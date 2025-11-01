@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage; // <-- TAMBAHKAN INI
-use Illuminate\Database\Eloquent\Casts\Attribute; // <-- TAMBAHKAN INI
+use Illuminate\Support\Facades\Storage; // <-- TAMBAHKAN
+// HAPUS: use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class JenisKonseling extends Model
 {
@@ -19,48 +19,34 @@ class JenisKonseling extends Model
     protected $fillable = [
         'jenis_konseling',
         'tipe_layanan',
-        'image', // Path gambar di storage
+        'image',
         'biaya_layanan',
         'nilai',
         'status',
     ];
 
-    // --- TAMBAHAN BARU: Memberitahu Eloquent untuk SELALU menyertakan 'image_url' ---
     /**
-     * The accessors to append to the model's array form.
-     *
-     * @var array
+     * Tambahkan 'image_url' ke JSON
      */
     protected $appends = ['image_url'];
-    // --- AKHIR TAMBAHAN ---
 
     /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array
+     * Sembunyikan 'image' (path mentah) dari JSON
      */
-    protected $hidden = [
-        'image', // Sembunyikan path 'image' asli
-    ];
+    protected $hidden = ['image'];
 
     /**
-     * Mendapatkan URL lengkap untuk gambar.
+     * PERBAIKAN: Accessor (gaya LAMA) untuk mendapatkan URL lengkap gambar.
      *
-     * @return \Illuminate\Database\Eloquent\Casts\Attribute
+     * @return string|null
      */
-    protected function imageUrl(): Attribute
+    public function getImageUrlAttribute()
     {
-        return Attribute::make(
-            // --- PERBAIKAN: Menggunakan function() {} ---
-            get: function () {
-                if ($this->image) {
-                    /** @phpstan-ignore-next-line */
-                    return Storage::disk('public')->url($this->image);
-                }
-                // Placeholder default jika tidak ada gambar
-                return 'https://placehold.co/400x300/E0F2FE/0EA5E9?text=' . urlencode($this->jenis_konseling);
-            }
-            // --- AKHIR PERBAIKAN ---
-        );
+        if (isset($this->attributes['image']) && $this->attributes['image']) {
+            /** @phpstan-ignore-next-line */
+            return Storage::disk('public')->url($this->attributes['image']);
+        }
+        // Ganti dengan URL placeholder jika Anda mau
+        return 'https://placehold.co/400x300/E0F2FE/0EA5E9?text=Layanan';
     }
 }

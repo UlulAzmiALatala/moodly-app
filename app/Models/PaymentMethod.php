@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Database\Eloquent\Casts\Attribute;
+// HAPUS: use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class PaymentMethod extends Model
 {
@@ -14,45 +14,32 @@ class PaymentMethod extends Model
     protected $fillable = [
         'name',
         'account_details',
-        'image', // Path gambar di storage
+        'image',
         'status',
     ];
 
     /**
-     * The accessors to append to the model's array form.
-     *
-     * @var array
+     * Tambahkan 'image_url' ke JSON
      */
     protected $appends = ['image_url'];
 
     /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array
+     * Sembunyikan 'image' (path mentah) dari JSON
      */
-    protected $hidden = [
-        'image', // Sembunyikan path 'image' asli
-    ];
+    protected $hidden = ['image'];
 
     /**
-     * Accessor untuk mendapatkan URL lengkap gambar QRIS.
+     * PERBAIKAN: Accessor (gaya LAMA) untuk mendapatkan URL lengkap gambar.
      *
-     * @return \Illuminate\Database\Eloquent\Casts\Attribute
+     * @param  string|null  $value
+     * @return string|null
      */
-    protected function imageUrl(): Attribute
+    public function getImageUrlAttribute()
     {
-        return Attribute::make(
-            // --- PERBAIKAN: Menggunakan function() {} ---
-            get: function () {
-                if ($this->image) {
-                    /** @phpstan-ignore-next-line */
-                    return Storage::disk('public')->url($this->image);
-                }
-
-                // Placeholder jika tidak ada gambar (meskipun seharusnya tidak terjadi jika Super Admin wajib upload)
-                return 'https://placehold.co/200x200/E0F2FE/0EA5E9?text=QRIS+Not+Found';
-            }
-            // --- AKHIR PERBAIKAN ---
-        );
+        if ($this->attributes['image']) {
+            /** @phpstan-ignore-next-line */
+            return Storage::disk('public')->url($this->attributes['image']);
+        }
+        return null;
     }
 }
