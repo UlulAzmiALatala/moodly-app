@@ -73,6 +73,7 @@ import VerifikasiKonselorPage from "../pages/admin/verifikasi-konselor/Index.jsx
 import VerifikasiDetailPage from "../pages/admin/verifikasi-konselor/Show.jsx";
 import VerifikasiCustomerPage from "../pages/admin/verifikasi-customer/Index.jsx";
 import VerifikasiCustomerDetailPage from "../pages/admin/verifikasi-customer/Show.jsx";
+import PaymentMethodsPage from "../pages/super-admin/payment-methods/Index.jsx";
 
 // --- [BARU] IMPORT HALAMAN KONSELOR ---
 import CounselorHomePage from "../pages/counselor/HomePage";
@@ -362,6 +363,10 @@ const AppRouter = () => {
                     <Route
                         path="/admin/tempat-konseling"
                         element={<TempatKonselingPage />}
+                    />
+                    <Route
+                        path="/admin/payment-methods"
+                        element={<PaymentMethodsPage />}
                     />
                     <Route
                         path="/admin/admin-management"
