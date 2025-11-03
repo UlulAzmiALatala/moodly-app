@@ -1,7 +1,7 @@
 import React from "react";
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 // --- PERBAIKAN: Mengembalikan path ke relatif (../) ---
-import { useAuth } from "../context/AuthContext"; // Sesuaikan path jika perlu
+import { useAuth } from "../context/AuthContext.jsx"; // Sesuaikan path jika perlu
 import Commet from "../components/Commet";
 
 // --- Layouts ---
@@ -82,9 +82,12 @@ import CounselorHistoryPage from "../pages/counselor/history/HistoryPage";
 import CounselorProfilePage from "../pages/counselor/profile/Index";
 import PracticeLocationPage from "../pages/counselor/location/index";
 import BankAccountPage from "../pages/counselor/bank-account/index";
-// --- TAMBAHAN IMPORT NOTIFIKASI ---
+import CounselorNotificationPage from "../pages/counselor/NotificationPage";
 import CounselorChatPage from "../pages/counselor/history/chat/ChatPageCounselor";
-import CounselorNotificationPage from "../pages/counselor/NotificationPage"; // Asumsi path
+import CounselorEditProfilePage from "../pages/counselor/profile/EditPage";
+// --- [INI TAMBAHAN BARU] ---
+import CounselorChangeEmailPage from "../pages/counselor/profile/ChangeEmailPage";
+import CounselorChangePasswordPage from "../pages/counselor/profile/ChangePasswordPage";
 
 // --- Guards (Penjaga Rute) ---
 
@@ -319,17 +322,28 @@ const AppRouter = () => {
                         path="/counselor/bank-account"
                         element={<BankAccountPage />}
                     />
-                    {/* --- [BARU] RUTE NOTIFIKASI KONSELOR --- */}
                     <Route
                         path="/counselor/notifications"
                         element={<CounselorNotificationPage />}
                     />
+                    <Route
+                        path="/counselor/chat/:id"
+                        element={<CounselorChatPage />}
+                    />
+                    <Route
+                        path="/counselor/profile/edit"
+                        element={<CounselorEditProfilePage />}
+                    />
+                    {/* --- [INI TAMBAHAN BARU] --- */}
+                    <Route
+                        path="/counselor/profile/change-email"
+                        element={<CounselorChangeEmailPage />}
+                    />
+                    <Route
+                        path="/counselor/profile/change-password"
+                        element={<CounselorChangePasswordPage />}
+                    />
                 </Route>
-                {/* --- [BARU] RUTE CHAT KONSELOR --- */}
-                <Route
-                    path="/counselor/chat/chat-page"
-                    element={<CounselorChatPage />}
-                />
             </Route>
 
             {/* === ZONA ADMIN (WEBSITE) === */}
@@ -433,7 +447,7 @@ const AppRouter = () => {
                 path="*"
                 element={
                     <div>
-                        <h1>404 - Halaman Tidak Ditemukan</h1>
+                        <h1>404 - Eitsss Halaman Tidak Ditemukan Bro 😊</h1>
                     </div>
                 }
             />
