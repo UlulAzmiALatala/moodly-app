@@ -9,7 +9,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\HasApiTokens;
-use Illuminate\Database\Eloquent\Casts\Attribute; // <-- TAMBAHKAN INI
+// HAPUS: use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class User extends Authenticatable
 {
@@ -40,14 +40,12 @@ class User extends Authenticatable
         'universitas',
     ];
 
-    // --- TAMBAHAN BARU: Memberitahu Eloquent untuk SELALU menyertakan 'avatar_url' ---
     /**
      * The accessors to append to the model's array form.
      *
      * @var array
      */
     protected $appends = ['avatar_url'];
-    // --- AKHIR TAMBAHAN ---
 
 
     /**
@@ -58,7 +56,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
-        'avatar', // Sembunyikan path 'avatar' asli, tampilkan 'avatar_url' saja
+        'avatar', // Sembunyikan path mentah 'avatar'
     ];
 
     /**
@@ -72,8 +70,6 @@ class User extends Authenticatable
         'spesialisasi' => 'array',
     ];
 
-    // --- RELASI BARU ---
-
     /**
      * Get all of the bookings for the User (sebagai customer).
      */
@@ -82,29 +78,20 @@ class User extends Authenticatable
         return $this->hasMany(Booking::class, 'customer_id');
     }
 
-    // --- ACCESSOR BARU UNTUK AVATAR (Gaya Baru) ---
-
     /**
-     * Mendapatkan URL lengkap untuk avatar.
+     * PERBAIKAN: Accessor (gaya LAMA) untuk mendapatkan URL avatar.
      *
-     * @return \Illuminate\Database\Eloquent\Casts\Attribute
+     * @return string|null
      */
-    protected function avatarUrl(): Attribute
+    public function getAvatarUrlAttribute()
     {
-        return Attribute::make(
-            // --- PERBAIKAN: Menggunakan function() {}
-            get: function () {
-                if ($this->avatar) {
-                    // Gunakan disk 'public'
-                    /** @phpstan-ignore-next-line */
-                    return Storage::disk('public')->url($this->avatar);
-                }
+        if (isset($this->attributes['avatar']) && $this->attributes['avatar']) {
+            /** @phpstan-ignore-next-line */
+            return Storage::disk('public')->url($this->attributes['avatar']);
+        }
 
-                // Fallback ke UI Avatars
-                $name = urlencode($this->name);
-                return "https://ui-avatars.com/api/?name={$name}&background=EBF4FF&color=3B82F6&bold=true";
-            }
-            // --- AKHIR PERBAIKAN ---
-        );
+        // Fallback ke UI Avatars jika tidak ada avatar
+        $name = urlencode($this->name);
+        return "https://ui-avatars.com/api/?name={$name}&background=EBF4FF&color=3B82F6&bold=true";
     }
 }

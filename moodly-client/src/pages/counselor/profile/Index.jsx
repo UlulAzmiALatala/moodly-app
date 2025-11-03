@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
+// --- PERBAIKAN: Path nunjuk langsung ke file AuthContext (tanpa .jsx) ---
 import { useAuth } from "../../../context/AuthContext";
 
 // --- Komponen Ikon ---
@@ -55,7 +56,6 @@ const LockIcon = () => (
     </svg>
 );
 
-// --- IKON BARU SESUAI DESAIN ---
 const CloudCogIcon = () => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -140,7 +140,6 @@ const BankIcon = () => (
         <line x1="7" y1="13" x2="17" y2="13" />
     </svg>
 );
-// --- AKHIR IKON BARU ---
 
 const LogOutIcon = () => (
     <svg
@@ -153,7 +152,7 @@ const LogOutIcon = () => (
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="text-gray-500" // Ubah warna jadi merah jika diinginkan: text-red-500
+        className="text-gray-500"
     >
         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
         <polyline points="16 17 21 12 16 7"></polyline>
@@ -179,20 +178,17 @@ const ChevronRightIcon = () => (
 // --- Akhir Komponen Ikon ---
 
 // --- Komponen Item Menu ---
-const MenuItem = (
-    { icon, label, onClick, isLogout = false } // Tambah prop isLogout
-) => (
+const MenuItem = ({ icon, label, onClick, isLogout = false }) => (
     <button
         onClick={onClick}
         className={`w-full flex items-center justify-between p-4 rounded-lg transition-colors duration-200 group ${
             isLogout
-                ? "bg-red-50 hover:bg-red-100" // Styling khusus logout
+                ? "bg-red-50 hover:bg-red-100"
                 : "bg-gray-100 hover:bg-gray-200"
         }`}
     >
         <div className="flex items-center gap-3">
             {React.cloneElement(icon, {
-                // Ubah warna ikon logout
                 className: isLogout ? "text-red-500" : "text-gray-500",
             })}
             <span
@@ -203,50 +199,46 @@ const MenuItem = (
                 {label}
             </span>
         </div>
-        {!isLogout && <ChevronRightIcon />}{" "}
-        {/* Sembunyikan panah untuk logout */}
+        {!isLogout && <ChevronRightIcon />}
     </button>
 );
 
 export default function ProfilePage() {
-    // Ambil user dan fungsi logout dari context asli
     const { user, logout } = useAuth();
     const navigate = useNavigate();
 
     const handleLogout = async () => {
         try {
             if (logout) {
-                await logout(); // Panggil fungsi logout dari context (asynchronous)
+                await logout();
             }
             console.log("Logout successful");
-            // Navigasi ke login SETELAH logout berhasil
             navigate("/login");
         } catch (error) {
             console.error("Logout failed:", error);
-            // Tampilkan pesan error jika perlu
         }
     };
 
     // --- FUNGSI NAVIGASI ---
-    const handleEditProfileClick = () => navigate("/profile/edit");
-    const handleChangeEmailClick = () => navigate("/profile/change-email");
-    const handleChangePasswordClick = () =>
-        navigate("/profile/change-password");
-    const handleHelpClick = () => navigate("/help");
+    const handleEditProfileClick = () => navigate("/counselor/profile/edit");
+    const handleHelpClick = () => navigate("/counselor/help"); // Pastikan rute ini ada
+    const handleScheduleClick = () => navigate("/counselor/schedule");
+    const handlePracticeLocationClick = () => navigate("/counselor/location"); // Pastikan rute ini ada
+    const handleBankClick = () => navigate("/counselor/bank-account"); // Pastikan rute ini ada
 
-    // --- FUNGSI NAVIGASI BARU UNTUK KONSELOR ---
-    const handleScheduleClick = () => navigate("/counselor/schedule"); // Ganti dengan path Anda
-    const handlePracticeLocationClick = () => navigate("/counselor/location"); // Ganti dengan path Anda
-    const handleBankClick = () => navigate("/counselor/bank-account"); // Ganti dengan path Anda
+    // --- [BARU] FUNGSI NAVIGASI UNTUK EMAIL & PASSWORD ---
+    const handleChangeEmailClick = () =>
+        navigate("/counselor/profile/change-email");
+    const handleChangePasswordClick = () =>
+        navigate("/counselor/profile/change-password");
 
     return (
         <div className="bg-white min-h-full font-sans pt-8 pb-4 px-4">
             {/* Info Profil Atas */}
             <div className="flex flex-col items-center text-center mb-8">
                 <img
-                    // Gunakan avatar user dari context
                     src={
-                        user?.avatar || // Gunakan accessor avatar jika ada
+                        user?.avatar ||
                         `https://ui-avatars.com/api/?name=${encodeURIComponent(
                             user?.name || "U"
                         )}&background=EBF4FF&color=3B82F6&bold=true`
@@ -254,8 +246,7 @@ export default function ProfilePage() {
                     alt="Profile Avatar"
                     className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-lg mb-3"
                     onError={(e) => {
-                        // Fallback jika avatar gagal load
-                        e.target.onerror = null; // Prevent infinite loop
+                        e.target.onerror = null;
                         e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
                             user?.name || "U"
                         )}&background=EBF4FF&color=3B82F6&bold=true`;
@@ -273,9 +264,11 @@ export default function ProfilePage() {
             <div className="space-y-3">
                 <MenuItem
                     icon={<UserIcon />}
-                    label="Profile" // PERUBAHAN: Sesuai desain
+                    label="Edit Profile"
                     onClick={handleEditProfileClick}
                 />
+
+                {/* --- [BARU] MENU EMAIL & PASSWORD DITAMBAHKAN --- */}
                 <MenuItem
                     icon={<MailIcon />}
                     label="Email"
@@ -286,13 +279,8 @@ export default function ProfilePage() {
                     label="Ubah Kata sandi"
                     onClick={handleChangePasswordClick}
                 />
-                <MenuItem
-                    icon={<CloudCogIcon />} // PERUBAHAN: Ikon sesuai desain
-                    label="Bantuan"
-                    onClick={handleHelpClick}
-                />
+                {/* --- AKHIR TAMBAHAN --- */}
 
-                {/* --- MENU BARU DITAMBAHKAN --- */}
                 <MenuItem
                     icon={<CalendarIcon />}
                     label="Atur Jadwal Praktik"
@@ -308,13 +296,16 @@ export default function ProfilePage() {
                     label="Daftar Rekening"
                     onClick={handleBankClick}
                 />
-                {/* --- AKHIR MENU BARU --- */}
-
+                <MenuItem
+                    icon={<CloudCogIcon />}
+                    label="Bantuan"
+                    onClick={handleHelpClick}
+                />
                 <MenuItem
                     icon={<LogOutIcon />}
                     label="Log Out"
                     onClick={handleLogout}
-                    isLogout={true} // Tandai sebagai tombol logout
+                    isLogout={true}
                 />
             </div>
         </div>

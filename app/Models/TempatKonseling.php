@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Database\Eloquent\Casts\Attribute; // <-- TAMBAHKAN INI
+// HAPUS: use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class TempatKonseling extends Model
 {
@@ -14,52 +14,41 @@ class TempatKonseling extends Model
     protected $fillable = [
         'nama_tempat',
         'alamat',
-        'image',        // Path gambar di storage
+        'image',
         'rating',
         'review_count',
         'status',
     ];
 
-    // --- TAMBAHAN BARU: Memberitahu Eloquent untuk SELALU menyertakan 'image_url' ---
     /**
-     * The accessors to append to the model's array form.
-     *
-     * @var array
+     * Tambahkan 'image_url' ke JSON
      */
     protected $appends = ['image_url'];
-    // --- AKHIR TAMBAHAN ---
 
     /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array
+     * Sembunyikan 'image' (path mentah) dari JSON
      */
-    protected $hidden = [
-        'image', // Sembunyikan path 'image' asli
-    ];
+    protected $hidden = ['image'];
+
 
     protected $casts = [
         'rating' => 'float',
     ];
 
     /**
-     * Accessor untuk mendapatkan URL gambar lengkap (Gaya Baru).
+     * PERBAIKAN: Accessor (gaya LAMA) untuk mendapatkan URL gambar lengkap.
      *
-     * @return \Illuminate\Database\Eloquent\Casts\Attribute
+     * @return string|null
      */
-    protected function imageUrl(): Attribute
+    public function getImageUrlAttribute()
     {
-        return Attribute::make(
-            // --- PERBAIKAN: Menggunakan function() {} ---
-            get: function () {
-                if ($this->image) {
-                    /** @phpstan-ignore-next-line */
-                    return Storage::disk('public')->url($this->image);
-                }
-                // Placeholder default jika tidak ada gambar
-                return 'https://placehold.co/400x300/E0F2FE/0EA5E9?text=' . urlencode($this->nama_tempat);
-            }
-            // --- AKHIR PERBAIKAN ---
-        );
+        if (isset($this->attributes['image']) && $this->attributes['image']) {
+            /** @phpstan-ignore-next-line */
+            return Storage::disk('public')->url($this->attributes['image']);
+        }
+        // Ganti dengan URL placeholder jika Anda mau
+        return 'https://placehold.co/400x300/E0F2FE/0EA5E9?text=Tempat';
     }
+
+    // ... (Relasi lain) ...
 }

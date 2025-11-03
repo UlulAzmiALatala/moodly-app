@@ -407,11 +407,19 @@ class BookingFlowController extends Controller
     public function getPaymentMethods()
     {
         try {
-            // --- PERBAIKAN: Ambil semua kolom, biarkan Model yg append URL ---
-            $methods = PaymentMethod::where('status', 'Aktif')->get();
-            // --- AKHIR PERBAIKAN ---
+            // --- PERBAIKAN: Ambil HANYA SATU (yang pertama) ---
+            $method = PaymentMethod::where('status', 'Aktif')
+                ->whereNotNull('image') // Pastikan ada gambar
+                ->orderBy('id', 'desc') // <-- UBAH KE 'desc'
+                ->first();
 
-            return response()->json($methods);
+            // Jika tidak ada, kembalikan array kosong
+            if (!$method) {
+                return response()->json([]);
+            }
+
+            // Kembalikan dalam array (agar frontend .filter/.map tidak error)
+            return response()->json([$method]);
         } catch (\Exception $e) {
             Log::error('Error fetching payment methods:', ['error' => $e->getMessage()]);
             return response()->json([
