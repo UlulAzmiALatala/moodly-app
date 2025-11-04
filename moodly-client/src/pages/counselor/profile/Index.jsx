@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-// --- PERBAIKAN: Path nunjuk langsung ke file AuthContext (tanpa .jsx) ---
-import { useAuth } from "../../../context/AuthContext";
+// --- PERBAIKAN: Path nunjuk ke file AuthContext.jsx (naik 3 level) ---
+import { useAuth } from "../../../context/AuthContext.jsx";
 
 // --- Komponen Ikon ---
 const UserIcon = () => (
@@ -222,7 +222,7 @@ export default function ProfilePage() {
     // --- FUNGSI NAVIGASI ---
     const handleEditProfileClick = () => navigate("/counselor/profile/edit");
     const handleHelpClick = () => navigate("/counselor/help"); // Pastikan rute ini ada
-    const handleScheduleClick = () => navigate("/counselor/schedule");
+    const handleScheduleClick = () => navigate("/counselor/schedule/edit"); // Diarahkan ke edit
     const handlePracticeLocationClick = () => navigate("/counselor/location"); // Pastikan rute ini ada
     const handleBankClick = () => navigate("/counselor/bank-account"); // Pastikan rute ini ada
 

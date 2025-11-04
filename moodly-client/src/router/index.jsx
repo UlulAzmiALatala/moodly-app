@@ -1,7 +1,7 @@
 import React from "react";
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
-// --- PERBAIKAN: Mengembalikan path ke relatif (../) ---
-import { useAuth } from "../context/AuthContext.jsx"; // Sesuaikan path jika perlu
+// --- PERBAIKAN: Path disesuaikan (tanpa .jsx) ---
+import { useAuth } from "../context/AuthContext"; // Sesuaikan path jika perlu
 import Commet from "../components/Commet";
 
 // --- Layouts ---
@@ -14,7 +14,6 @@ import PageLayout from "../layouts/PageLayout";
 // --- Halaman Auth (Mobile) ---
 import LoginPage from "../pages/auth/LoginPage";
 import AddressPage from "../pages/auth/AddressPage";
-// Ini akan mengimpor file 'RegisterPage.jsx' Anda yang "pintar"
 import RegisterPage from "../pages/auth/RegisterPage";
 import OnboardingPage from "../pages/auth/OnboardingPage";
 
@@ -24,18 +23,16 @@ import NotificationPage from "../pages/customer/NotificationPage";
 import BookingPage from "../pages/customer/booking/Index";
 import FindCounselorPage from "../pages/customer/booking/FindCounselorPage";
 import InPersonPage from "../pages/customer/booking/InPersonPage";
-// import PaymentPage from "../pages/customer/booking/PaymentPage"; // <-- Sudah benar dikomentari
 import LocationDetailPage from "../pages/customer/booking/LocationDetailPage";
 import PsychologistDetailPage from "../pages/customer/booking/PsychologistDetailPage";
 
 // --- IMPORT UNTUK PAYMENT ---
 import PaymentOnlinePage from "../pages/customer/booking/payment/PaymentOnlinePage";
-import QrisPaymentPage from "../pages/customer/booking/payment/QrisPaymentPage"; // <-- Tambahkan ini
-import PaymentOfflinePage from "../pages/customer/booking/payment/PaymentOfflinePage"; // Import yang benar
+import QrisPaymentPage from "../pages/customer/booking/payment/QrisPaymentPage";
+import PaymentOfflinePage from "../pages/customer/booking/payment/PaymentOfflinePage";
 // --- AKHIR IMPORT PAYMENT ---
 
 import HistoryPage from "../pages/customer/history/Index";
-// --- PERBAIKAN: Typo 'pages.customer' diubah jadi 'pages/customer' ---
 import HistoryDetailPage from "../pages/customer/history/DetailPage";
 import RatingPage from "../pages/customer/history/RatingPage";
 import CancelPage from "../pages/customer/history/CancelPage";
@@ -54,7 +51,6 @@ import ChatAdminPage from "../pages/customer/help/ChatAdminPage";
 import ChatPage from "../pages/customer/session/ChatPage";
 
 // --- Halaman Admin & Super Admin (Website) ---
-// (Import halaman Admin/Super Admin tetap sama)
 import JenisKonselingPage from "../pages/super-admin/konseling/jenis/Index.jsx";
 import DurasiKonselingPage from "../pages/super-admin/konseling/durasi/Index.jsx";
 import TempatKonselingPage from "../pages/super-admin/konseling/tempat/Index.jsx";
@@ -73,7 +69,6 @@ import VerifikasiKonselorPage from "../pages/admin/verifikasi-konselor/Index.jsx
 import VerifikasiDetailPage from "../pages/admin/verifikasi-konselor/Show.jsx";
 import VerifikasiCustomerPage from "../pages/admin/verifikasi-customer/Index.jsx";
 import VerifikasiCustomerDetailPage from "../pages/admin/verifikasi-customer/Show.jsx";
-import PaymentMethodsPage from "../pages/super-admin/payment-methods/Index.jsx";
 
 // --- [BARU] IMPORT HALAMAN KONSELOR ---
 import CounselorHomePage from "../pages/counselor/HomePage";
@@ -85,9 +80,12 @@ import BankAccountPage from "../pages/counselor/bank-account/index";
 import CounselorNotificationPage from "../pages/counselor/NotificationPage";
 import CounselorChatPage from "../pages/counselor/history/chat/ChatPageCounselor";
 import CounselorEditProfilePage from "../pages/counselor/profile/EditPage";
-// --- [INI TAMBAHAN BARU] ---
 import CounselorChangeEmailPage from "../pages/counselor/profile/ChangeEmailPage";
 import CounselorChangePasswordPage from "../pages/counselor/profile/ChangePasswordPage";
+import CounselorHelpPage from "../pages/counselor/help/Index";
+import CounselorScheduleEditPage from "../pages/counselor/schedule/Edit";
+// ✅ Diperbaiki: Sesuaikan dengan struktur folder kamu
+import CounselorReschedulePage from "../pages/counselor/history/Edit";
 
 // --- Guards (Penjaga Rute) ---
 
@@ -100,7 +98,6 @@ const GuestGuard = () => {
         ) {
             return <Navigate to="/admin/dashboard" />;
         }
-        // --- PERBAIKAN: Cek 'konselor' DAN 'counselor' ---
         if (
             user.role?.includes("konselor") ||
             user.role?.includes("counselor")
@@ -114,33 +111,29 @@ const GuestGuard = () => {
 
 const ProtectedGuard = () => {
     const { user } = useAuth();
-    // --- PERBAIKAN: Logika Guard Customer ---
     if (!user) {
-        return <Navigate to="/login" />; // Belum login, tendang
+        return <Navigate to="/login" />;
     }
     if (user.role?.includes("admin") || user.role?.includes("super-admin")) {
-        return <Navigate to="/admin/dashboard" />; // Admin, tendang ke admin
+        return <Navigate to="/admin/dashboard" />;
     }
     if (user.role?.includes("konselor") || user.role?.includes("counselor")) {
-        return <Navigate to="/counselor/home" />; // Konselor, tendang ke konselor
+        return <Navigate to="/counselor/home" />;
     }
-    // Lolos semua, berarti customer
     return <Outlet />;
 };
 
 const CounselorProtectedGuard = () => {
     const { user } = useAuth();
-    // --- PERBAIKAN: Logika Guard Konselor ---
     if (!user) {
-        return <Navigate to="/counselor/login" />; // Belum login, tendang
+        return <Navigate to="/counselor/login" />;
     }
     if (user.role?.includes("admin") || user.role?.includes("super-admin")) {
-        return <Navigate to="/admin/dashboard" />; // Admin, tendang ke admin
+        return <Navigate to="/admin/dashboard" />;
     }
     if (!user.role?.includes("konselor") && !user.role?.includes("counselor")) {
-        return <Navigate to="/home" />; // Bukan konselor (customer), tendang ke customer
+        return <Navigate to="/home" />;
     }
-    // Lolos semua, berarti konselor
     return <Outlet />;
 };
 
@@ -164,11 +157,9 @@ const AdminProtectedGuard = () => {
     );
 };
 
-// --- PETA APLIKASI UTAMA ---
 const AppRouter = () => {
     const { loading } = useAuth();
 
-    // 1. Tampilkan loading jika user belum siap
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
@@ -182,7 +173,6 @@ const AppRouter = () => {
         );
     }
 
-    // 2. Jika sudah tidak loading, tampilkan Rute
     return (
         <Routes>
             {/* === ZONA AUTH CUSTOMER & KONSELOR (MOBILE) === */}
@@ -201,7 +191,6 @@ const AppRouter = () => {
 
             {/* === ZONA CUSTOMER TERPROTEKSI (MOBILE) === */}
             <Route element={<ProtectedGuard />}>
-                {/* 1. Rute MobileLayout */}
                 <Route element={<MobileLayout />}>
                     <Route path="/home" element={<HomePage />} />
                     <Route path="/booking" element={<BookingPage />} />
@@ -214,7 +203,6 @@ const AppRouter = () => {
                     <Route path="/beranda" element={<Navigate to="/home" />} />
                 </Route>
 
-                {/* 2. Rute PageLayout */}
                 <Route element={<PageLayout />}>
                     <Route path="/address" element={<AddressPage />} />
                     <Route path="/profile/edit" element={<EditProfilePage />} />
@@ -334,7 +322,6 @@ const AppRouter = () => {
                         path="/counselor/profile/edit"
                         element={<CounselorEditProfilePage />}
                     />
-                    {/* --- [INI TAMBAHAN BARU] --- */}
                     <Route
                         path="/counselor/profile/change-email"
                         element={<CounselorChangeEmailPage />}
@@ -342,6 +329,18 @@ const AppRouter = () => {
                     <Route
                         path="/counselor/profile/change-password"
                         element={<CounselorChangePasswordPage />}
+                    />
+                    <Route
+                        path="/counselor/help"
+                        element={<CounselorHelpPage />}
+                    />
+                    <Route
+                        path="/counselor/schedule/edit"
+                        element={<CounselorScheduleEditPage />}
+                    />
+                    <Route
+                        path="/counselor/history/Edit"
+                        element={<CounselorReschedulePage />}
                     />
                 </Route>
             </Route>
@@ -377,10 +376,6 @@ const AppRouter = () => {
                     <Route
                         path="/admin/tempat-konseling"
                         element={<TempatKonselingPage />}
-                    />
-                    <Route
-                        path="/admin/payment-methods"
-                        element={<PaymentMethodsPage />}
                     />
                     <Route
                         path="/admin/admin-management"
@@ -447,7 +442,7 @@ const AppRouter = () => {
                 path="*"
                 element={
                     <div>
-                        <h1>404 - Eitsss Halaman Tidak Ditemukan Bro 😊</h1>
+                        <h1>404 - Halaman Tidak Ditemukan</h1>
                     </div>
                 }
             />
