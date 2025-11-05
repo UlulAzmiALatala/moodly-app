@@ -1,6 +1,6 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom"; // <-- 1. TAMBAHKAN IMPORT INI
 // Import ikon-ikon HANYA UNTUK KONTEN (Calendar, Clock, Star)
-// Ikon navbar tidak ada di sini (INI SUDAH BENAR)
 import { Calendar, Clock, Star } from "lucide-react";
 
 // --- Data Dummy ---
@@ -14,7 +14,15 @@ const dummyUpcomingData = [
         time: "16.00 - 17.00",
         type: "Vidio Call",
     },
-    // ... data lainnya
+    {
+        id: 2,
+        sesi: "1 Jam Sesi",
+        name: "Pelita Maharani",
+        img: "https://randomuser.me/api/portraits/women/67.jpg",
+        date: "12 - 09 - 2025",
+        time: "17.00 - 18.00",
+        type: "Chat",
+    },
 ];
 const dummyCancelledData = [
     {
@@ -27,7 +35,6 @@ const dummyCancelledData = [
         type: "Chat",
         status: "Telah Dibatalkan Customer",
     },
-    // ... data lainnya
 ];
 const dummyCompletedData = [
     {
@@ -40,7 +47,6 @@ const dummyCompletedData = [
         time: "16.00 - 17.00",
         type: "Chat",
     },
-    // ... data lainnya
 ];
 
 // --- Komponen Internal ---
@@ -89,47 +95,70 @@ const TabNavigation = ({ activeTab, onTabClick }) => {
     );
 };
 
-const UpcomingCard = ({ item }) => (
-    <div className="bg-white rounded-2xl shadow-lg p-4 space-y-3">
-        {/* ... (konten kartu) ... */}
-        <div className="flex justify-between items-start">
-            <span className="text-xs text-gray-500 font-medium">
-                {item.sesi}
-            </span>
-            <img
-                src={item.img}
-                alt={item.name}
-                className="w-12 h-12 rounded-full object-cover border-2 border-gray-100"
-            />
+// --- PERBAIKAN DI SINI ---
+const UpcomingCard = ({ item }) => {
+    const navigate = useNavigate(); // <-- 2. TAMBAHKAN HOOK NAVIGASI
+
+    const handleGantiJadwal = () => {
+        // --- 4. ARAHKAN KE HALAMAN EDIT SESUAI PERMINTAANMU ---
+        navigate(`/counselor/history/Edit`);
+    };
+
+    const handleMulai = () => {
+        // Arahkan ke chat page
+        navigate(`/counselor/chat/${item.id}`);
+    };
+
+    return (
+        <div className="bg-white rounded-2xl shadow-lg p-4 space-y-3">
+            <div className="flex justify-between items-start">
+                <span className="text-xs text-gray-500 font-medium">
+                    {item.sesi}
+                </span>
+                <img
+                    src={item.img}
+                    alt={item.name}
+                    className="w-12 h-12 rounded-full object-cover border-2 border-gray-100"
+                />
+            </div>
+            <div className="flex justify-between items-center">
+                <h3 className="text-lg font-bold text-sky-700">{item.name}</h3>
+                <span className="text-sm font-bold text-sky-500">
+                    {item.type}
+                </span>
+            </div>
+            <div className="flex items-center gap-4 text-sm text-gray-600 border-t pt-3">
+                <span className="flex items-center gap-1.5">
+                    <Calendar size={16} className="text-gray-400" />
+                    {item.date}
+                </span>
+                <span className="flex items-center gap-1.5">
+                    <Clock size={16} className="text-gray-400" />
+                    {item.time}
+                </span>
+            </div>
+            <div className="flex items-center gap-3 pt-2">
+                {/* --- 3. TAMBAHKAN onClick DI SINI --- */}
+                <button
+                    onClick={handleGantiJadwal}
+                    className="flex-1 py-2 px-4 border border-sky-500 text-sky-500 rounded-full text-sm font-semibold transition-all hover:bg-sky-50"
+                >
+                    Ganti Jadwal
+                </button>
+                <button
+                    onClick={handleMulai}
+                    className="flex-1 py-2 px-4 bg-sky-500 text-white rounded-full text-sm font-semibold transition-all hover:bg-sky-600"
+                >
+                    Mulai
+                </button>
+            </div>
         </div>
-        <div className="flex justify-between items-center">
-            <h3 className="text-lg font-bold text-sky-700">{item.name}</h3>
-            <span className="text-sm font-bold text-sky-500">{item.type}</span>
-        </div>
-        <div className="flex items-center gap-4 text-sm text-gray-600 border-t pt-3">
-            <span className="flex items-center gap-1.5">
-                <Calendar size={16} className="text-gray-400" />
-                {item.date}
-            </span>
-            <span className="flex items-center gap-1.5">
-                <Clock size={16} className="text-gray-400" />
-                {item.time}
-            </span>
-        </div>
-        <div className="flex items-center gap-3 pt-2">
-            <button className="flex-1 py-2 px-4 border border-sky-500 text-sky-500 rounded-full text-sm font-semibold transition-all hover:bg-sky-50">
-                Ganti Jadwal
-            </button>
-            <button className="flex-1 py-2 px-4 bg-sky-500 text-white rounded-full text-sm font-semibold transition-all hover:bg-sky-600">
-                Mulai
-            </button>
-        </div>
-    </div>
-);
+    );
+};
+// --- AKHIR PERBAIKAN ---
 
 const CancelledCard = ({ item }) => (
     <div className="bg-white rounded-2xl shadow-lg p-4 space-y-3 opacity-90">
-        {/* ... (konten kartu) ... */}
         <div className="flex justify-between items-start">
             <span className="text-xs text-gray-500 font-medium">
                 {item.sesi}
@@ -162,7 +191,6 @@ const CancelledCard = ({ item }) => (
 
 const CompletedCard = ({ item }) => (
     <div className="bg-white rounded-2xl shadow-lg p-4 space-y-3">
-        {/* ... (konten kartu) ... */}
         <div className="flex items-start gap-3">
             <img
                 src={item.img}
@@ -215,13 +243,11 @@ export default function HistoryPage() {
     };
 
     return (
-        // pb-24 memberi ruang untuk bottom navigation bar DARI LAYOUT
+        // PERBAIKAN: bg-white-50 jadi bg-pink-50
         <div className="bg-pink-50 min-h-full p-4 pb-24">
             <TabNavigation activeTab={activeTab} onTabClick={setActiveTab} />
 
             <div className="mt-6 space-y-4">{renderContent()}</div>
-            
-            {/* <BottomNavBar /> TIDAK ADA DI SINI. INI SUDAH BENAR. */}
         </div>
     );
 }
