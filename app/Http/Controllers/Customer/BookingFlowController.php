@@ -13,6 +13,7 @@ use App\Models\PaymentMethod; // <-- Import untuk QRIS
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use Carbon\CarbonInterval;
 
@@ -408,18 +409,13 @@ class BookingFlowController extends Controller
     {
         try {
             // --- PERBAIKAN: Ambil HANYA SATU (yang pertama) ---
-            $method = PaymentMethod::where('status', 'Aktif')
+            $methods = PaymentMethod::where('status', 'Aktif')
                 ->whereNotNull('image') // Pastikan ada gambar
-                ->orderBy('id', 'desc') // <-- UBAH KE 'desc'
-                ->first();
+                ->orderBy('id', 'desc') // Urutkan (opsional, tapi bagus)
+                ->get(); // <-- UBAH DARI first() MENJADI get()
 
-            // Jika tidak ada, kembalikan array kosong
-            if (!$method) {
-                return response()->json([]);
-            }
-
-            // Kembalikan dalam array (agar frontend .filter/.map tidak error)
-            return response()->json([$method]);
+            // Kembalikan semua, atau array kosong jika tidak ada
+            return response()->json($methods);
         } catch (\Exception $e) {
             Log::error('Error fetching payment methods:', ['error' => $e->getMessage()]);
             return response()->json([
@@ -428,5 +424,27 @@ class BookingFlowController extends Controller
             ], 500);
         }
     }
-    // --- AKHIR METHOD BARU ---
+
+    public function getPaymentMethodImage(PaymentMethod $paymentMethod)
+    {
+        try {
+            // Pastikan gambar ada
+            if (!$paymentMethod->image || !Storage::disk('public')->exists($paymentMethod->image)) {
+                return response()->json(['message' => 'Gambar tidak ditemukan.'], 404);
+            }
+
+            // Ambil path lengkap ke file
+            $path = Storage::disk('public')->path($paymentMethod->image);
+
+            // Kirim file sebagai respons
+            // Ini akan otomatis ditangani oleh middleware cors.php
+            return response()->file($path);
+        } catch (\Exception $e) {
+            Log::error('Error fetching payment method image:', ['id' => $paymentMethod->id, 'error' => $e->getMessage()]);
+            return response()->json([
+                'message' => 'Gagal mengambil gambar.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

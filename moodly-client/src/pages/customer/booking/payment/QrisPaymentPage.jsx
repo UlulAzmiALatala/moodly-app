@@ -197,7 +197,7 @@ function QrisPaymentPage() {
 
                     <img
                         ref={qrImageRef}
-                        src={qrisMethod.image_url} // <-- Gunakan URL dinamis
+                        src={`http://localhost:8000/api/payment-methods/image/${qrisMethod.id}`}
                         alt={`QR Code ${qrisMethod.name}`}
                         className="w-full max-w-[200px] h-auto aspect-square block mx-auto bg-gray-100" // Tambah bg
                         crossOrigin="anonymous"
@@ -212,7 +212,11 @@ function QrisPaymentPage() {
                 {/* Tombol Simpan */}
                 <button
                     onClick={() =>
-                        handleSaveQR(qrisMethod.image_url, qrisMethod.name)
+                        handleSaveQR(
+                            // GANTI "http://localhost:8000" dengan VITE_API_URL Anda jika ada
+                            `http://localhost:8000/api/payment-methods/image/${qrisMethod.id}`,
+                            qrisMethod.name
+                        )
                     }
                     className="w-full bg-cyan-500 text-white font-bold py-3 px-6 rounded-lg shadow hover:bg-cyan-600 transition-colors active:scale-95"
                 >
