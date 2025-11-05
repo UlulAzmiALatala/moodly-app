@@ -7,8 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany; // <-- TAMBAHKAN Import HasMany
 
+// --- TAMBAHAN BARU ---
+use Illuminate\Database\Eloquent\Casts\Attribute; // Untuk Accessor
+use Illuminate\Support\Facades\Storage; // Untuk URL Storage
+// --- AKHIR TAMBAHAN BARU ---
+
 class Booking extends Model
 {
+    // ... (kode $fillable, $appends, relasi tidak berubah) ...
     use HasFactory;
 
     protected $fillable = [
@@ -24,7 +30,24 @@ class Booking extends Model
         'total_harga',
         'alasan_pembatalan', // <-- Pastikan ada dari migrasi sebelumnya
         'catatan_pembatalan', // <-- Pastikan ada dari migrasi sebelumnya
+
+        // --- TAMBAHAN DARI MIGRARI BARU ---
+        'payment_proof_image',
+        'payment_proof_notes',
+        // --- AKHIR TAMBAHAN ---
     ];
+
+    // --- TAMBAHAN BARU: Appends ---
+    /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array
+     */
+    protected $appends = [
+        'payment_proof_image_url' // <-- Kita ingin URL ini selalu ada di JSON
+    ];
+    // --- AKHIR TAMBAHAN BARU ---
+
 
     /**
      * Get the customer that owns the booking.
@@ -70,4 +93,23 @@ class Booking extends Model
     {
         return $this->belongsTo(TempatKonseling::class);
     }
+
+    // --- TAMBAHAN BARU: Accessor untuk Bukti Pembayaran ---
+    /**
+     * Dapatkan URL lengkap untuk gambar bukti pembayaran.
+     *
+     * @return \Illuminate\Database\Eloquent\Casts\Attribute
+     */
+    protected function paymentProofImageUrl(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => $this->payment_proof_image
+                // --- PERBAIKAN: Gunakan Storage::url() ---
+                // Method ini adalah shortcut untuk Storage::disk('public')->url()
+                // dan akan dipahami oleh linter Intelephense.
+                ? Storage::url($this->payment_proof_image)
+                : null,
+        );
+    }
+    // --- AKHIR TAMBAHAN BARU & PERBAIKAN ---
 }

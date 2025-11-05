@@ -41,17 +41,27 @@ const DeleteIcon = () => (
 
 // Badge Status
 const StatusBadge = ({ status }) => {
+    // --- PERBAIKAN: Tambahkan style untuk status baru ---
     const styles = {
         Selesai: "bg-green-100 text-green-700",
         Batal: "bg-red-100 text-red-700",
         Proses: "bg-yellow-100 text-yellow-700",
         Dijadwalkan: "bg-blue-100 text-blue-700",
         "Menunggu Konfirmasi": "bg-gray-100 text-gray-700",
+        // --- TAMBAHAN BARU ---
+        "Menunggu Pembayaran": "bg-yellow-100 text-yellow-700", // Status dari DB
+        "Menunggu Verifikasi": "bg-purple-100 text-purple-700 font-bold", // <-- BUTUH AKSI
+        "Pembayaran Ditolak": "bg-red-100 text-red-700", // <-- SAMA SEPERTI BATAL
+        // --- AKHIR TAMBAHAN BARU ---
     };
+    // --- AKHIR PERBAIKAN ---
+
     return (
         <span
             className={`px-3 py-1 text-sm font-medium rounded-full ${
-                styles[status] || styles["Menunggu Konfirmasi"]
+                // --- PERBAIKAN: Default fallback yang lebih aman ---
+                styles[status] || "bg-gray-100 text-gray-700"
+                // --- AKHIR PERBAIKAN ---
             }`}
         >
             {status}
@@ -61,6 +71,7 @@ const StatusBadge = ({ status }) => {
 
 const BookingManagementPage = () => {
     const [bookings, setBookings] = useState([]); // State untuk menyimpan data
+    // ... (sisa file tidak berubah) ...
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -90,6 +101,7 @@ const BookingManagementPage = () => {
 
     // Fungsi Delete (diperiksa ulang)
     const handleDelete = async () => {
+        // ... (sisa file tidak berubah) ...
         if (!selectedBooking) return; // Pastikan ada booking yang dipilih
         try {
             await apiClient.delete(
@@ -106,12 +118,14 @@ const BookingManagementPage = () => {
 
     // Fungsi untuk membuka modal (diperiksa ulang)
     const openModal = (setter, booking = null) => {
+        // ... (sisa file tidak berubah) ...
         setSelectedBooking(booking); // Set booking yang dipilih
         setter(true);
     };
 
     // Fungsi format tanggal (diperiksa ulang)
     const formatDate = (dateString) => {
+        // ... (sisa file tidak berubah) ...
         if (!dateString) return "-";
         try {
             const date = new Date(dateString);
@@ -127,6 +141,7 @@ const BookingManagementPage = () => {
     };
 
     // Tampilan Loading dan Error
+    // ... (sisa file tidak berubah) ...
     if (loading) return <div className="p-6">Memuat data pesanan...</div>;
     if (error) return <div className="p-6 text-red-500">{error}</div>;
 
