@@ -159,4 +159,30 @@ class BookingManagementController extends Controller
             return response()->json(['message' => 'Gagal menolak pembayaran.'], 500);
         }
     }
+
+    // --- METHOD PROXY GAMBAR BARU ---
+    /**
+     * Mengambil file gambar bukti pembayaran (Proxy).
+     * GET /api/super-admin/booking-management/{booking}/payment-proof-image
+     */
+    public function getPaymentProofImage(Booking $booking)
+    {
+        try {
+            // Cek file
+            if (!$booking->payment_proof_image || !Storage::disk('public')->exists($booking->payment_proof_image)) {
+                Log::warning('Admin requested non-existent payment proof:', ['booking_id' => $booking->id, 'path' => $booking->payment_proof_image]);
+                return response()->json(['message' => 'Gambar bukti pembayaran tidak ditemukan.'], 404);
+            }
+
+            // Ambil path lengkap
+            $path = Storage::disk('public')->path($booking->payment_proof_image);
+
+            // Kirim file. Ini akan otomatis lolos CORS (karena ini rute API)
+            return response()->file($path);
+        } catch (\Exception $e) {
+            Log::error('Error fetching payment proof image:', ['booking_id' => $booking->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Gagal mengambil gambar.'], 500);
+        }
+    }
+    // --- AKHIR METHOD BARU ---
 }
