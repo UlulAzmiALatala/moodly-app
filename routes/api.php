@@ -45,8 +45,14 @@ Route::group(['middleware' => [
     require __DIR__ . '/auth.php';
 
     // --- RUTE PUBLIK (TIDAK PERLU LOGIN) ---
-    // --- TAMBAHKAN RUTE INI UNTUK CUSTOMER MENGAMBIL DATA QRIS ---
+    // Rute untuk Customer mengambil daftar QRIS
     Route::get('/payment-methods', [BookingFlowController::class, 'getPaymentMethods']);
+
+    // --- INI RUTE BARU (PROXY GAMBAR) ---
+    // Rute "Proxy" untuk mengambil gambar QRIS (menghindari CORS error di 'php artisan serve')
+    // Kita gunakan 'paymentMethod' (model binding) agar lebih rapi
+    Route::get('/payment-methods/image/{paymentMethod}', [BookingFlowController::class, 'getPaymentMethodImage'])
+        ->where('paymentMethod', '[0-9]+'); // Pastikan ID adalah angka
     // --- AKHIR RUTE BARU ---
 
 
