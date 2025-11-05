@@ -103,12 +103,14 @@ class Booking extends Model
     protected function paymentProofImageUrl(): Attribute
     {
         return Attribute::make(
+            // --- PERBAIKAN: Panggil Rute API Proxy ---
+            // Alih-alih memanggil Storage::url() (yang menyebabkan error CORS
+            // di php artisan serve), kita panggil rute API proxy yang sudah
+            // kita daftarkan di routes/api.php
             get: fn() => $this->payment_proof_image
-                // --- PERBAIKAN: Gunakan Storage::url() ---
-                // Method ini adalah shortcut untuk Storage::disk('public')->url()
-                // dan akan dipahami oleh linter Intelephense.
-                ? Storage::url($this->payment_proof_image)
+                ? url('/api/super-admin/booking-management/' . $this->id . '/payment-proof-image')
                 : null,
+            // --- AKHIR PERBAIKAN ---
         );
     }
     // --- AKHIR TAMBAHAN BARU & PERBAIKAN ---
