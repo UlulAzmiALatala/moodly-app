@@ -94,17 +94,20 @@ const CalendarCheckIcon = () => (
 );
 // --- Akhir Komponen Ikon ---
 
+// --- PERBAIKAN LOGIKA PICKER ---
 // Komponen Input Jam dengan tombol naik/turun
-const TimePickerInput = ({ value, onChange, label }) => {
+const TimePickerInput = ({ value, onChange, label, max }) => {
     const increment = () => {
         const num = parseInt(value, 10);
-        const newValue = (num + 1) % 24;
+        // Logika modulo diubah biar bener (0-59 atau 0-23)
+        const newValue = (num + 1) % (max + 1);
         onChange(newValue.toString().padStart(2, "0"));
     };
 
     const decrement = () => {
         const num = parseInt(value, 10);
-        const newValue = (num - 1 + 24) % 24;
+        // Logika modulo diubah biar bener
+        const newValue = (num - 1 + (max + 1)) % (max + 1);
         onChange(newValue.toString().padStart(2, "0"));
     };
 
@@ -112,6 +115,7 @@ const TimePickerInput = ({ value, onChange, label }) => {
         <div className="flex flex-col items-center">
             <button
                 onClick={increment}
+                type="button" // Biar ga submit form
                 className="bg-cyan-500 hover:bg-cyan-600 active:bg-cyan-700 p-2 rounded-t-lg transition-colors"
             >
                 <ChevronUpIcon />
@@ -119,11 +123,12 @@ const TimePickerInput = ({ value, onChange, label }) => {
             <input
                 type="text"
                 value={value}
-                readOnly
+                readOnly // Biarkan readOnly agar input selalu valid
                 className="w-16 text-center text-lg font-bold py-2 bg-gray-100 border-t-0 border-b-0 border-x-0 outline-none text-gray-800"
             />
             <button
                 onClick={decrement}
+                type="button" // Biar ga submit form
                 className="bg-cyan-500 hover:bg-cyan-600 active:bg-cyan-700 p-2 rounded-b-lg transition-colors"
             >
                 <ChevronUpIcon className="rotate-180" />{" "}
@@ -132,10 +137,22 @@ const TimePickerInput = ({ value, onChange, label }) => {
         </div>
     );
 };
+// --- AKHIR PERBAIKAN ---
+
+// --- [BARU] Fungsi untuk mendapatkan tanggal hari ini format YYYY-MM-DD ---
+const getTodayString = () => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0"); // Bulan itu 0-indexed
+    const dd = String(today.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+};
 
 export default function SchedulePage() {
     const navigate = useNavigate();
-    const [selectedDay, setSelectedDay] = useState("Senin");
+
+    const [selectedDate, setSelectedDate] = useState(getTodayString()); // <-- STATE BARU
+
     const [hour, setHour] = useState("00");
     const [minute, setMinute] = useState("00");
     const [mediaKonseling, setMediaKonseling] = useState({
@@ -154,25 +171,16 @@ export default function SchedulePage() {
         setMediaKonseling((prev) => ({ ...prev, [name]: checked }));
     };
 
-    const handleSaveSchedule = () => {
+    const handleSaveSchedule = (e) => {
+        e.preventDefault(); // Mencegah form submit default
         console.log("Jadwal Tersimpan:", {
-            day: selectedDay,
+            date: selectedDate,
             time: `${hour}:${minute}`,
             media: mediaKonseling,
         });
         // Di sini Anda bisa mengirim data ke API
         navigate(-1); // Kembali ke halaman sebelumnya
     };
-
-    const daysOfWeek = [
-        "Senin",
-        "Selasa",
-        "Rabu",
-        "Kamis",
-        "Jum'at",
-        "Sabtu",
-        "Minggu",
-    ];
 
     return (
         <div className="bg-white min-h-screen font-sans">
@@ -192,139 +200,142 @@ export default function SchedulePage() {
             </header>
 
             {/* Konten Utama */}
-            <main className="p-6 space-y-6 pb-28">
-                {/* Berdasarkan Hari Dropdown */}
-                <div>
-                    <label className="block text-sm font-semibold text-gray-800 mb-2">
-                        Atur Jadwal
-                    </label>
-                    <div className="relative">
-                        <select
-                            className="block w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent appearance-none pr-10 text-gray-700"
-                            value={selectedDay}
-                            onChange={(e) => setSelectedDay(e.target.value)}
+            <form onSubmit={handleSaveSchedule}>
+                <main className="p-6 space-y-6 pb-28">
+                    {/* --- Pilihan Tanggal --- */}
+                    <div>
+                        <label
+                            htmlFor="schedule-date"
+                            className="block text-sm font-semibold text-gray-800 mb-2"
                         >
-                            <option value="">Berdasarkan Hari</option>
-                            {daysOfWeek.map((day) => (
-                                <option key={day} value={day}>
-                                    {day}
-                                </option>
-                            ))}
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                            <ChevronDownIcon />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Jam Mulai */}
-                <div>
-                    <label className="block text-sm font-semibold text-gray-800 mb-2">
-                        Jam Mulai
-                    </label>
-                    <div className="flex items-center gap-2">
-                        <TimePickerInput
-                            value={hour}
-                            onChange={setHour}
-                            label="Jam"
+                            Pilih Tanggal
+                        </label>
+                        <input
+                            type="date"
+                            id="schedule-date"
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                            className="block w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-gray-700"
+                            min={getTodayString()}
                         />
-                        <span className="text-2xl font-bold text-gray-700">
-                            :
-                        </span>
-                        <TimePickerInput
-                            value={minute}
-                            onChange={setMinute}
-                            label="Menit"
-                        />
-                        <button className="flex items-center gap-2 px-4 py-2 bg-cyan-50 text-cyan-600 rounded-full text-sm font-medium hover:bg-cyan-100 transition-colors shadow-sm ml-4">
-                            <PlusIcon /> Tambah Jam
-                        </button>
                     </div>
-                </div>
 
-                {/* Media Konseling */}
-                <div>
-                    <label className="block text-sm font-semibold text-gray-800 mb-3">
-                        Media Konseling yang Tersedia
-                    </label>
-                    <div className="space-y-3">
-                        <div className="flex items-center">
-                            <input
-                                type="checkbox"
-                                id="videoCall"
-                                name="videoCall"
-                                checked={mediaKonseling.videoCall}
-                                onChange={handleMediaChange}
-                                className="h-5 w-5 text-cyan-600 rounded focus:ring-cyan-500 border-gray-300"
+                    {/* Jam Mulai */}
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-800 mb-2">
+                            Jam Mulai
+                        </label>
+                        <div className="flex items-center gap-2">
+                            {/* --- PERBAIKAN: Tambah max={23} --- */}
+                            <TimePickerInput
+                                value={hour}
+                                onChange={setHour}
+                                label="Jam"
+                                max={23}
                             />
-                            <label
-                                htmlFor="videoCall"
-                                className="ml-3 text-sm text-gray-700"
-                            >
-                                Vidio Call
-                            </label>
-                        </div>
-                        <div className="flex items-center">
-                            <input
-                                type="checkbox"
-                                id="voiceCall"
-                                name="voiceCall"
-                                checked={mediaKonseling.voiceCall}
-                                onChange={handleMediaChange}
-                                className="h-5 w-5 text-cyan-600 rounded focus:ring-cyan-500 border-gray-300"
+                            <span className="text-2xl font-bold text-gray-700">
+                                :
+                            </span>
+                            {/* --- PERBAIKAN: Tambah max={59} --- */}
+                            <TimePickerInput
+                                value={minute}
+                                onChange={setMinute}
+                                label="Menit"
+                                max={59}
                             />
-                            <label
-                                htmlFor="voiceCall"
-                                className="ml-3 text-sm text-gray-700"
+                            <button
+                                type="button" // Biar ga submit form
+                                className="flex items-center gap-2 px-4 py-2 bg-cyan-50 text-cyan-600 rounded-full text-sm font-medium hover:bg-cyan-100 transition-colors shadow-sm ml-4"
                             >
-                                Voice Call
-                            </label>
-                        </div>
-                        <div className="flex items-center">
-                            <input
-                                type="checkbox"
-                                id="chat"
-                                name="chat"
-                                checked={mediaKonseling.chat}
-                                onChange={handleMediaChange}
-                                className="h-5 w-5 text-cyan-600 rounded focus:ring-cyan-500 border-gray-300"
-                            />
-                            <label
-                                htmlFor="chat"
-                                className="ml-3 text-sm text-gray-700"
-                            >
-                                Chat
-                            </label>
-                        </div>
-                        <div className="flex items-center">
-                            <input
-                                type="checkbox"
-                                id="tatapMuka"
-                                name="tatapMuka"
-                                checked={mediaKonseling.tatapMuka}
-                                onChange={handleMediaChange}
-                                className="h-5 w-5 text-cyan-600 rounded focus:ring-cyan-500 border-gray-300"
-                            />
-                            <label
-                                htmlFor="tatapMuka"
-                                className="ml-3 text-sm text-gray-700"
-                            >
-                                Tatap Muka
-                            </label>
+                                <PlusIcon /> Tambah Jam
+                            </button>
                         </div>
                     </div>
-                </div>
-            </main>
 
-            {/* Tombol Simpan Jadwal (Sticky Bawah) */}
-            <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-4 bg-gradient-to-t from-white via-white to-transparent z-10">
-                <button
-                    onClick={handleSaveSchedule}
-                    className="w-full bg-cyan-500 text-white text-lg font-bold py-3.5 px-4 rounded-full shadow-lg hover:bg-cyan-600 transition-colors active:scale-95 flex items-center justify-center"
-                >
-                    <CalendarCheckIcon /> Simpan Jadwal
-                </button>
-            </div>
+                    {/* Media Konseling */}
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-800 mb-3">
+                            Media Konseling yang Tersedia
+                        </label>
+                        <div className="space-y-3">
+                            <div className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    id="videoCall"
+                                    name="videoCall"
+                                    checked={mediaKonseling.videoCall}
+                                    onChange={handleMediaChange}
+                                    className="h-5 w-5 text-cyan-600 rounded focus:ring-cyan-500 border-gray-300"
+                                />
+                                <label
+                                    htmlFor="videoCall"
+                                    className="ml-3 text-sm text-gray-700"
+                                >
+                                    Vidio Call
+                                </label>
+                            </div>
+                            <div className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    id="voiceCall"
+                                    name="voiceCall"
+                                    checked={mediaKonseling.voiceCall}
+                                    onChange={handleMediaChange}
+                                    className="h-5 w-5 text-cyan-600 rounded focus:ring-cyan-500 border-gray-300"
+                                />
+                                <label
+                                    htmlFor="voiceCall"
+                                    className="ml-3 text-sm text-gray-700"
+                                >
+                                    Voice Call
+                                </label>
+                            </div>
+                            <div className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    id="chat"
+                                    name="chat"
+                                    checked={mediaKonseling.chat}
+                                    onChange={handleMediaChange}
+                                    className="h-5 w-5 text-cyan-600 rounded focus:ring-cyan-500 border-gray-300"
+                                />
+                                <label
+                                    htmlFor="chat"
+                                    className="ml-3 text-sm text-gray-700"
+                                >
+                                    Chat
+                                </label>
+                            </div>
+                            <div className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    id="tatapMuka"
+                                    name="tatapMuka"
+                                    checked={mediaKonseling.tatapMuka}
+                                    onChange={handleMediaChange}
+                                    className="h-5 w-5 text-cyan-600 rounded focus:ring-cyan-500 border-gray-300"
+                                />
+                                <label
+                                    htmlFor="tatapMuka"
+                                    className="ml-3 text-sm text-gray-700"
+                                >
+                                    Tatap Muka
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+
+                {/* Tombol Simpan Jadwal (Sticky Bawah) */}
+                <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-4 bg-gradient-to-t from-white via-white to-transparent z-10">
+                    <button
+                        type="submit" // Submit form
+                        className="w-full bg-cyan-500 text-white text-lg font-bold py-3.5 px-4 rounded-full shadow-lg hover:bg-cyan-600 transition-colors active:scale-95 flex items-center justify-center"
+                    >
+                        <CalendarCheckIcon /> Simpan Jadwal
+                    </button>
+                </div>
+            </form>
         </div>
     );
 }
