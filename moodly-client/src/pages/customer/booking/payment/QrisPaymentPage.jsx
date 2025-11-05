@@ -103,7 +103,8 @@ function QrisPaymentPage() {
 
     const handleSaveQR = async (imageUrl, imageName) => {
         if (!imageUrl) {
-            alert("Gambar QR tidak ditemukan.");
+            // Ganti alert dengan UI yang lebih baik jika ada waktu
+            console.error("Gambar QR tidak ditemukan.");
             return;
         }
 
@@ -125,11 +126,24 @@ function QrisPaymentPage() {
             window.URL.revokeObjectURL(url);
         } catch (error) {
             console.error("Error saat menyimpan QR Code:", error);
-            alert(
+            // Ganti alert dengan UI yang lebih baik jika ada waktu
+            console.error(
                 "Gagal menyimpan gambar QR Code. Silakan coba screenshot manual."
             );
         }
     };
+
+    // --- TAMBAHAN BARU: Navigasi ke Halaman Upload ---
+    const handleNavigateToUpload = () => {
+        if (!orderId) {
+            console.error("Tidak bisa navigasi, ID booking tidak ada.");
+            return;
+        }
+        // Kirim ID booking via URL param
+        // Kirim juga full booking object via state untuk dipakai di halaman upload
+        navigate(`/booking/upload-proof/${orderId}`, { state: { booking } });
+    };
+    // --- AKHIR TAMBAHAN BARU ---
 
     // Format Rupiah
     const formatCurrency = (amount) => {
@@ -157,6 +171,8 @@ function QrisPaymentPage() {
         }
 
         // Ambil metode QRIS pertama yang aktif
+        // (Kita sudah perbaiki controller untuk mengirim SEMUA,
+        // tapi UI ini hanya menampilkan yang pertama)
         const qrisMethod = paymentMethods[0];
 
         if (!qrisMethod) {
@@ -165,6 +181,10 @@ function QrisPaymentPage() {
                 <ErrorDisplay message="Metode pembayaran QRIS tidak ditemukan." />
             );
         }
+
+        // Tentukan API_URL. Ganti ini dengan .env jika ada
+        const API_URL = "http://localhost:8000";
+        const imageUrl = `${API_URL}/api/payment-methods/image/${qrisMethod.id}`;
 
         return (
             <>
@@ -197,7 +217,7 @@ function QrisPaymentPage() {
 
                     <img
                         ref={qrImageRef}
-                        src={`http://localhost:8000/api/payment-methods/image/${qrisMethod.id}`}
+                        src={imageUrl} // <-- Gunakan URL proxy API
                         alt={`QR Code ${qrisMethod.name}`}
                         className="w-full max-w-[200px] h-auto aspect-square block mx-auto bg-gray-100" // Tambah bg
                         crossOrigin="anonymous"
@@ -213,8 +233,7 @@ function QrisPaymentPage() {
                 <button
                     onClick={() =>
                         handleSaveQR(
-                            // GANTI "http://localhost:8000" dengan VITE_API_URL Anda jika ada
-                            `http://localhost:8000/api/payment-methods/image/${qrisMethod.id}`,
+                            imageUrl, // <-- Kirim URL proxy
                             qrisMethod.name
                         )
                     }
@@ -252,20 +271,18 @@ function QrisPaymentPage() {
                         Sudah Selesai Bayar?
                     </h3>
                     <p className="text-xs leading-relaxed mt-2">
-                        Pembayaran Anda akan diverifikasi secara otomatis oleh
-                        sistem. Silakan cek halaman{" "}
-                        <Link
-                            to="/history"
-                            className="text-cyan-600 font-medium hover:underline"
-                        >
-                            Riwayat Pesanan
-                        </Link>{" "}
-                        untuk melihat status terbaru.
+                        Silakan upload bukti transfer Anda agar pesanan dapat
+                        segera kami proses.
                     </p>
-                    {/* TODO: Tambahkan tombol konfirmasi jika verifikasi tidak otomatis */}
-                    {/* <button className="mt-4 w-full max-w-xs bg-gray-700 text-white font-bold py-3 px-6 rounded-lg shadow hover:bg-gray-800 transition-colors active:scale-95">
-                        Saya Sudah Bayar
-                    </button> */}
+
+                    {/* --- PERUBAHAN: Tombol diaktifkan --- */}
+                    <button
+                        onClick={handleNavigateToUpload}
+                        className="mt-4 w-full max-w-xs bg-gray-700 text-white font-bold py-3 px-6 rounded-lg shadow hover:bg-gray-800 transition-colors active:scale-95"
+                    >
+                        Saya Sudah Bayar, Upload Bukti
+                    </button>
+                    {/* --- AKHIR PERUBAHAN --- */}
                 </div>
             </main>
         </div>

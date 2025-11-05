@@ -13,7 +13,7 @@ use App\Models\PaymentMethod; // <-- Import untuk QRIS
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Storage; // <-- Pastikan import ini ada
 use Carbon\Carbon;
 use Carbon\CarbonInterval;
 
@@ -24,6 +24,7 @@ class BookingFlowController extends Controller
      * GET /api/booking/tempat-konseling
      */
     public function getTempatKonseling()
+    // ... (code dari getTempatKonseling() sampai getPaymentMethodImage() tidak berubah) ...
     {
         try {
             $tempatList = TempatKonseling::where('status', 'Aktif')
@@ -447,4 +448,69 @@ class BookingFlowController extends Controller
             ], 500);
         }
     }
+
+    // --- TAMBAHAN BARU: METHOD UPLOAD BUKTI PEMBAYARAN ---
+    /**
+     * Menerima upload bukti pembayaran dari customer.
+     * POST /api/booking/{booking}/upload-proof
+     */
+    public function uploadPaymentProof(Request $request, Booking $booking)
+    {
+        // 1. Otorisasi: Pastikan booking ini milik user yang login
+        if ($booking->customer_id !== Auth::id()) {
+            return response()->json(['message' => 'Tidak diizinkan'], 403);
+        }
+
+        // 2. Validasi Status: Hanya boleh upload jika status 'Menunggu Pembayaran'
+        if ($booking->status_pesanan !== 'Menunggu Pembayaran') {
+            return response()->json([
+                'message' => 'Tidak dapat mengupload bukti untuk pesanan ini.',
+                'status' => $booking->status_pesanan
+            ], 400); // 400 Bad Request
+        }
+
+        // 3. Validasi Input
+        $validator = Validator::make($request->all(), [
+            'image' => 'required|image|mimes:jpg,jpeg,png|max:2048', // 2MB max
+            'keterangan' => 'nullable|string|max:500',
+        ], [
+            'image.required' => 'File gambar bukti pembayaran wajib diisi.',
+            'image.image' => 'File harus berupa gambar.',
+            'image.mimes' => 'Format gambar harus JPG atau PNG.',
+            'image.max' => 'Ukuran gambar maksimal 2MB.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        try {
+            // 4. Simpan File
+            $path = $request->file('image')->store('payment_proofs', 'public');
+
+            // 5. Update Booking
+            $booking->payment_proof_image = $path;
+            $booking->payment_proof_notes = $request->input('keterangan');
+            $booking->status_pesanan = 'Menunggu Verifikasi'; // <-- Status Baru!
+            $booking->save();
+
+            Log::info('Payment proof uploaded successfully:', ['booking_id' => $booking->id, 'path' => $path]);
+
+            // 6. Kembalikan respons sukses
+            return response()->json([
+                'message' => 'Bukti pembayaran berhasil diupload.',
+                'booking' => $booking
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error uploading payment proof:', [
+                'booking_id' => $booking->id,
+                'error' => $e->getMessage()
+            ]);
+            return response()->json([
+                'message' => 'Terjadi kesalahan saat mengupload file.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    // --- AKHIR TAMBAHAN BARU ---
 }
