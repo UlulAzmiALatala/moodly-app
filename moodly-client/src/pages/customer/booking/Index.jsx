@@ -78,7 +78,7 @@ export default function BookingPage() {
             }
         };
         fetchServices();
-    }, []);
+    }, []); // <-- PERBAIKAN: Pastikan ini adalah array kosong []
 
     // 2. Filter data saat tab atau search berubah
     useEffect(() => {
@@ -94,7 +94,7 @@ export default function BookingPage() {
             );
 
         setFilteredServices(filtered);
-    }, [allServices, activeTab, searchTerm]);
+    }, [allServices, activeTab, searchTerm]); // <-- PERBAIKAN: Pastikan ini HANYA berisi 3 item ini
 
     // --- FUNGSI HANDLE BOOK CLICK YANG DIPERBARUI ---
     const handleBookClick = (service) => {

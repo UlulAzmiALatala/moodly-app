@@ -24,7 +24,7 @@ class BookingFlowController extends Controller
      * GET /api/booking/tempat-konseling
      */
     public function getTempatKonseling()
-    // ... (code dari getTempatKonseling() sampai getPaymentMethodImage() tidak berubah) ...
+    // ... (code dari getTempatKonseling() sampai getCounselors() tidak berubah) ...
     {
         try {
             $tempatList = TempatKonseling::where('status', 'Aktif')
@@ -62,6 +62,7 @@ class BookingFlowController extends Controller
     /**
      * Mengambil daftar konselor yang aktif dan terverifikasi.
      * GET /api/booking/counselors
+     * [PERBAIKAN] Sekarang memfilter berdasarkan serviceId (jenis_konseling_id)
      */
     public function getCounselors(Request $request)
     {
@@ -70,10 +71,28 @@ class BookingFlowController extends Controller
                 ->where('status', 'Terverifikasi')
                 ->select('id', 'name', 'avatar', 'universitas', 'spesialisasi', 'rating');
 
+            // --- TAMBAHAN LOGIKA FILTER ---
+            if ($request->has('serviceId')) {
+                // Pastikan serviceId adalah integer
+                $serviceId = (int) $request->query('serviceId');
+
+                // Asumsi 'spesialisasi' adalah kolom JSON yang menyimpan array ID [1, 5, 7]
+                // yang sesuai dengan 'jenis_konselings.id'
+                $query->whereJsonContains('spesialisasi', $serviceId);
+
+                Log::info('Filtering counselors for serviceId:', ['serviceId' => $serviceId]);
+            } else {
+                Log::info('Fetching all counselors, no serviceId provided.');
+            }
+            // --- AKHIR TAMBAHAN ---
+
             $counselors = $query->orderBy('name')->get();
             return response()->json($counselors);
         } catch (\Exception $e) {
-            Log::error('Error fetching counselors list:', ['error' => $e->getMessage()]);
+            Log::error('Error fetching counselors list:', [
+                'error' => $e->getMessage(),
+                'params' => $request->all() // Tambahkan params ke log
+            ]);
             return response()->json([
                 'message' => 'Gagal mengambil data konselor.',
                 'error' => $e->getMessage()
@@ -100,11 +119,18 @@ class BookingFlowController extends Controller
                 'spesialisasi',
                 'rating',
                 'surat_izin_praktik',
+                // 'metode_layanan' akan ditambahkan di bawah
             ]);
 
-            // TODO: Ini masih hardcoded, bisa diganti nanti
-            $konselorData['servesVia'] = ['Chat', 'Video Call', 'Voice Call', 'Tatap Muka'];
-            $konselorData['reviews'] = '(200+ ulasan)'; // Hardcoded
+            // --- PERBAIKAN: Mengambil data dinamis dari database ---
+            // 'metode_layanan' adalah kolom JSON 'array' yang sudah kita siapkan di tabel users
+            // Model User.php akan otomatis men-cast ini sebagai array PHP
+            // Ini HANYA berisi metode online (['Chat'], ['Chat', 'Video Call'], dll)
+            $konselorData['metode_layanan'] = $konselor->metode_layanan ?? []; // Ambil dari DB, fallback ke array kosong
+
+            // 'reviews' kita hapus dulu hardcode-nya, nanti bisa diisi dari relasi
+            $konselorData['reviews'] = null; // Hapus hardcode
+            // --- AKHIR PERBAIKAN ---
 
             Log::info('Counselor Detail fetched:', $konselorData);
             return response()->json($konselorData);

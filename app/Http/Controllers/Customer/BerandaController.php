@@ -21,8 +21,10 @@ class BerandaController extends Controller
             // Model accessor di JenisKonseling.php akan otomatis mengubah 'image' (path)
             // menjadi URL lengkap.
             $services = JenisKonseling::where('status', 'Aktif')
-                ->select('id', 'jenis_konseling', 'tipe_layanan', 'image') // <-- PERUBAHAN DI SINI
-                ->take(6) // Ambil 6 layanan teratas
+                ->select('id', 'jenis_konseling', 'tipe_layanan', 'image')
+                // --- PERBAIKAN: HAPUS ->take(6) ---
+                // Biarkan frontend yang memfilter tab Online/Offline.
+                // Kita harus mengirim SEMUA layanan yang aktif.
                 ->get();
 
             // 2. Ambil data konselor (User dengan role 'konselor')
@@ -30,7 +32,7 @@ class BerandaController extends Controller
             $counselors = User::where('role', 'konselor')
                 ->where('status', 'Terverifikasi')
                 ->select('id', 'name', 'avatar', 'universitas', 'spesialisasi', 'rating')
-                ->take(4) // Ambil 4 konselor
+                ->take(4) // Ambil 4 konselor (ini tidak apa-apa untuk beranda)
                 ->get();
 
             // 3. Kembalikan data sebagai JSON

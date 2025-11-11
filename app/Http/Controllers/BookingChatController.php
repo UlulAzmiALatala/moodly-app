@@ -7,7 +7,8 @@ use App\Models\ChatMessage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Log; // <-- Import Log
+use Illuminate\Support\Facades\Log;
+use App\Events\NewChatMessage; // <-- TAMBAHKAN IMPORT EVENT
 
 // TODO: Import Notifikasi jika sudah siap
 // use App\Notifications\NewChatMessageNotification;
@@ -38,10 +39,6 @@ class BookingChatController extends Controller
                 ->get();
 
             // TODO: Tandai pesan sebagai sudah dibaca (jika perlu)
-            // $booking->chatMessages()
-            //     ->where('sender_id', '!=', Auth::id())
-            //     ->where('is_read', false)
-            //     ->update(['is_read' => true]);
 
             // --- PERUBAHAN: Kembalikan booking dan messages ---
             return response()->json([
@@ -84,11 +81,10 @@ class BookingChatController extends Controller
             // Muat data pengirim untuk respon
             $message->load('sender:id,name,avatar');
 
-            // TODO: Kirim notifikasi/event (misal: Laravel Echo) ke penerima
-            // $recipient = ($booking->customer_id === Auth::id()) ? $booking->konselor : $booking->customer;
-            // if ($recipient) {
-            // ... (logika notifikasi)
-            // }
+            // --- PERBAIKAN: Kirim event broadcast ---
+            // Siarkan event ke user lain (bukan si pengirim)
+            broadcast(new NewChatMessage($message))->toOthers();
+            // --- AKHIR PERBAIKAN ---
 
             return response()->json($message, 201); // 201 = Created
 

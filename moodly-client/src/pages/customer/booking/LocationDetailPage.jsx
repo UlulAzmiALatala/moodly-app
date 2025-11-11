@@ -57,25 +57,24 @@ function UniversityIcon(props) {
     );
 }
 
-// Format Tanggal (Helper - tidak terpakai di sini, bisa dihapus)
-// const formatDate = (dateString) => { ... };
-
 // Komponen Kartu Psikolog (Sama seperti di FindCounselorPage)
 const PsikologCard = ({ counselor, onClick }) => {
-    // Ambil maks 2 spesialisasi pertama, atau default jika tidak ada
-    const specializationTags = Array.isArray(counselor.spesialisasi)
-        ? counselor.spesialisasi.slice(0, 2)
-        : ["Spesialisasi"]; // Fallback
+    // --- PERBAIKAN: Konversi ID (Angka) ke String ---
+    // 1. Cek jika 'spesialisasi' adalah array
+    const specs = Array.isArray(counselor.spesialisasi)
+        ? // 2. Ubah tiap item (angka) menjadi string
+          counselor.spesialisasi.map(String)
+        : [];
+
+    // 3. Ambil 2 item pertama
+    const specializationTags = specs.slice(0, 2);
+    // --- AKHIR PERBAIKAN ---
 
     // Tambahkan tag 'lainnya' jika > 2
-    if (
-        Array.isArray(counselor.spesialisasi) &&
-        counselor.spesialisasi.length > 2
-    ) {
-        specializationTags.push(
-            `${counselor.spesialisasi.length - 2}+ lainnya`
-        );
+    if (specs.length > 2) {
+        specializationTags.push(`${specs.length - 2}+ lainnya`);
     }
+
     return (
         <button
             onClick={onClick}
@@ -104,23 +103,22 @@ const PsikologCard = ({ counselor, onClick }) => {
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
-                    {/* Tampilkan spesialisasi (asumsi array) */}
-                    {specializationTags.map((tag, index) => (
-                        <span
-                            key={index}
-                            className={`text-xs font-semibold px-3 py-1 rounded-full ${
-                                index === specializationTags.length - 1 &&
-                                tag.includes("+")
-                                    ? "bg-cyan-100 text-cyan-600"
-                                    : "bg-blue-100 text-blue-600"
-                            }`}
-                        >
-                            {tag}
-                        </span>
-                    ))}
-                    {/* Tambahkan pesan jika tidak ada spesialisasi */}
-                    {(!Array.isArray(counselor.spesialisasi) ||
-                        counselor.spesialisasi.length === 0) && (
+                    {specializationTags.length > 0 ? (
+                        specializationTags.map((tag, index) => (
+                            <span
+                                key={index}
+                                className={`text-xs font-semibold px-3 py-1 rounded-full ${
+                                    // 'tag' sekarang sudah pasti string, .includes() aman
+                                    index === specializationTags.length - 1 &&
+                                    tag.includes("+")
+                                        ? "bg-cyan-100 text-cyan-600"
+                                        : "bg-blue-100 text-blue-600"
+                                }`}
+                            >
+                                {tag}
+                            </span>
+                        ))
+                    ) : (
                         <span className="text-xs text-gray-400">
                             Belum ada spesialisasi.
                         </span>
@@ -210,7 +208,16 @@ export default function LocationDetailPage() {
             // Untuk sementara, ambil semua konselor aktif
             try {
                 setLoadingCounselor(true);
-                const response = await apiClient.get("/api/booking/counselors");
+                // --- PERBAIKAN SEMENTARA: Kirim serviceId agar filter topik tetap jalan ---
+                // Nanti kita akan tambahkan tempatId di sini
+                const response = await apiClient.get(
+                    "/api/booking/counselors",
+                    {
+                        params: { serviceId: serviceId },
+                    }
+                );
+                // --- AKHIR PERBAIKAN ---
+
                 // Pastikan response.data adalah array
                 setCounselors(
                     Array.isArray(response.data) ? response.data : []
@@ -223,8 +230,8 @@ export default function LocationDetailPage() {
             }
         };
         fetchCounselors();
-        // Hanya fetch sekali saat komponen mount
-    }, []);
+        // --- PERBAIKAN: Tambahkan serviceId sebagai dependency ---
+    }, [serviceId]);
 
     // --- PERUBAHAN: Handle klik pada kartu konselor ---
     const handleCounselorClick = (counselorId) => {
@@ -374,8 +381,8 @@ export default function LocationDetailPage() {
                             ))
                         ) : (
                             <p className="text-center text-gray-500 py-10">
-                                Tidak ada konselor yang tersedia di lokasi ini
-                                saat ini.
+                                Tidak ada konselor yang tersedia untuk layanan
+                                ini di lokasi ini.
                             </p>
                         )}
                     </div>

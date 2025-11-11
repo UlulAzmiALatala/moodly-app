@@ -1,8 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 // --- PERBAIKAN: Tambahkan 'Link' dan 'useParams' ---
 import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
-// --- AKHIR PERBAIKAN ---
-// --- PERBAIKAN: Path relatif 4x mundur, tanpa ekstensi ---
+// --- PERBAIKAN: Path relatif 3x mundur, tanpa ekstensi ---
 import apiClient from "../../../../api/axios";
 // --- AKHIR PERBAIKAN ---
 
@@ -237,7 +236,8 @@ function QrisPaymentPage() {
                             qrisMethod.name
                         )
                     }
-                    className="w-full bg-cyan-500 text-white font-bold py-3 px-6 rounded-lg shadow hover:bg-cyan-600 transition-colors active:scale-95"
+                    // --- PERBAIKAN STYLE: Tombol Simpan (Sekunder) ---
+                    className="w-full bg-white text-cyan-600 border border-cyan-500 font-bold py-3 px-6 rounded-lg shadow-sm hover:bg-cyan-50 transition-colors active:scale-95"
                 >
                     Simpan Code QR
                 </button>
@@ -278,7 +278,8 @@ function QrisPaymentPage() {
                     {/* --- PERUBAHAN: Tombol diaktifkan --- */}
                     <button
                         onClick={handleNavigateToUpload}
-                        className="mt-4 w-full max-w-xs bg-gray-700 text-white font-bold py-3 px-6 rounded-lg shadow hover:bg-gray-800 transition-colors active:scale-95"
+                        // --- PERBAIKAN STYLE: Tombol Upload Bukti (Primer) ---
+                        className="mt-4 w-full max-w-xs bg-cyan-500 text-white font-bold py-3 px-6 rounded-lg shadow hover:bg-cyan-600 transition-colors active:scale-95"
                     >
                         Saya Sudah Bayar, Upload Bukti
                     </button>

@@ -15,37 +15,83 @@ class CounselorAvailabilitySeeder extends Seeder
      */
     public function run(): void
     {
-        // Hapus data lama jika ada
+        // Hapus data lama
         DB::table('counselor_availabilities')->delete();
 
-        // Cari konselor pertama (atau sesuaikan logikanya)
-        $konselor1 = User::where('role', 'konselor')->first();
+        // --- Ambil Konselor (sesuai UserSeeder.php) ---
+        $konselor1 = User::where('email', 'konselor1@moodly.com')->first();
+        $konselor2 = User::where('email', 'konselor2@moodly.com')->first();
+        $konselor3 = User::where('email', 'konselor3@moodly.com')->first(); // Yang offline
+        $konselor4 = User::where('email', 'konselor4@moodly.com')->first();
+        $konselor5 = User::where('email', 'konselor5@moodly.com')->first(); // Yang bisa semua
 
+        // Definisikan jadwal panjang sesuai permintaan Anda
+        $jadwalPanjang = ['start_time' => '08:00:00', 'end_time' => '22:00:00'];
+        // Definisikan jadwal kantor (untuk konselor offline)
+        $jadwalKantor = ['start_time' => '09:00:00', 'end_time' => '17:00:00'];
+
+        // --- Konselor 1 (Senin - Jumat, Jadwal Panjang) ---
         if ($konselor1) {
-            CounselorAvailability::create([
-                'counselor_id' => $konselor1->id,
-                'day_of_week' => 1, // Senin
-                'start_time' => '09:00:00',
-                'end_time' => '12:00:00',
-            ]);
-            CounselorAvailability::create([
-                'counselor_id' => $konselor1->id,
-                'day_of_week' => 1, // Senin
-                'start_time' => '13:00:00',
-                'end_time' => '16:00:00',
-            ]);
-            CounselorAvailability::create([
-                'counselor_id' => $konselor1->id,
-                'day_of_week' => 3, // Rabu
-                'start_time' => '10:00:00',
-                'end_time' => '15:00:00',
-            ]);
+            for ($day = 1; $day <= 5; $day++) { // 1 (Senin) s/d 5 (Jumat)
+                CounselorAvailability::create([
+                    'counselor_id' => $konselor1->id,
+                    'day_of_week' => $day,
+                    'start_time' => $jadwalPanjang['start_time'],
+                    'end_time' => $jadwalPanjang['end_time'],
+                ]);
+            }
         }
 
-        // Tambahkan untuk konselor lain jika perlu
-        // $konselor2 = User::where('role', 'konselor')->skip(1)->first();
-        // if ($konselor2) { ... }
+        // --- Konselor 2 (Sen, Rab, Jum, Jadwal Panjang) ---
+        if ($konselor2) {
+            foreach ([1, 3, 5] as $day) { // Hanya Senin, Rabu, Jumat
+                CounselorAvailability::create([
+                    'counselor_id' => $konselor2->id,
+                    'day_of_week' => $day,
+                    'start_time' => $jadwalPanjang['start_time'],
+                    'end_time' => $jadwalPanjang['end_time'],
+                ]);
+            }
+        }
 
-        $this->command->info('Counselor availability seeded!'); // Pesan sukses
+        // --- Konselor 3 (Senin - Jumat, Jam Kantor) ---
+        // (Ini adalah konselor yang kita set hanya offline di UserSeeder)
+        if ($konselor3) {
+            for ($day = 1; $day <= 5; $day++) { // 1 (Senin) s/d 5 (Jumat)
+                CounselorAvailability::create([
+                    'counselor_id' => $konselor3->id,
+                    'day_of_week' => $day,
+                    'start_time' => $jadwalKantor['start_time'],
+                    'end_time' => $jadwalKantor['end_time'],
+                ]);
+            }
+        }
+
+        // --- Konselor 4 (Sel, Kam, Sab, Jadwal Panjang) ---
+        if ($konselor4) {
+            foreach ([2, 4, 6] as $day) { // Hanya Selasa, Kamis, Sabtu
+                CounselorAvailability::create([
+                    'counselor_id' => $konselor4->id,
+                    'day_of_week' => $day,
+                    'start_time' => $jadwalPanjang['start_time'],
+                    'end_time' => $jadwalPanjang['end_time'],
+                ]);
+            }
+        }
+
+        // --- Konselor 5 (SETIAP HARI, Jadwal Panjang) ---
+        // (Bagus untuk testing)
+        if ($konselor5) {
+            for ($day = 0; $day <= 6; $day++) { // 0 (Minggu) s/d 6 (Sabtu)
+                CounselorAvailability::create([
+                    'counselor_id' => $konselor5->id,
+                    'day_of_week' => $day,
+                    'start_time' => $jadwalPanjang['start_time'],
+                    'end_time' => $jadwalPanjang['end_time'],
+                ]);
+            }
+        }
+
+        $this->command->info('Counselor availability (long hours) seeded!');
     }
 }

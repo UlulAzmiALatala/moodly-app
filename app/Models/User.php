@@ -36,6 +36,7 @@ class User extends Authenticatable
         'password',
         'surat_izin_praktik',
         'spesialisasi',
+        'metode_layanan', // <-- TAMBAHKAN INI
         'rating',
         'universitas',
     ];
@@ -68,6 +69,7 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
         'spesialisasi' => 'array',
+        'metode_layanan' => 'array', // <-- TAMBAHKAN INI
     ];
 
     /**

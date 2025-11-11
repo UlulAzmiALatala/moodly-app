@@ -136,6 +136,14 @@ const ChevronDownIcon = () => (
     </svg>
 );
 
+// --- PERBAIKAN: Pindahkan mediaIconMap ke scope atas ---
+const mediaIconMap = {
+    "Voice Call": <VoiceCallIcon />,
+    "Video Call": <VideoCallIcon />,
+    Chat: <ChatIcon />,
+};
+// --- AKHIR PERBAIKAN ---
+
 // --- Komponen Jadwal ---
 const ScheduleTabContent = ({
     method,
@@ -152,6 +160,7 @@ const ScheduleTabContent = ({
     setSelectedTime,
     selectedMedia,
     setSelectedMedia,
+    availableMethods, // <-- PERUBAHAN 1: Terima prop baru
 }) => {
     const getAvailableTimesForSelectedDate = () => {
         const dateData = scheduleOptions.availableDates.find(
@@ -193,6 +202,16 @@ const ScheduleTabContent = ({
             maximumFractionDigits: 0,
         }).format(amount);
     };
+
+    // --- PERUBAHAN 2: Buat map ikon untuk render dinamis ---
+    // --- HAPUS BLOK INI (sudah dipindah ke atas) ---
+    // const mediaIconMap = {
+    //     "Voice Call": <VoiceCallIcon />,
+    //     "Video Call": <VideoCallIcon />,
+    //     "Chat": <ChatIcon />,
+    // };
+    // --- AKHIR PERUBAHAN 2 ---
+    // --- AKHIR PENGHAPUSAN ---
 
     return (
         <div className="space-y-5 bg-white p-4 rounded-xl shadow">
@@ -323,8 +342,9 @@ const ScheduleTabContent = ({
                         Pilihan Media Konseling
                     </h4>
                     <div className="flex flex-wrap gap-2">
-                        {["Voice Call", "Video Call", "Chat"].map(
-                            (media, index) => (
+                        {/* --- PERUBAHAN 3: Render tombol media secara dinamis --- */}
+                        {availableMethods.length > 0 ? (
+                            availableMethods.map((media, index) => (
                                 <button
                                     key={index}
                                     onClick={() => handleMediaSelect(media)}
@@ -334,17 +354,18 @@ const ScheduleTabContent = ({
                                             : "bg-white text-gray-700 border-gray-300 hover:bg-cyan-50"
                                     }`}
                                 >
-                                    {media === "Voice Call" && (
-                                        <VoiceCallIcon />
-                                    )}
-                                    {media === "Video Call" && (
-                                        <VideoCallIcon />
-                                    )}
-                                    {media === "Chat" && <ChatIcon />}
+                                    {/* Gunakan map ikon kita */}
+                                    {mediaIconMap[media]}
                                     {media}
                                 </button>
-                            )
+                            ))
+                        ) : (
+                            <p className="text-xs text-gray-400">
+                                Konselor ini belum mengatur metode layanan
+                                online.
+                            </p>
                         )}
+                        {/* --- AKHIR PERUBAHAN 3 --- */}
                     </div>
                 </div>
             )}
@@ -363,7 +384,7 @@ export default function PsychologistDetailPage() {
         serviceName,
         tempatId,
         tempatName,
-        method = "Online",
+        method = "Online", // Ini menentukan apakah alur ini 'Offline' atau 'Online'
     } = location.state || {};
 
     const [activeTab, setActiveTab] = useState("Profile Psikolog");
@@ -383,6 +404,10 @@ export default function PsychologistDetailPage() {
     const [selectedDate, setSelectedDate] = useState(null);
     const [selectedTime, setSelectedTime] = useState("");
     const [selectedMedia, setSelectedMedia] = useState("");
+
+    // --- PERUBAHAN 4: State untuk loading submit ---
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    // --- AKHIR PERUBAHAN 4 ---
 
     // Fetch detail psikolog
     useEffect(() => {
@@ -443,21 +468,31 @@ export default function PsychologistDetailPage() {
 
     const handleBack = () => navigate(-1);
 
-    const handleStartCounseling = () => {
+    // --- PERUBAHAN 5: Mengganti logika handleStartCounseling ---
+    const handleStartCounseling = async () => {
         if (activeTab === "Profile Psikolog") {
             setActiveTab("Jadwal");
             return;
         }
 
+        // 1. Validasi Input
         if (!selectedDurationId || !selectedDate || !selectedTime) {
+            // TODO: Ganti alert() dengan modal/toast yang lebih baik
             alert("Harap lengkapi pilihan jadwal (Durasi, Tanggal, Jam).");
             return;
         }
-        if (method !== "Offline" && !selectedMedia) {
-            alert("Harap pilih media konseling.");
+
+        // Tentukan metode final
+        const finalMethod = method === "Offline" ? "Tatap Muka" : selectedMedia;
+
+        if (method !== "Offline" && !finalMethod) {
+            alert(
+                "Harap pilih media konseling (Chat, Video Call, atau Voice Call)."
+            );
             return;
         }
 
+        // 2. Dapatkan Data Pendukung
         const selectedDurationData = scheduleOptions.durations.find(
             (d) => d.id == selectedDurationId
         );
@@ -467,66 +502,68 @@ export default function PsychologistDetailPage() {
             return;
         }
 
-        const finalMethod = method === "Offline" ? "Tatap Muka" : selectedMedia;
-
-        const formatDateForDisplay = (dateString) => {
-            if (!dateString) return "Tanggal belum dipilih";
-            try {
-                const dateObj = new Date(dateString + "T00:00:00");
-                return dateObj.toLocaleDateString("id-ID", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                });
-            } catch (e) {
-                console.error("Error formatting date:", e);
-                return dateString;
-            }
+        // 3. Siapkan Payload API
+        const apiPayload = {
+            counselorId: parseInt(counselorId),
+            jenisKonselingId: serviceId, // Diambil dari location.state
+            durationId: parseInt(selectedDurationId),
+            tempatId: tempatId || null, // Diambil dari location.state (jika offline)
+            date: selectedDate,
+            time: selectedTime,
+            method: finalMethod,
         };
 
-        const bookingData = {
-            apiPayload: {
-                counselorId: parseInt(counselorId),
-                jenisKonselingId: serviceId,
-                durationId: parseInt(selectedDurationId),
-                tempatId: tempatId || null,
-                date: selectedDate,
-                time: selectedTime,
-                method: finalMethod,
-            },
-            displayData: {
-                counselorName: psychologistData?.name,
-                counselorImage: psychologistData?.avatar,
-                counselorUniversity: psychologistData?.universitas,
-                counselorSpecialty: Array.isArray(
-                    psychologistData?.spesialisasi
-                )
-                    ? psychologistData.spesialisasi[0]
-                    : psychologistData?.spesialisasi || "Psikolog",
-                serviceName: serviceName,
-                tempatName: tempatName || null,
-                tempatAddress: null, // TODO: Kita perlu fetch detail tempat jika offline
-                scheduleDateDisplay: formatDateForDisplay(selectedDate),
-                scheduleTime: selectedTime,
-                method: finalMethod,
-                durationText: selectedDurationData.durasi_menit,
-                consultationFee: selectedDurationData.harga,
-                serviceFee: 5000,
-            },
-        };
+        // 4. Panggil API untuk Membuat Booking
+        setIsSubmitting(true);
+        try {
+            // Panggil API yang sudah kita siapkan di BookingFlowController@storeBooking
+            const response = await apiClient.post(
+                "/api/booking/create",
+                apiPayload
+            );
 
-        console.log("Navigating to confirmation with data:", bookingData);
+            // 5. API Sukses, dapatkan data booking asli dari database
+            const newBooking = response.data.booking; // Ini adalah data penting!
 
-        const confirmationPageRoute =
-            method === "Offline"
-                ? "/booking/payment-offline"
-                : "/booking/payment-online";
+            // 6. Tentukan halaman tujuan
+            const confirmationPageRoute =
+                method === "Offline"
+                    ? "/booking/payment-offline"
+                    : "/booking/payment-online";
 
-        navigate(confirmationPageRoute, {
-            state: { bookingData: bookingData },
-        });
+            // 7. Navigasi ke halaman pembayaran DENGAN DATA BOOKING ASLI
+            // Halaman payment-online/offline akan mengambil state 'booking' ini
+            navigate(confirmationPageRoute, {
+                state: {
+                    booking: newBooking, // <-- KIRIM DATA BOOKING ASLI
+                    // (Opsional) kita juga bisa kirim displayData jika halaman pembayaran perlu
+                    displayData: {
+                        counselorName: psychologistData?.name,
+                        serviceName: serviceName,
+                        tempatName: tempatName || null,
+                        scheduleDateDisplay: newBooking.tanggal_konsultasi, // Gunakan data dari API
+                        scheduleTime: newBooking.jam_konsultasi,
+                        method: newBooking.metode_konsultasi,
+                        durationText: selectedDurationData.durasi_menit,
+                        consultationFee: selectedDurationData.harga,
+                        serviceFee:
+                            newBooking.total_harga - selectedDurationData.harga, // Hitung biaya layanan
+                    },
+                },
+            });
+        } catch (err) {
+            // 8. Tangani Error API
+            console.error("Gagal membuat booking:", err);
+            const errorMessage =
+                err.response?.data?.message ||
+                "Gagal membuat booking. Silakan coba lagi.";
+            alert(errorMessage);
+        } finally {
+            // 9. Selesai Submitting
+            setIsSubmitting(false);
+        }
     };
+    // --- AKHIR PERUBAHAN 5 ---
 
     if (loading)
         return <div className="p-4 text-center">Memuat detail psikolog...</div>;
@@ -545,17 +582,25 @@ export default function PsychologistDetailPage() {
     const ratingDisplay = ratingValue !== null ? ratingValue.toFixed(1) : "N/A";
     const firstName = psychologistData.name?.split(",")[0];
 
-    const specializationTags = Array.isArray(psychologistData.spesialisasi)
-        ? psychologistData.spesialisasi.slice(0, 4)
+    // --- PERBAIKAN: Konversi Angka (ID) ke String sebelum mapping ---
+    // 1. Cek jika 'spesialisasi' adalah array
+    const specs = Array.isArray(psychologistData.spesialisasi)
+        ? // 2. Ubah tiap item (angka) menjadi string
+          psychologistData.spesialisasi.map(String)
         : [];
-    if (
-        Array.isArray(psychologistData.spesialisasi) &&
-        psychologistData.spesialisasi.length > 4
-    ) {
-        specializationTags[3] = `${
-            psychologistData.spesialisasi.length - 3
-        }+ lainnya`;
+
+    // 3. Ambil 4 item pertama
+    const specializationTags = specs.slice(0, 4);
+
+    // 4. Cek 'lainnya'
+    if (specs.length > 4) {
+        specializationTags[3] = `${specs.length - 3}+ lainnya`;
     }
+    // --- AKHIR PERBAIKAN (Blok ini menggantikan definisi specializationTags sebelumnya) ---
+
+    // --- PERUBAHAN 6: Ambil metode layanan dinamis untuk tab Profile ---
+    const profileMethods = psychologistData.metode_layanan || [];
+    // --- AKHIR PERUBAHAN 6 ---
 
     return (
         <div className="bg-gray-50 min-h-screen font-sans">
@@ -637,10 +682,12 @@ export default function PsychologistDetailPage() {
                             {psychologistData.name}
                         </h1>
                         <div className="flex flex-wrap gap-1.5 mt-1.5">
+                            {/* INI ADALAH LOKASI ERROR (BARIS 640-644) */}
                             {specializationTags.map((tag, index) => (
                                 <span
                                     key={index}
                                     className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${
+                                        // 'tag' sekarang sudah pasti string, .includes() aman
                                         tag.includes("+")
                                             ? "bg-white/30 text-white border border-white/50"
                                             : "bg-white text-cyan-600"
@@ -688,23 +735,23 @@ export default function PsychologistDetailPage() {
                                 Keahlian
                             </h3>
                             <div className="flex flex-wrap gap-2">
-                                {Array.isArray(psychologistData.spesialisasi) &&
-                                psychologistData.spesialisasi.length > 0 ? (
-                                    psychologistData.spesialisasi.map(
-                                        (tag, index) => (
-                                            <span
-                                                key={index}
-                                                className="text-xs font-semibold px-3 py-1 rounded-full bg-cyan-100 text-cyan-700"
-                                            >
-                                                {tag}
-                                            </span>
-                                        )
-                                    )
+                                {/* --- PERBAIKAN KEDUA: Di dalam tab Profile --- */}
+                                {specs.length > 0 ? (
+                                    // Gunakan 'specs' (array of string)
+                                    specs.map((tag, index) => (
+                                        <span
+                                            key={index}
+                                            className="text-xs font-semibold px-3 py-1 rounded-full bg-cyan-100 text-cyan-700"
+                                        >
+                                            {tag}
+                                        </span>
+                                    ))
                                 ) : (
                                     <span className="text-xs text-gray-400">
                                         Belum ada data keahlian.
                                     </span>
                                 )}
+                                {/* --- AKHIR PERBAIKAN KEDUA --- */}
                             </div>
                         </div>
                         <div className="bg-white p-4 rounded-xl shadow space-y-3">
@@ -752,34 +799,24 @@ export default function PsychologistDetailPage() {
                                 Melayani via:
                             </h3>
                             <div className="flex flex-wrap gap-2">
-                                {Array.isArray(psychologistData.servesVia) &&
-                                psychologistData.servesVia.length > 0 ? (
-                                    psychologistData.servesVia.map(
-                                        (method, index) => (
-                                            <span
-                                                key={index}
-                                                className="flex items-center text-xs font-semibold px-3 py-1 rounded-full bg-gray-100 text-gray-600"
-                                            >
-                                                {method === "Voice Call" && (
-                                                    <VoiceCallIcon />
-                                                )}
-                                                {method === "Chat" && (
-                                                    <ChatIcon />
-                                                )}
-                                                {(method === "Video Call" ||
-                                                    method ===
-                                                        "Vidio Call") && (
-                                                    <VideoCallIcon />
-                                                )}
-                                                {method}
-                                            </span>
-                                        )
-                                    )
+                                {/* --- PERUBAHAN 7: Gunakan 'profileMethods' (dari metode_layanan) --- */}
+                                {profileMethods.length > 0 ? (
+                                    profileMethods.map((method, index) => (
+                                        <span
+                                            key={index}
+                                            className="flex items-center text-xs font-semibold px-3 py-1 rounded-full bg-gray-100 text-gray-600"
+                                        >
+                                            {/* Gunakan map ikon kita */}
+                                            {mediaIconMap[method]}
+                                            {method}
+                                        </span>
+                                    ))
                                 ) : (
                                     <span className="text-xs text-gray-400">
                                         Metode layanan belum ditentukan.
                                     </span>
                                 )}
+                                {/* --- AKHIR PERUBAHAN 7 --- */}
                             </div>
                         </div>
                     </div>
@@ -800,6 +837,11 @@ export default function PsychologistDetailPage() {
                         setSelectedTime={setSelectedTime}
                         selectedMedia={selectedMedia}
                         setSelectedMedia={setSelectedMedia}
+                        // --- PERUBAHAN 8: Kirim metode dinamis ke komponen ---
+                        availableMethods={
+                            psychologistData?.metode_layanan || []
+                        }
+                        // --- AKHIR PERUBAHAN 8 ---
                     />
                 )}
             </main>
@@ -808,17 +850,22 @@ export default function PsychologistDetailPage() {
             <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-4 bg-white border-t border-gray-200 shadow-[0_-2px_5px_rgba(0,0,0,0.05)] z-20">
                 <button
                     onClick={handleStartCounseling}
-                    className="w-full bg-cyan-500 text-white font-bold py-3 px-4 rounded-lg shadow hover:bg-cyan-600 transition-colors active:scale-95 disabled:bg-gray-400"
+                    className="w-full bg-cyan-500 text-white font-bold py-3 px-4 rounded-lg shadow hover:bg-cyan-600 transition-colors active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed"
                     disabled={
-                        activeTab === "Jadwal" &&
-                        (!selectedDurationId ||
-                            !selectedDate ||
-                            !selectedTime ||
-                            (method !== "Offline" && !selectedMedia))
+                        // --- PERUBAHAN 9: Tambahkan check isSubmitting ---
+                        isSubmitting ||
+                        (activeTab === "Jadwal" &&
+                            (!selectedDurationId ||
+                                !selectedDate ||
+                                !selectedTime ||
+                                (method !== "Offline" && !selectedMedia)))
+                        // --- AKHIR PERUBAHAN 9 ---
                     }
                 >
                     {/* Teks Tombol Dinamis */}
-                    {activeTab === "Profile Psikolog"
+                    {isSubmitting
+                        ? "Memproses..."
+                        : activeTab === "Profile Psikolog"
                         ? "Pilih Jadwal"
                         : `Mulai konseling dengan ${firstName}`}
                 </button>

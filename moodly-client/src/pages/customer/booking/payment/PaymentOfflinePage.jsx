@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from "react"; // <-- Pastikan useEffect ada
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import apiClient from "../../../../api/axios.js"; // <-- Path import dikoreksi
+// --- PERBAIKAN: Path import dikoreksi (tanpa .js) ---
+import apiClient from "../../../../api/axios";
+// --- AKHIR PERBAIKAN ---
 
 // --- Komponen Ikon ---
 const BackArrowIcon = () => (
@@ -79,25 +81,27 @@ const InformationCircleIcon = () => (
 // --- Akhir Komponen Ikon ---
 
 export default function PaymentOfflinePage() {
-    // Ganti nama komponen
     const navigate = useNavigate();
     const location = useLocation();
 
-    // --- Ambil data dari location.state ---
-    const { bookingData } = location.state || {};
-    const { apiPayload, displayData } = bookingData || {};
+    // --- PERBAIKAN 1: Ambil data dari state yang benar ---
+    // (Dikirim dari PsychologistDetailPage)
+    const { booking, displayData } = location.state || {};
+    // --- AKHIR PERBAIKAN 1 ---
 
     const [agreed, setAgreed] = useState(false);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(false); // Tetap gunakan untuk loading navigasi
     const [error, setError] = useState(null);
 
-    // Jika tidak ada data, redirect
+    // --- PERBAIKAN 2: Jika tidak ada data, redirect ---
     useEffect(() => {
-        if (!bookingData) {
+        // Cek 'booking' (data API) bukan 'bookingData' (struktur lama)
+        if (!booking || !displayData) {
             console.error("Tidak ada data booking, kembali ke beranda.");
-            navigate("/");
+            navigate("/"); // Redirect ke home
         }
-    }, [bookingData, navigate]);
+    }, [booking, displayData, navigate]); // Dependensi diperbarui
+    // --- AKHIR PERBAIKAN 2 ---
 
     // Format Rupiah
     const formatCurrency = (amount) => {
@@ -109,15 +113,19 @@ export default function PaymentOfflinePage() {
         }).format(amount);
     };
 
-    // Data dinamis dari displayData (jika bookingData ada)
+    // --- PERBAIKAN 3: Isi data dari 'booking' (API) dan 'displayData' (Tampilan) ---
     const bookingDetails = displayData
         ? {
-              bookingCode: "MOODLY-XXXXX", // Ini akan diganti setelah kita implementasi kode pesanan
-              bookingDate: new Date().toLocaleDateString("id-ID", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "numeric",
-              }),
+              // Gunakan ID booking asli dari API
+              bookingCode: `MOODLY-${booking.id}`,
+              bookingDate: new Date(booking.created_at).toLocaleDateString(
+                  "id-ID",
+                  {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                  }
+              ),
               psychologistName: displayData.counselorName,
               psychologistImage: displayData.counselorImage,
               university: displayData.counselorUniversity,
@@ -134,63 +142,48 @@ export default function PaymentOfflinePage() {
           }
         : {};
 
-    const totalPayment =
-        (displayData?.consultationFee || 0) + (displayData?.serviceFee || 0);
+    // Gunakan total harga dari 'booking' (API) sebagai sumber kebenaran
+    const totalPayment = booking?.total_harga || 0;
+    // --- AKHIR PERBAIKAN 3 ---
 
     const handleBack = () => {
         navigate(-1);
     };
 
-    // --- PERBAIKAN: Handler untuk submit ke API ---
+    // --- PERBAIKAN 4: Handler HANYA untuk navigasi ---
     const handleContinue = async () => {
         if (!agreed) {
             setError("Anda harus menyetujui syarat dan ketentuan.");
             return;
         }
 
-        setLoading(true);
+        setLoading(true); // Tampilkan loading
         setError(null);
 
-        try {
-            // Panggil API storeBooking
-            const response = await apiClient.post(
-                "/api/booking/create",
-                apiPayload
-            );
-            const createdBooking = response.data.booking;
+        // HAPUS SEMUA LOGIKA apiClient.post
+        // Halaman ini tidak lagi bertanggung jawab membuat booking
 
-            // --- PERBAIKAN NAVIGASI: Langsung ke QRIS ---
-            console.log(
-                "Booking sukses dibuat, navigasi ke QRIS...",
-                createdBooking
-            );
-            navigate(`/booking/payment/qris/${createdBooking.id}`, {
+        try {
+            // Logika berhasil (karena booking sudah dibuat)
+            console.log("Konfirmasi Offline, navigasi ke QRIS...", booking);
+
+            // Langsung navigasi ke halaman QRIS
+            navigate(`/booking/payment/qris/${booking.id}`, {
                 replace: true,
-                state: { booking: createdBooking }, // Kirim data booking (termasuk total_harga)
+                state: { booking: booking }, // Kirim data booking (termasuk total_harga)
             });
-            // --- AKHIR PERBAIKAN NAVIGASI ---
+            // Tidak perlu setLoading(false) karena kita navigasi
         } catch (err) {
-            console.error("Gagal membuat booking:", err);
-            let errorMessage = "Gagal membuat pesanan. Silakan coba lagi.";
-            if (err.response && err.response.status === 422) {
-                const firstError = Object.values(
-                    err.response.data.errors
-                )[0][0];
-                errorMessage = firstError || errorMessage;
-            } else if (
-                err.response &&
-                err.response.data &&
-                err.response.data.message
-            ) {
-                errorMessage = err.response.data.message;
-            }
-            setError(errorMessage);
+            // Ini seharusnya tidak terjadi, tapi sebagai fallback
+            console.error("Error saat navigasi:", err);
+            setError("Gagal melanjutkan. Silakan coba lagi.");
             setLoading(false);
         }
     };
-    // --- AKHIR PERBAIKAN HANDLER ---
+    // --- AKHIR PERBAIKAN 4 ---
 
-    if (!bookingData) {
+    // Tampilkan loading jika data belum siap (meskipun useEffect akan redirect)
+    if (!booking || !displayData) {
         return (
             <div className="bg-gray-50 min-h-full font-sans flex items-center justify-center">
                 Memuat data...

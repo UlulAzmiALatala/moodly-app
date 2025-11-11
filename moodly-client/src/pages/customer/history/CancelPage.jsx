@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom"; // Import Link
-import apiClient from "../../../api/axios"; // Sesuaikan path
+import { useNavigate, useParams, Link } from "react-router-dom";
+// --- PERBAIKAN: Hapus ekstensi .js ---
+import apiClient from "../../../api/axios";
 
 // --- Helper Format Tanggal ---
 function formatDate(dateString) {
@@ -13,6 +14,28 @@ function formatDate(dateString) {
         return dateString; // fallback
     }
 }
+
+// --- HELPER BARU: Format Waktu ---
+const formatTimeRange = (startTime, durationMinutes) => {
+    if (!startTime || !durationMinutes) return startTime || "...";
+    try {
+        const start = startTime.substring(0, 5); // "16:00"
+        const minutes = parseInt(String(durationMinutes).split(" ")[0]);
+        if (isNaN(minutes)) return start;
+
+        const [startHour, startMin] = start.split(":").map(Number);
+        const endDate = new Date();
+        endDate.setHours(startHour, startMin + minutes, 0, 0);
+
+        const endHour = String(endDate.getHours()).padStart(2, "0");
+        const endMin = String(endDate.getMinutes()).padStart(2, "0");
+
+        return `${start} - ${endHour}:${endMin}`; // "16:00 - 18:00"
+    } catch (e) {
+        return startTime.substring(0, 5);
+    }
+};
+// --- AKHIR HELPER BARU ---
 
 // Komponen untuk memilih alasan pembatalan
 const CancellationPage = () => {
@@ -41,6 +64,7 @@ const CancellationPage = () => {
         const fetchSessionData = async () => {
             try {
                 setLoading(true);
+                // Kita panggil API yang SAMA dengan DetailPage
                 const response = await apiClient.get(`/api/history/${id}`);
                 setSessionData(response.data);
             } catch (err) {
@@ -56,7 +80,7 @@ const CancellationPage = () => {
     // Fungsi untuk menangani pembatalan
     const handleCancel = async () => {
         if (!selectedReason) {
-            alert("Silakan pilih alasan pembatalan."); // Ganti dengan modal custom jika ada
+            alert("Silakan pilih alasan pembatalan.");
             return;
         }
         if (isSubmitting) return;
@@ -64,16 +88,21 @@ const CancellationPage = () => {
         setIsSubmitting(true);
         try {
             // Kirim data pembatalan ke API
+            // (Backend HistoryController@cancel sekarang sudah siap menerima ini)
             await apiClient.patch(`/api/history/${id}/cancel`, {
                 alasan: selectedReason,
                 catatan: note,
             });
 
             // Arahkan kembali ke riwayat setelah berhasil
-            navigate("/history");
+            // Tambahkan state untuk memberi tahu halaman riwayat agar refresh (opsional)
+            navigate("/history", { state: { refresh: true } });
         } catch (err) {
             console.error("Gagal membatalkan sesi:", err);
-            setError("Gagal membatalkan sesi. Coba lagi.");
+            const apiError =
+                err.response?.data?.message ||
+                "Gagal membatalkan sesi. Coba lagi.";
+            setError(apiError);
         } finally {
             setIsSubmitting(false);
         }
@@ -83,7 +112,8 @@ const CancellationPage = () => {
     if (loading) {
         return <div className="p-4 text-center">Memuat data sesi...</div>;
     }
-    if (error) {
+    // Tampilkan error API di atas form jika ada (selain error loading)
+    if (error && !sessionData) {
         return <div className="p-4 text-center text-red-500">{error}</div>;
     }
     if (!sessionData) {
@@ -92,9 +122,22 @@ const CancellationPage = () => {
 
     // Ambil data konselor
     const konselor = sessionData.konselor || {};
-    const specialization = konselor.spesialisasi
-        ? konselor.spesialisasi[0]
-        : "Spesialisasi";
+    // --- PERBAIKAN: Gunakan jenis_konseling sebagai spesialisasi ---
+    const specialization =
+        sessionData.jenis_konseling?.jenis_konseling || "Konseling";
+    // --- AKHIR PERBAIKAN ---
+
+    // --- PERBAIKAN: Gunakan formatTimeRange ---
+    const formattedTime = formatTimeRange(
+        sessionData.jam_konsultasi,
+        sessionData.durasi_konseling?.durasi_menit
+    );
+    // --- AKHIR PERBAIKAN ---
+
+    // Fallback Avatar
+    const avatarFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+        konselor.name || "K"
+    )}&background=EBF4FF&color=3B82F6&bold=true&size=64`;
 
     return (
         <div className="p-4 bg-gray-50 min-h-screen">
@@ -122,17 +165,30 @@ const CancellationPage = () => {
                 <div className="w-6"></div> {/* Spacer */}
             </div>
 
+            {/* Menampilkan error submit di atas */}
+            {error && sessionData && (
+                <div className="p-3 text-center text-sm text-red-700 bg-red-100 rounded-lg mb-4">
+                    {error}
+                </div>
+            )}
+
             {/* Informasi Sesi (Dinamis) */}
             <div className="bg-white p-4 rounded-xl shadow-lg mb-4">
                 <div className="flex items-center space-x-3">
                     <img
-                        src={konselor.avatar} // Dinamis
-                        alt={konselor.name}
+                        // --- PERBAIKAN: Fallback avatar ---
+                        src={konselor.avatar || avatarFallback}
+                        onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = avatarFallback;
+                        }}
+                        // --- AKHIR PERBAIKAN ---
+                        alt={konselor.name || "Konselor"}
                         className="w-16 h-16 rounded-full object-cover"
                     />
                     <div>
                         <h2 className="font-bold text-gray-900">
-                            {konselor.name}
+                            {konselor.name || "Konselor"}
                         </h2>
                         <p className="text-sm text-gray-500">
                             {specialization}
@@ -141,7 +197,8 @@ const CancellationPage = () => {
                             <span>
                                 {formatDate(sessionData.tanggal_konsultasi)}
                             </span>
-                            <span>{sessionData.jam_konsultasi}</span>
+                            {/* --- PERBAIKAN: Gunakan waktu yang diformat --- */}
+                            <span>{formattedTime}</span>
                         </div>
                         <span className="text-xs text-blue-600 font-semibold">
                             {sessionData.metode_konsultasi}
