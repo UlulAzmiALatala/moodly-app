@@ -11,10 +11,16 @@ import AuthAdminLayout from "../layouts/AuthAdminLayout";
 import PageLayout from "../layouts/PageLayout";
 
 // --- Halaman Auth (Mobile) ---
-import LoginPage from "../pages/auth/LoginPage";
-import AddressPage from "../pages/auth/AddressPage";
-import RegisterPage from "../pages/auth/RegisterPage";
+import CustomerLoginPage from "../pages/auth/customer/LoginPage";
+import CustomerRegisterPage from "../pages/auth/customer/RegisterPage";
+import CustomerAddressPage from "../pages/auth/customer/AddressPage";
+import CustomerCreatePasswordPage from "../pages/auth/customer/CreatePasswordPage";
 import OnboardingPage from "../pages/auth/OnboardingPage";
+import CounselorLoginPage from "../pages/auth/counselor/LoginPage";
+import CounselorRegisterPage from "../pages/auth/counselor/RegisterPage";
+import CounselorAddressPage from "../pages/auth/counselor/AddressPage";
+import CounselorCreatePasswordPage from "../pages/auth/counselor/CreatePasswordPage";
+import AdminLoginPage from "../pages/auth/admin/LoginPage";
 
 // --- Halaman Customer (Mobile) ---
 import HomePage from "../pages/customer/HomePage";
@@ -24,31 +30,29 @@ import FindCounselorPage from "../pages/customer/booking/FindCounselorPage";
 import InPersonPage from "../pages/customer/booking/InPersonPage";
 import LocationDetailPage from "../pages/customer/booking/LocationDetailPage";
 import PsychologistDetailPage from "../pages/customer/booking/PsychologistDetailPage";
-
-// --- IMPORT UNTUK PAYMENT ---
 import PaymentOnlinePage from "../pages/customer/booking/payment/PaymentOnlinePage";
 import QrisPaymentPage from "../pages/customer/booking/payment/QrisPaymentPage";
 import PaymentOfflinePage from "../pages/customer/booking/payment/PaymentOfflinePage";
 import UploadPaymentProofPage from "../pages/customer/booking/payment/UploadPaymentProofPage";
-
-// --- HISTORY & PROFIL CUSTOMER ---
 import HistoryPage from "../pages/customer/history/Index";
 import HistoryDetailPage from "../pages/customer/history/DetailPage";
 import RatingPage from "../pages/customer/history/RatingPage";
 import CancelPage from "../pages/customer/history/CancelPage";
 import CancelDetailPage from "../pages/customer/history/CancelDetailPage";
 import ReschedulePage from "../pages/customer/history/ReschedulePage";
-
 import ProfilePage from "../pages/customer/profile/Index";
 import EditProfilePage from "../pages/customer/profile/EditPage";
 import ChangePasswordPage from "../pages/customer/profile/ChangePasswordPage";
 import ChangeEmailPage from "../pages/customer/profile/ChangeEmailPage";
 import ChangePhoneNumberPage from "../pages/customer/profile/ChangePhoneNumberPage";
-
 import HelpPage from "../pages/customer/help/Index";
 import FaqPage from "../pages/customer/help/FaqPage";
 import ChatAdminPage from "../pages/customer/help/ChatAdminPage";
 import ChatPage from "../pages/customer/session/ChatPage";
+
+// --- BARU: Impor halaman edit profil ---
+import ChangeAddressPage from "../pages/customer/profile/ChangeAddressPage"; // <-- KITA AKAN BUAT INI
+// --- AKHIR BARU ---
 
 // --- Halaman Admin & Super Admin (Website) ---
 import JenisKonselingPage from "../pages/super-admin/konseling/jenis/Index.jsx";
@@ -63,7 +67,6 @@ import CustomerDetailPage from "../pages/super-admin/customer/Show.jsx";
 import BookingManagementPage from "../pages/super-admin/pesanan/Index.jsx";
 import BookingDetailPage from "../pages/super-admin/pesanan/Show.jsx";
 import PaymentMethodsPage from "../pages/super-admin/payment-methods/Index.jsx";
-
 import JadwalKonsultasiPage from "../pages/admin/jadwal-konsultasi/Index.jsx";
 import JadwalDetailPage from "../pages/admin/jadwal-konsultasi/Show.jsx";
 import VerifikasiKonselorPage from "../pages/admin/verifikasi-konselor/Index.jsx";
@@ -141,6 +144,7 @@ const AdminProtectedGuard = () => {
         <Navigate to="/admin/login" />
     );
 };
+// === END GUARDS ===
 
 // === ROUTER UTAMA ===
 const AppRouter = () => {
@@ -156,21 +160,52 @@ const AppRouter = () => {
 
     return (
         <Routes>
-            {/* === AUTH CUSTOMER & KONSELOR === */}
+            {/* === AUTH (SEMUA PERAN) === */}
             <Route element={<GuestGuard />}>
+                {/* Rute di dalam AuthLayout (Header Gelombang) */}
                 <Route element={<AuthLayout />}>
                     <Route path="/" element={<OnboardingPage />} />
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route path="/counselor/login" element={<LoginPage />} />
-                    <Route path="/register" element={<RegisterPage />} />
+
+                    {/* Rute Customer */}
+                    <Route path="/login" element={<CustomerLoginPage />} />
+                    <Route
+                        path="/register"
+                        element={<CustomerRegisterPage />}
+                    />
+
+                    {/* Rute Konselor */}
+                    <Route
+                        path="/counselor/login"
+                        element={<CounselorLoginPage />}
+                    />
                     <Route
                         path="/counselor/register"
-                        element={<RegisterPage />}
+                        element={<CounselorRegisterPage />}
+                    />
+                </Route>
+
+                {/* Rute Multi-step (Header Polos) */}
+                <Route element={<PageLayout />}>
+                    {/* Alur Customer */}
+                    <Route path="/address" element={<CustomerAddressPage />} />
+                    <Route
+                        path="/create-password"
+                        element={<CustomerCreatePasswordPage />}
+                    />
+
+                    {/* Alur Konselor (BARU) */}
+                    <Route
+                        path="/counselor/address"
+                        element={<CounselorAddressPage />}
+                    />
+                    <Route
+                        path="/counselor/create-password"
+                        element={<CounselorCreatePasswordPage />}
                     />
                 </Route>
             </Route>
 
-            {/* === CUSTOMER === */}
+            {/* === CUSTOMER (PROTECTED) === */}
             <Route element={<ProtectedGuard />}>
                 <Route element={<MobileLayout />}>
                     <Route path="/home" element={<HomePage />} />
@@ -185,7 +220,7 @@ const AppRouter = () => {
                 </Route>
 
                 <Route element={<PageLayout />}>
-                    <Route path="/address" element={<AddressPage />} />
+                    {/* Rute Edit Profil */}
                     <Route path="/profile/edit" element={<EditProfilePage />} />
                     <Route
                         path="/profile/change-password"
@@ -199,6 +234,14 @@ const AppRouter = () => {
                         path="/profile/change-phone"
                         element={<ChangePhoneNumberPage />}
                     />
+
+                    <Route
+                        path="/profile/edit/address"
+                        element={<ChangeAddressPage />}
+                    />
+                    {/* --- AKHIR BARU --- */}
+
+                    {/* Rute Booking */}
                     <Route
                         path="/booking/find-counselor"
                         element={<FindCounselorPage />}
@@ -235,6 +278,8 @@ const AppRouter = () => {
                         path="/booking/upload-proof/:bookingId"
                         element={<UploadPaymentProofPage />}
                     />
+
+                    {/* Rute History */}
                     <Route
                         path="/history/:id"
                         element={<HistoryDetailPage />}
@@ -251,7 +296,12 @@ const AppRouter = () => {
                         path="/history/cancel-detail/:id"
                         element={<CancelDetailPage />}
                     />
-                    <Route path="/history/rate/:id" element={<RatingPage />} />
+                    <Route
+                        path="/history/rating/:id"
+                        element={<RatingPage />}
+                    />
+
+                    {/* Rute Bantuan & Sesi */}
                     <Route path="/help" element={<HelpPage />} />
                     <Route path="/help/faq" element={<FaqPage />} />
                     <Route
@@ -262,7 +312,7 @@ const AppRouter = () => {
                 </Route>
             </Route>
 
-            {/* === KONSELOR === */}
+            {/* === KONSELOR (PROTECTED) === */}
             <Route element={<CounselorProtectedGuard />}>
                 <Route element={<MobileLayout />}>
                     <Route
@@ -309,7 +359,7 @@ const AppRouter = () => {
             {/* === ADMIN & SUPER ADMIN === */}
             <Route element={<AdminGuestGuard />}>
                 <Route element={<AuthAdminLayout />}>
-                    <Route path="/admin/login" element={<LoginPage />} />
+                    <Route path="/admin/login" element={<AdminLoginPage />} />
                 </Route>
             </Route>
 
@@ -323,7 +373,8 @@ const AppRouter = () => {
                         path="/admin/dashboard"
                         element={
                             <div>
-                                <h1>Selamat Datang di Dasbor!</h1>
+                                {" "}
+                                <h1>Selamat Datang di Dasbor!</h1>{" "}
                             </div>
                         }
                     />
@@ -403,7 +454,6 @@ const AppRouter = () => {
             </Route>
 
             {/* === FALLBACK === */}
-            <Route path="/" element={<Navigate to="/login" />} />
             <Route
                 path="*"
                 element={

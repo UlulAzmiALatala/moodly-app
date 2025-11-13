@@ -10,47 +10,51 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
+use App\Models\JenisKonseling; // Pastikan model ini ada
 
-class RegisteredUserController extends Controller
+class CounselorRegisterController extends Controller
 {
     /**
-     * Handle an incoming registration request.
+     * Handle an incoming counselor registration request.
      *
      * @throws \Illuminate\Validation\ValidationException
      */
     public function store(Request $request): Response
     {
-        // --- PERBAIKAN: Tambahkan validasi untuk field baru Anda ---
+        // Validasi khusus untuk Konselor
         $request->validate([
+            // Data Diri
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'phone' => ['required', 'string', 'max:20'], // <-- Dibuat 'required'
-
-            // --- DATA BARU (SESUAI PERMINTAAN ANDA) ---
+            'phone' => ['required', 'string', 'max:20'],
             'gender' => ['required', 'string', 'in:Laki-laki,Perempuan'],
             'tanggal_lahir' => ['required', 'date'],
-            // --- AKHIR DATA BARU ---
 
-            // Data Alamat (dari AddressPage.jsx)
+            // Alamat (Sesuai permintaan Anda)
             'province' => ['required', 'string', 'max:255'],
             'city' => ['required', 'string', 'max:255'],
             'district' => ['required', 'string', 'max:255'],
             'postal_code' => ['required', 'string', 'max:10'],
             'street_address' => ['required', 'string'],
+
+            // Data Konselor
+            'surat_izin_praktik' => ['required', 'string', 'max:255'],
+            'universitas' => ['required', 'string', 'max:255'],
+            'spesialisasi' => ['required', 'array', 'min:1'],
+            'spesialisasi.*' => ['integer', 'exists:jenis_konselings,id'], // Validasi ID spesialisasi
+
+            // Password
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'role' => 'customer', // Ini HANYA untuk customer
-            'status' => 'Verifikasi', // Status awal
+            'role' => 'konselor', // <-- Peran sebagai Konselor
+            'status' => 'Verifikasi', // Status awal, perlu diverifikasi admin
             'phone' => $request->phone,
-
-            // --- DATA BARU ---
             'gender' => $request->gender,
             'tanggal_lahir' => $request->tanggal_lahir,
-            // --- AKHIR DATA BARU ---
 
             // Alamat
             'province' => $request->province,
@@ -58,6 +62,11 @@ class RegisteredUserController extends Controller
             'district' => $request->district,
             'postal_code' => $request->postal_code,
             'street_address' => $request->street_address,
+
+            // Data Konselor
+            'surat_izin_praktik' => $request->surat_izin_praktik,
+            'universitas' => $request->universitas,
+            'spesialisasi' => $request->spesialisasi, // Disimpan sebagai array JSON (pastikan Model User punya $casts)
 
             'password' => Hash::make($request->password),
         ]);

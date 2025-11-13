@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\CustomerVerificationController;
 use App\Http\Controllers\Customer\BerandaController;
 use App\Http\Controllers\Customer\HistoryController;
 use App\Http\Controllers\Customer\BookingFlowController;
+use App\Http\Controllers\Customer\ProfileController;
 use App\Http\Controllers\BookingChatController;
 
 use App\Http\Middleware\RoleMiddleware;
@@ -34,6 +35,7 @@ Route::group(['middleware' => [
 
     require __DIR__ . '/auth.php';
 
+    Route::get('/jenis-konseling', [JenisKonselingController::class, 'index']);
     Route::get('/payment-methods', [BookingFlowController::class, 'getPaymentMethods']);
     Route::get('/payment-methods/image/{paymentMethod}', [BookingFlowController::class, 'getPaymentMethodImage'])
         ->where('paymentMethod', '[0-9]+');
@@ -46,6 +48,10 @@ Route::group(['middleware' => [
 
         // --- RUTE UNTUK CUSTOMER ---
         Route::get('/beranda-data', [BerandaController::class, 'getBerandaData']);
+        Route::post('/profile/update', [ProfileController::class, 'update']);
+        Route::post('/profile/change-password', [ProfileController::class, 'updatePassword']);
+        Route::post('/profile/change-email', [ProfileController::class, 'updateEmail']);
+        Route::post('/profile/change-phone', [ProfileController::class, 'updatePhone']);
 
         Route::get('/history', [HistoryController::class, 'index']);
         Route::get('/history/{booking}', [HistoryController::class, 'show']);

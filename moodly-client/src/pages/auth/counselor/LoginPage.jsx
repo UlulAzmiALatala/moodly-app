@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../../context/AuthContext"; // Path 3x mundur
 
 // --- Komponen Ikon (Tidak diubah) ---
 function UserIcon() {
@@ -81,52 +81,38 @@ function EyeOffIcon() {
         </svg>
     );
 }
-function GoogleIcon({ className }) {
-    return (
-        <svg className={className} viewBox="0 0 533.5 544.3" aria-hidden="true">
-            {" "}
-            <path
-                fill="#EA4335"
-                d="M533.5 278.4c0-18.6-1.7-37.1-5.3-55H272.1v104.2h146.9c-6.3 34.2-25.9 63.9-55 83.4l88.9 69.1c52.1-48 80.6-118.7 80.6-201.7z"
-            />{" "}
-            <path
-                fill="#34A853"
-                d="M272.1 544.3c72.9 0 134.1-24.1 178.9-65.5l-88.9-69.1c-24.7 16.6-56.3 26-90 26-69.2 0-127.9-46.7-148.9-109.4H31.4v68.8c44.3 88.1 134.9 148.2 240.7 148.2z"
-            />{" "}
-            <path
-                fill="#4A90E2"
-                d="M123.2 326.3c-10.5-31.2-10.5-64.9 0-96.1V161.4H31.4c-42.6 84.9-42.6 184.4 0 269.3l91.8-104.4z"
-            />{" "}
-            <path
-                fill="#FBBC05"
-                d="M272.1 106.2c39.7-.6 78 14.7 106.3 42.5l79.4-79.4C404.3 14.5 339.7-4.8 272.1 0 166.3 0 75.7 60 31.4 148.2l91.8 68.8c21-62.7 79.7-110.8 148.9-110.8z"
-            />{" "}
-        </svg>
-    );
-}
 // --- End of Icon Components ---
 
-export default function LoginPage() {
-    const { login } = useAuth();
+export default function CounselorLoginPage() {
+    // --- PERBAIKAN: Panggil 'loginCounselor' ---
+    const { loginCounselor } = useAuth();
+    // --- AKHIR PERBAIKAN ---
+
     const [email, setEmail] = useState("");
     const [pwd, setPwd] = useState("");
     const [showPwd, setShowPwd] = useState(false);
     const [errors, setErrors] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false); // <-- Tambahkan state submitting
 
     const onSubmit = async (e) => {
         e.preventDefault();
         setErrors(null);
+        setIsSubmitting(true); // <-- Set loading
 
         if (!email || !pwd) {
             setErrors({ message: "Harap isi semua kolom." });
+            setIsSubmitting(false); // <-- Stop loading
             return;
         }
 
         try {
-            await login({ email, password: pwd });
+            // --- PERBAIKAN: Panggil 'loginCounselor' ---
+            await loginCounselor({ email, password: pwd });
             // Navigasi akan diurus oleh router jika berhasil
         } catch (error) {
-            setErrors(error);
+            // Tangkap error (baik dari validasi 422 atau error role)
+            setErrors({ message: error.message || "Login gagal." });
+            setIsSubmitting(false); // <-- Stop loading
         }
     };
 
@@ -159,7 +145,7 @@ export default function LoginPage() {
             <main className="flex-grow flex flex-col justify-center p-8">
                 <div className="w-full">
                     <h1 className="text-2xl font-bold text-center text-gray-800 mb-6">
-                        Masuk
+                        Login Konselor
                     </h1>
 
                     <form className="space-y-4" onSubmit={onSubmit} noValidate>
@@ -173,6 +159,7 @@ export default function LoginPage() {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
+                                disabled={isSubmitting} // <-- Disable saat loading
                                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none"
                             />
                         </div>
@@ -187,6 +174,7 @@ export default function LoginPage() {
                                 value={pwd}
                                 onChange={(e) => setPwd(e.target.value)}
                                 required
+                                disabled={isSubmitting} // <-- Disable saat loading
                                 className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none"
                             />
                             <button
@@ -205,7 +193,7 @@ export default function LoginPage() {
 
                         <div className="text-right">
                             <Link
-                                to="/forgot-password"
+                                to="/forgot-password" // TODO: Buat alur lupa password konselor
                                 className="text-sm text-gray-500 hover:underline"
                             >
                                 Lupa Kata sandi?
@@ -214,35 +202,40 @@ export default function LoginPage() {
 
                         <button
                             type="submit"
-                            className="w-full py-3 bg-black text-white rounded-full font-semibold hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500"
+                            disabled={isSubmitting} // <-- Disable saat loading
+                            className="w-full py-3 bg-black text-white rounded-full font-semibold hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:bg-gray-400"
                         >
-                            Masuk
+                            {isSubmitting ? "Memproses..." : "Masuk"}
                         </button>
                     </form>
 
                     {errors && (
                         <div className="text-red-600 text-xs mt-3 text-center">
-                            {errors.email || errors.password || errors.message}
+                            {/* --- PERBAIKAN: Tampilkan error dengan benar --- */}
+                            {errors.message}
                         </div>
                     )}
 
                     <div className="text-center text-sm text-gray-600 mt-6">
                         Belum punya akun?{" "}
                         <Link
-                            to="/register"
+                            // --- PERBAIKAN: Arahkan ke registrasi konselor ---
+                            to="/counselor/register"
                             className="text-sky-500 font-semibold hover:underline"
                         >
                             Daftar
                         </Link>
                     </div>
 
+                    {/* --- PERBAIKAN: Hapus tombol Google ---
                     <button
                         type="button"
-                        className="w-full py-3 mt-4 flex items-center justify-center bg-white border border-gray-300 rounded-full text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                        className="w-full py-3 mt-4 ..."
                     >
                         <GoogleIcon className="w-5 h-5 mr-2" />
                         <span className="font-medium">Masuk dengan Google</span>
                     </button>
+                    */}
                 </div>
             </main>
         </>

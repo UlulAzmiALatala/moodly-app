@@ -22,8 +22,10 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
-        'avatar', // Path avatar di storage
+        'avatar',
         'email',
+        'gender',
+        'tanggal_lahir',
         'role',
         'status',
         'phone',
@@ -69,7 +71,8 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
         'spesialisasi' => 'array',
-        'metode_layanan' => 'array', // <-- TAMBAHKAN INI
+        'metode_layanan' => 'array',
+        'tanggal_lahir' => 'date',
     ];
 
     /**
