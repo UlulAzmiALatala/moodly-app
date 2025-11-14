@@ -24,6 +24,7 @@ use App\Http\Controllers\BookingChatController;
 
 use App\Http\Controllers\Counselor\DashboardController;
 use App\Http\Controllers\Counselor\ScheduleController;
+use App\Http\Controllers\Counselor\HistoryController as CounselorHistoryController;
 
 use App\Http\Middleware\RoleMiddleware;
 use App\Models\User;
@@ -52,6 +53,12 @@ Route::group(['middleware' => [
         Route::get('/counselor/dashboard-data', [DashboardController::class, 'getDashboardData'])
             ->middleware(RoleMiddleware::class . ':konselor');
         Route::get('/counselor/schedules', [ScheduleController::class, 'index'])
+            ->middleware(RoleMiddleware::class . ':konselor');
+        Route::get('/counselor/booking/{booking}', [ScheduleController::class, 'show'])
+            ->middleware(RoleMiddleware::class . ':konselor');
+        Route::post('/counselor/booking/{booking}/complete', [ScheduleController::class, 'completeSession'])
+            ->middleware(RoleMiddleware::class . ':konselor');
+        Route::get('/counselor/history', [CounselorHistoryController::class, 'index'])
             ->middleware(RoleMiddleware::class . ':konselor');
 
         // --- RUTE UNTUK CUSTOMER ---

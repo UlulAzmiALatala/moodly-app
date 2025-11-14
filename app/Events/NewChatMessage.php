@@ -2,16 +2,19 @@
 
 namespace App\Events;
 
-use App\Models\ChatMessage; // <-- Import model ChatMessage
+use App\Models\ChatMessage;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
-use Illuminate\Broadcasting\PrivateChannel; // <-- Gunakan PrivateChannel
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast; // <-- Implement ini
+use Illuminate\Broadcasting\PrivateChannel;
+// --- PERBAIKAN: Ganti ShouldBroadcast menjadi ShouldBroadcastNow ---
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
+// --- AKHIR PERBAIKAN ---
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class NewChatMessage implements ShouldBroadcast // <-- Implement ShouldBroadcast
+// --- PERBAIKAN: Implementasi ShouldBroadcastNow ---
+class NewChatMessage implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -20,7 +23,7 @@ class NewChatMessage implements ShouldBroadcast // <-- Implement ShouldBroadcast
      *
      * @var \App\Models\ChatMessage
      */
-    public ChatMessage $message; // <-- Buat properti publik untuk data pesan
+    public ChatMessage $message;
 
     /**
      * Create a new event instance.
@@ -29,7 +32,7 @@ class NewChatMessage implements ShouldBroadcast // <-- Implement ShouldBroadcast
      */
     public function __construct(ChatMessage $message)
     {
-        $this->message = $message; // <-- Tetapkan pesan saat event dibuat
+        $this->message = $message;
     }
 
     /**
@@ -40,13 +43,11 @@ class NewChatMessage implements ShouldBroadcast // <-- Implement ShouldBroadcast
     public function broadcastOn()
     {
         // Siarkan ke channel privat berdasarkan ID booking.
-        // Contoh: 'chat.16', 'chat.17', dst.
         return new PrivateChannel('chat.' . $this->message->booking_id);
     }
 
     /**
      * Nama event yang akan disiarkan.
-     * (Default-nya adalah 'NewChatMessage', tapi ini lebih bersih)
      */
     public function broadcastAs()
     {
@@ -55,7 +56,6 @@ class NewChatMessage implements ShouldBroadcast // <-- Implement ShouldBroadcast
 
     /**
      * Data yang akan disiarkan.
-     * (Kita kirim seluruh data $message yang sudah di-load)
      */
     public function broadcastWith()
     {

@@ -1,14 +1,14 @@
 import React from "react";
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
-import { useAuth } from "../context/AuthContext.jsx"; // .jsx ditambahkan
-import Commet from "../components/Commet.jsx"; // .jsx ditambahkan
+import { useAuth } from "../context/AuthContext.jsx";
+import Commet from "../components/Commet.jsx";
 
 // --- Layouts ---
-import MobileLayout from "../layouts/MobileLayout.jsx"; // .jsx ditambahkan
-import AuthLayout from "../layouts/AuthLayout.jsx"; // .jsx ditambahkan
-import AdminLayout from "../layouts/AdminLayout.jsx"; // .jsx ditambahkan
-import AuthAdminLayout from "../layouts/AuthAdminLayout.jsx"; // .jsx ditambahkan
-import PageLayout from "../layouts/PageLayout.jsx"; // .jsx ditambahkan
+import MobileLayout from "../layouts/MobileLayout.jsx";
+import AuthLayout from "../layouts/AuthLayout.jsx";
+import AdminLayout from "../layouts/AdminLayout.jsx";
+import AuthAdminLayout from "../layouts/AuthAdminLayout.jsx";
+import PageLayout from "../layouts/PageLayout.jsx";
 
 // --- Halaman Auth (Mobile) ---
 import CustomerLoginPage from "../pages/auth/customer/LoginPage.jsx";
@@ -21,6 +21,9 @@ import CounselorRegisterPage from "../pages/auth/counselor/RegisterPage.jsx";
 import CounselorAddressPage from "../pages/auth/counselor/AddressPage.jsx";
 import CounselorCreatePasswordPage from "../pages/auth/counselor/CreatePasswordPage.jsx";
 import AdminLoginPage from "../pages/auth/admin/LoginPage.jsx";
+import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage.jsx";
+import ResetPasswordPage from "../pages/auth/ResetPasswordPage.jsx";
+import VerifyCodePage from "../pages/auth/VerifyCodePage.jsx";
 
 // --- Halaman Customer (Mobile) ---
 import HomePage from "../pages/customer/HomePage.jsx";
@@ -50,6 +53,7 @@ import HelpPage from "../pages/customer/help/Index.jsx";
 import FaqPage from "../pages/customer/help/FaqPage.jsx";
 import ChatAdminPage from "../pages/customer/help/ChatAdminPage.jsx";
 import ChatPage from "../pages/customer/session/ChatPage.jsx";
+import PrivacyPolicyPage from "../pages/customer/PrivacyPolicyPage.jsx";
 
 // --- Halaman Admin & Super Admin (Website) ---
 import JenisKonselingPage from "../pages/super-admin/konseling/jenis/Index.jsx";
@@ -64,14 +68,16 @@ import CustomerDetailPage from "../pages/super-admin/customer/Show.jsx";
 import BookingManagementPage from "../pages/super-admin/pesanan/Index.jsx";
 import BookingDetailPage from "../pages/super-admin/pesanan/Show.jsx";
 import PaymentMethodsPage from "../pages/super-admin/payment-methods/Index.jsx";
+import AdminDashboardPage from "../pages/admin/dashboard/Index.jsx";
 import JadwalKonsultasiPage from "../pages/admin/jadwal-konsultasi/Index.jsx";
 import JadwalDetailPage from "../pages/admin/jadwal-konsultasi/Show.jsx";
 import VerifikasiKonselorPage from "../pages/admin/verifikasi-konselor/Index.jsx";
 import VerifikasiDetailPage from "../pages/admin/verifikasi-konselor/Show.jsx";
 import VerifikasiCustomerPage from "../pages/admin/verifikasi-customer/Index.jsx";
 import VerifikasiCustomerDetailPage from "../pages/admin/verifikasi-customer/Show.jsx";
+import SuperAdminDashboardPage from "../pages/super-admin/dashboard/Index.jsx";
 
-// --- Halaman Konselor (Impor diperbarui dan ditambah) ---
+// --- Halaman Konselor (Impor DIBERSIHKAN & Disesuaikan) ---
 import CounselorHomePage from "../pages/counselor/HomePage.jsx";
 import CounselorNotificationPage from "../pages/counselor/NotificationPage.jsx";
 // Help
@@ -79,26 +85,23 @@ import CounselorHelpPage from "../pages/counselor/help/Index.jsx";
 import CounselorFaqPage from "../pages/counselor/help/FaqPage.jsx";
 import CounselorChatAdminPage from "../pages/counselor/help/ChatAdminPage.jsx";
 // Schedule
-import CounselorSchedulePage from "../pages/counselor/schedule/index.jsx";
+import CounselorSchedulePage from "../pages/counselor/schedule/Index.jsx"; // <-- Nama file diubah jadi Index.jsx
+import CounselorScheduleDetailPage from "../pages/counselor/schedule/DetailPage.jsx"; // <-- File "Pintar" kita
 // History
 import CounselorHistoryPage from "../pages/counselor/history/HistoryPage.jsx";
 import CounselorHistoryEditPage from "../pages/counselor/history/Edit.jsx";
-import CounselorReschedulePage from "../pages/counselor/history/ReSchedulePage.jsx"; // <-- BARU
-// History Chat
-import CounselorChatPage from "../pages/counselor/history/chat/ChatPageCounselor.jsx";
-import CounselorChatEndPage from "../pages/counselor/history/chat/EndPage.jsx";
-import CounselorChatRatingPage from "../pages/counselor/history/chat/RatingPage.jsx";
-import CounselorChatRecallPage from "../pages/counselor/history/chat/RecallPage.jsx";
-import CounselorChatSchedulePage from "../pages/counselor/history/chat/SchedulePage.jsx";
-// Profile (dan file-file yang dipindah)
+import CounselorReschedulePage from "../pages/counselor/history/ReSchedulePage.jsx";
+// Konseling/Chat
+import CounselorChatPage from "../pages/counselor/konseling/chat/ChatPageCounselor.jsx";
+// Profile
 import CounselorProfilePage from "../pages/counselor/profile/Index.jsx";
 import CounselorProfileEditPage from "../pages/counselor/profile/EditPage.jsx";
 import CounselorChangeEmailPage from "../pages/counselor/profile/ChangeEmailPage.jsx";
 import CounselorChangePasswordPage from "../pages/counselor/profile/ChangePasswordPage.jsx";
 import CounselorChangePhonePage from "../pages/counselor/profile/ChangePhoneNumberPage.jsx";
-import CounselorChangeBankAccountPage from "../pages/counselor/profile/ChangeBankAccount.jsx"; // <-- BARU (Dipindah)
-import CounselorChangeLocationPage from "../pages/counselor/profile/ChangeLocation.jsx"; // <-- BARU (Dipindah)
-import CounselorChangeSchedulePage from "../pages/counselor/profile/ChangeSchedulePage.jsx"; // <-- BARU (Dipindah)
+import CounselorChangeBankAccountPage from "../pages/counselor/profile/ChangeBankAccount.jsx";
+import CounselorChangeLocationPage from "../pages/counselor/profile/ChangeLocation.jsx";
+import CounselorChangeSchedulePage from "../pages/counselor/profile/ChangeSchedulePage.jsx";
 // --- AKHIR IMPOR KONSELOR ---
 
 // === GUARDS ===
@@ -206,6 +209,15 @@ const AppRouter = () => {
                         path="/counselor/create-password"
                         element={<CounselorCreatePasswordPage />}
                     />
+                    <Route
+                        path="/forgot-password"
+                        element={<ForgotPasswordPage />}
+                    />
+                    <Route
+                        path="/reset-password"
+                        element={<ResetPasswordPage />}
+                    />
+                    <Route path="/verify-code" element={<VerifyCodePage />} />
                 </Route>
             </Route>
 
@@ -303,10 +315,14 @@ const AppRouter = () => {
                         element={<ChatAdminPage />}
                     />
                     <Route path="/session/chat/:id" element={<ChatPage />} />
+                    <Route
+                        path="/privacy-policy"
+                        element={<PrivacyPolicyPage />}
+                    />
                 </Route>
             </Route>
 
-            {/* === KONSELOR (PROTECTED) --- (Rute Diperbarui) === */}
+            {/* === KONSELOR (PROTECTED) --- (Rute Disesuaikan) === */}
             <Route element={<CounselorProtectedGuard />}>
                 {/* Rute Utama (dengan MobileLayout) */}
                 <Route element={<MobileLayout />}>
@@ -338,9 +354,12 @@ const AppRouter = () => {
 
                 {/* Rute Sekunder (dengan PageLayout) */}
                 <Route element={<PageLayout />}>
-                    {/* Schedule (Hapus rute 'Edit' dan 'Change' lama) */}
-                    {/* <Route path="/counselor/schedule/edit/:id" element={<CounselorScheduleEditPage />} /> */}
-                    {/* <Route path="/counselor/schedule/change" element={<CounselorScheduleChangePage />} /> */}
+                    {/* --- PERBAIKAN: Rute Schedule --- */}
+                    {/* Rute ini adalah untuk detail 'pintar' yang baru kita buat */}
+                    <Route
+                        path="/counselor/schedule/:id"
+                        element={<CounselorScheduleDetailPage />}
+                    />
 
                     {/* History */}
                     <Route
@@ -352,27 +371,13 @@ const AppRouter = () => {
                         element={<CounselorReschedulePage />}
                     />
 
-                    {/* History Chat Sub-pages */}
+                    {/* --- PERBAIKAN: Rute Chat & Konseling Digabung --- */}
+                    {/* Halaman chat konselor */}
                     <Route
                         path="/counselor/chat/:id"
                         element={<CounselorChatPage />}
                     />
-                    <Route
-                        path="/counselor/chat/:id/end"
-                        element={<CounselorChatEndPage />}
-                    />
-                    <Route
-                        path="/counselor/chat/:id/rating"
-                        element={<CounselorChatRatingPage />}
-                    />
-                    <Route
-                        path="/counselor/chat/:id/recall"
-                        element={<CounselorChatRecallPage />}
-                    />
-                    <Route
-                        path="/counselor/chat/:id/schedule"
-                        element={<CounselorChatSchedulePage />}
-                    />
+                    {/* Rute-rute lama di 'konseling' sudah dihapus karena digabung ke DetailPage */}
 
                     {/* Help */}
                     <Route
@@ -388,7 +393,7 @@ const AppRouter = () => {
                         element={<CounselorChatAdminPage />}
                     />
 
-                    {/* Profile & Settings (Rute baru ditambahkan) */}
+                    {/* Profile & Settings (Rute disesuaikan struktur baru) */}
                     <Route
                         path="/counselor/profile/edit"
                         element={<CounselorProfileEditPage />}
@@ -417,10 +422,6 @@ const AppRouter = () => {
                         path="/counselor/profile/change-schedule"
                         element={<CounselorChangeSchedulePage />}
                     />
-
-                    {/* Rute Lama (Dipindah) */}
-                    {/* <Route path="/counselor/location" element={<PracticeLocationPage />} /> */}
-                    {/* <Route path="/counselor/bank-account" element={<BankAccountPage />} /> */}
                 </Route>
             </Route>
 
@@ -438,14 +439,12 @@ const AppRouter = () => {
                     />
                     <Route
                         path="/admin/dashboard"
-                        element={
-                            <div>
-                                {" "}
-                                <h1>Selamat Datang di Dasbor!</h1>{" "}
-                            </div>
-                        }
+                        element={<AdminDashboardPage />}
                     />
-                    {/* ... (sisa rute admin tidak berubah) ... */}
+                    <Route
+                        path="/super-admin/dashboard"
+                        element={<SuperAdminDashboardPage />}
+                    />
                     <Route
                         path="/admin/jenis-konseling"
                         element={<JenisKonselingPage />}

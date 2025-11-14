@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import apiClient from "../../../api/axios.js";
-import { useAuth } from "../../../context/AuthContext.jsx";
+import apiClient from "../../../../api/axios.js";
+import { useAuth } from "../../../../context/AuthContext.jsx";
 
-// --- Import Echo & Pusher ---
 import Echo from "laravel-echo";
 import Pusher from "pusher-js";
 window.Pusher = Pusher;
@@ -38,6 +37,7 @@ const echo = new Echo({
 });
 // --- AKHIR PERBAIKAN ---
 
+// --- Komponen Layout & Ikon ---
 const MobileLayout = ({ children }) => (
     <div className="flex justify-center min-h-screen bg-white">
         <div className="w-full max-w-md min-h-screen bg-white flex flex-col border-x">
@@ -77,11 +77,12 @@ const SendIcon = () => (
         />
     </svg>
 );
+// --- Akhir Komponen Layout & Ikon ---
 
-export default function ChatPage() {
+export default function ChatPageCounselor() {
     const navigate = useNavigate();
-    const { id: bookingId } = useParams();
-    const { user: authUser } = useAuth(); // Ini adalah Customer
+    const { id: bookingId } = useParams(); // Ambil bookingId dari URL
+    const { user: authUser } = useAuth(); // Ini adalah Konselor
 
     const [messages, setMessages] = useState([]);
     const [bookingInfo, setBookingInfo] = useState(null);
@@ -110,6 +111,7 @@ export default function ChatPage() {
         const handleNewMessage = (event) => {
             const newMessage = event.message;
             setMessages((prevMessages) => {
+                // Cek duplikat
                 if (!prevMessages.find((msg) => msg.id === newMessage.id)) {
                     return [...prevMessages, newMessage];
                 }
@@ -123,8 +125,10 @@ export default function ChatPage() {
                 const response = await apiClient.get(
                     `/api/booking/${bookingId}/chat/messages`
                 );
+
                 setMessages(response.data.messages || []);
                 setBookingInfo(response.data.booking || null);
+
                 const endedStatus = ["Selesai", "Dibatalkan", "Tidak Hadir"];
                 if (
                     endedStatus.includes(response.data.booking?.status_pesanan)
@@ -132,7 +136,7 @@ export default function ChatPage() {
                     setIsChatEnded(true);
                 } else {
                     console.log(
-                        `Customer mendengarkan di channel: ${channelName}`
+                        `Konselor mendengarkan di channel: ${channelName}`
                     );
                     echo.private(channelName).listen(
                         ".new-message",
@@ -141,8 +145,15 @@ export default function ChatPage() {
                 }
                 setError(null);
             } catch (err) {
-                console.error("Gagal mengambil data chat (Customer):", err);
-                setError("Gagal memuat percakapan.");
+                console.error("Gagal mengambil data chat (Konselor):", err);
+                if (err.response && err.response.status === 403) {
+                    setError(
+                        err.response.data.message ||
+                            "Anda tidak diizinkan mengakses chat ini."
+                    );
+                } else {
+                    setError("Gagal memuat percakapan.");
+                }
             } finally {
                 setLoading(false);
             }
@@ -150,8 +161,9 @@ export default function ChatPage() {
 
         fetchChatData();
 
+        // --- Fungsi Cleanup ---
         return () => {
-            console.log(`Customer berhenti mendengarkan: ${channelName}`);
+            console.log(`Konselor berhenti mendengarkan: ${channelName}`);
             echo.leave(channelName);
         };
     }, [bookingId, authUser]);
@@ -170,12 +182,13 @@ export default function ChatPage() {
         setInput("");
 
         try {
-            // Panggil API (Listener Echo akan menangani update UI)
+            // Panggil API untuk menyimpan pesan
+            // (Listener Echo (handleNewMessage) yang akan menangani update UI)
             await apiClient.post(`/api/booking/${bookingId}/chat/messages`, {
                 message: sentInput,
             });
         } catch (err) {
-            console.error("Gagal mengirim pesan (Customer):", err);
+            console.error("Gagal mengirim pesan (Konselor):", err);
             setInput(sentInput); // Kembalikan teks jika gagal
             if (err.response && err.response.data.message) {
                 alert(err.response.data.message);
@@ -188,7 +201,7 @@ export default function ChatPage() {
         }
     };
 
-    // --- Tampilan Loading, Error, atau Data Kosong ---
+    // --- Tampilan Loading, Error ---
     if (loading || !authUser) {
         return (
             <MobileLayout>
@@ -224,20 +237,20 @@ export default function ChatPage() {
     }
 
     // --- Tampilan Chat Dinamis ---
-    const counselor = bookingInfo.konselor;
-    const userAvatar =
+    const customer = bookingInfo.customer;
+    const counselorAvatar =
         authUser.avatar_url ||
         `https://placehold.co/32x32/E2E8F0/4A5568?text=${authUser.name.charAt(
             0
         )}`;
-    const counselorAvatar =
-        counselor.avatar_url ||
-        `https://placehold.co/32x32/EBF8FF/3B82F6?text=${counselor.name.charAt(
+    const customerAvatar =
+        customer.avatar_url ||
+        `https://placehold.co/32x32/EBF8FF/3B82F6?text=${customer.name.charAt(
             0
         )}`;
 
-    const fallbackUser = `https://placehold.co/32x32/E2E8F0/4A5568?text=U`;
-    const fallbackCounselor = `https://placehold.co/32x32/EBF8FF/7F9CF5?text=K`;
+    const fallbackCounselor = `https://placehold.co/32x32/E2E8F0/4A5568?text=K`;
+    const fallbackCustomer = `https://placehold.co/32x32/EBF8FF/7F9CF5?text=C`;
 
     return (
         <MobileLayout>
@@ -252,17 +265,17 @@ export default function ChatPage() {
                     </button>
 
                     <img
-                        src={counselorAvatar} // Tampilkan avatar konselor
-                        alt={counselor.name}
+                        src={customerAvatar} // Tampilkan avatar customer
+                        alt={customer.name}
                         className="w-10 h-10 rounded-full mr-3 object-cover"
                         onError={(e) => {
                             e.target.onerror = null;
-                            e.target.src = fallbackCounselor;
+                            e.target.src = fallbackCustomer;
                         }}
                     />
                     <div>
                         <h2 className="font-semibold text-sm leading-tight">
-                            {counselor.name}
+                            {customer.name}
                         </h2>
                         {!isChatEnded && (
                             <span className="text-xs text-white/80 flex items-center">
@@ -288,12 +301,12 @@ export default function ChatPage() {
                         >
                             {!isSenderMe && (
                                 <img
-                                    src={counselorAvatar}
-                                    alt={counselor.name}
+                                    src={customerAvatar}
+                                    alt={customer.name}
                                     className="w-8 h-8 rounded-full mr-2 object-cover"
                                     onError={(e) => {
                                         e.target.onerror = null;
-                                        e.target.src = fallbackCounselor;
+                                        e.target.src = fallbackCustomer;
                                     }}
                                 />
                             )}
@@ -310,12 +323,12 @@ export default function ChatPage() {
 
                             {isSenderMe && (
                                 <img
-                                    src={userAvatar}
+                                    src={counselorAvatar}
                                     alt={authUser.name}
                                     className="w-8 h-8 rounded-full ml-2 object-cover"
                                     onError={(e) => {
                                         e.target.onerror = null;
-                                        e.target.src = fallbackUser;
+                                        e.target.src = fallbackCounselor;
                                     }}
                                 />
                             )}
@@ -326,21 +339,20 @@ export default function ChatPage() {
                 {/* Pesan penutup jika sesi selesai */}
                 {isChatEnded && (
                     <div className="flex flex-col items-center text-center mt-8 animate-fadeIn">
-                        {bookingInfo.status_pesanan === "Selesai" && (
-                            <Link
-                                to={`/history/rating/${bookingId}`} // Path ke halaman rating
-                                className="bg-[#706E6E] text-white text-sm font-medium px-6 py-2 rounded-md shadow-sm hover:bg-[#5a59B9] transition mb-4"
-                            >
-                                Beri Penilaian
-                            </Link>
-                        )}
-
-                        <div className="border border-[#00A9E0] rounded-lg bg-white p-3 text-xs text-gray-600 leading-relaxed w-full">
-                            <p>
-                                Sesi chat ini telah berakhir (Status:{" "}
-                                {bookingInfo.status_pesanan}).
+                        <div className="bg-gradient-to-br from-[#FFD700] via-[#FFEA94] to-[#FFF8DC] border border-[#E6C200] rounded-2xl shadow-md p-5 text-gray-800 leading-relaxed w-full">
+                            <p className="font-semibold text-[15px]">
+                                ✨ Sesi percakapan telah berakhir.
+                            </p>
+                            <p className="mt-2 text-sm">
+                                Status sesi ini: {bookingInfo.status_pesanan}
                             </p>
                         </div>
+                        <Link
+                            to={`/counselor/schedule/${bookingId}`}
+                            className="mt-4 w-full max-w-[85%] bg-gray-700 text-white font-semibold py-3 rounded-full shadow-md hover:bg-gray-800 transition"
+                        >
+                            Kembali ke Detail Sesi
+                        </Link>
                     </div>
                 )}
             </main>
