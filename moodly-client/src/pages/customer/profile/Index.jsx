@@ -83,7 +83,7 @@ const LogOutIcon = () => (
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="text-gray-500" // Ubah warna jadi merah jika diinginkan: text-red-500
+        className="text-gray-500" // Warna diubah oleh MenuItem
     >
         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
         <polyline points="16 17 21 12 16 7"></polyline>
@@ -109,9 +109,7 @@ const ChevronRightIcon = () => (
 // --- Akhir Komponen Ikon ---
 
 // --- Komponen Item Menu ---
-const MenuItem = (
-    { icon, label, onClick, isLogout = false } // Tambah prop isLogout
-) => (
+const MenuItem = ({ icon, label, onClick, isLogout = false }) => (
     <button
         onClick={onClick}
         className={`w-full flex items-center justify-between p-4 rounded-lg transition-colors duration-200 group ${
@@ -134,53 +132,49 @@ const MenuItem = (
             </span>
         </div>
         {!isLogout && <ChevronRightIcon />}{" "}
-        {/* Sembunyikan panah untuk logout */}
     </button>
 );
 
 export default function ProfilePage() {
-    // Ambil user dan fungsi logout dari context asli
     const { user, logout } = useAuth();
     const navigate = useNavigate();
 
     const handleLogout = async () => {
         try {
             if (logout) {
-                await logout(); // Panggil fungsi logout dari context (asynchronous)
+                await logout(); // Panggil fungsi logout dari context
             }
-            console.log("Logout successful");
-            // Navigasi ke login SETELAH logout berhasil
-            navigate("/login");
+            // Navigasi akan ditangani oleh ProtectedGuard
+            // navigate("/login"); // Sebenarnya tidak perlu
         } catch (error) {
             console.error("Logout failed:", error);
-            // Tampilkan pesan error jika perlu
         }
     };
 
-    // Fungsi navigasi diperbarui
     const handleEditProfileClick = () => navigate("/profile/edit");
     const handleChangeEmailClick = () => navigate("/profile/change-email");
     const handleChangePasswordClick = () =>
         navigate("/profile/change-password");
-
     const handleHelpClick = () => navigate("/help");
+
+    // --- PERBAIKAN: Gunakan avatar_url ---
+    const avatarUrl =
+        user?.avatar_url ||
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+            user?.name || "U"
+        )}&background=EBF4FF&color=3B82F6&bold=true`;
+    // --- AKHIR PERBAIKAN ---
 
     return (
         <div className="bg-white min-h-full font-sans pt-8 pb-4 px-4">
             {/* Info Profil Atas */}
             <div className="flex flex-col items-center text-center mb-8">
                 <img
-                    // Gunakan avatar user dari context
-                    src={
-                        user?.avatar || // Gunakan accessor avatar jika ada
-                        `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                            user?.name || "U"
-                        )}&background=EBF4FF&color=3B82F6&bold=true`
-                    }
+                    // --- PERBAIKAN: Gunakan variabel avatarUrl ---
+                    src={avatarUrl}
                     alt="Profile Avatar"
                     className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-lg mb-3"
                     onError={(e) => {
-                        // Fallback jika avatar gagal load
                         e.target.onerror = null; // Prevent infinite loop
                         e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
                             user?.name || "U"
@@ -199,7 +193,7 @@ export default function ProfilePage() {
             <div className="space-y-3">
                 <MenuItem
                     icon={<UserIcon />}
-                    label="Edit Profile" // Ubah label
+                    label="Edit Profile"
                     onClick={handleEditProfileClick}
                 />
                 <MenuItem
@@ -212,17 +206,16 @@ export default function ProfilePage() {
                     label="Ubah Kata sandi"
                     onClick={handleChangePasswordClick}
                 />
-                {/* --- PERBAIKAN: Gunakan handleHelpClick --- */}
                 <MenuItem
                     icon={<HelpCircleIcon />}
-                    label="Bantuan" // Kembalikan label
-                    onClick={handleHelpClick} // Panggil fungsi yang benar
+                    label="Bantuan"
+                    onClick={handleHelpClick}
                 />
                 <MenuItem
                     icon={<LogOutIcon />}
                     label="Log Out"
                     onClick={handleLogout}
-                    isLogout={true} // Tandai sebagai tombol logout
+                    isLogout={true}
                 />
             </div>
         </div>

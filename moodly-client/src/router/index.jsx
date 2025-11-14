@@ -1,58 +1,55 @@
 import React from "react";
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import Commet from "../components/Commet";
+import { useAuth } from "../context/AuthContext.jsx"; // .jsx ditambahkan
+import Commet from "../components/Commet.jsx"; // .jsx ditambahkan
 
 // --- Layouts ---
-import MobileLayout from "../layouts/MobileLayout";
-import AuthLayout from "../layouts/AuthLayout";
-import AdminLayout from "../layouts/AdminLayout";
-import AuthAdminLayout from "../layouts/AuthAdminLayout";
-import PageLayout from "../layouts/PageLayout";
+import MobileLayout from "../layouts/MobileLayout.jsx"; // .jsx ditambahkan
+import AuthLayout from "../layouts/AuthLayout.jsx"; // .jsx ditambahkan
+import AdminLayout from "../layouts/AdminLayout.jsx"; // .jsx ditambahkan
+import AuthAdminLayout from "../layouts/AuthAdminLayout.jsx"; // .jsx ditambahkan
+import PageLayout from "../layouts/PageLayout.jsx"; // .jsx ditambahkan
 
 // --- Halaman Auth (Mobile) ---
-import CustomerLoginPage from "../pages/auth/customer/LoginPage";
-import CustomerRegisterPage from "../pages/auth/customer/RegisterPage";
-import CustomerAddressPage from "../pages/auth/customer/AddressPage";
-import CustomerCreatePasswordPage from "../pages/auth/customer/CreatePasswordPage";
-import OnboardingPage from "../pages/auth/OnboardingPage";
-import CounselorLoginPage from "../pages/auth/counselor/LoginPage";
-import CounselorRegisterPage from "../pages/auth/counselor/RegisterPage";
-import CounselorAddressPage from "../pages/auth/counselor/AddressPage";
-import CounselorCreatePasswordPage from "../pages/auth/counselor/CreatePasswordPage";
-import AdminLoginPage from "../pages/auth/admin/LoginPage";
+import CustomerLoginPage from "../pages/auth/customer/LoginPage.jsx";
+import CustomerRegisterPage from "../pages/auth/customer/RegisterPage.jsx";
+import CustomerAddressPage from "../pages/auth/customer/AddressPage.jsx";
+import CustomerCreatePasswordPage from "../pages/auth/customer/CreatePasswordPage.jsx";
+import OnboardingPage from "../pages/auth/OnboardingPage.jsx";
+import CounselorLoginPage from "../pages/auth/counselor/LoginPage.jsx";
+import CounselorRegisterPage from "../pages/auth/counselor/RegisterPage.jsx";
+import CounselorAddressPage from "../pages/auth/counselor/AddressPage.jsx";
+import CounselorCreatePasswordPage from "../pages/auth/counselor/CreatePasswordPage.jsx";
+import AdminLoginPage from "../pages/auth/admin/LoginPage.jsx";
 
 // --- Halaman Customer (Mobile) ---
-import HomePage from "../pages/customer/HomePage";
-import NotificationPage from "../pages/customer/NotificationPage";
-import BookingPage from "../pages/customer/booking/Index";
-import FindCounselorPage from "../pages/customer/booking/FindCounselorPage";
-import InPersonPage from "../pages/customer/booking/InPersonPage";
-import LocationDetailPage from "../pages/customer/booking/LocationDetailPage";
-import PsychologistDetailPage from "../pages/customer/booking/PsychologistDetailPage";
-import PaymentOnlinePage from "../pages/customer/booking/payment/PaymentOnlinePage";
-import QrisPaymentPage from "../pages/customer/booking/payment/QrisPaymentPage";
-import PaymentOfflinePage from "../pages/customer/booking/payment/PaymentOfflinePage";
-import UploadPaymentProofPage from "../pages/customer/booking/payment/UploadPaymentProofPage";
-import HistoryPage from "../pages/customer/history/Index";
-import HistoryDetailPage from "../pages/customer/history/DetailPage";
-import RatingPage from "../pages/customer/history/RatingPage";
-import CancelPage from "../pages/customer/history/CancelPage";
-import CancelDetailPage from "../pages/customer/history/CancelDetailPage";
-import ReschedulePage from "../pages/customer/history/ReschedulePage";
-import ProfilePage from "../pages/customer/profile/Index";
-import EditProfilePage from "../pages/customer/profile/EditPage";
-import ChangePasswordPage from "../pages/customer/profile/ChangePasswordPage";
-import ChangeEmailPage from "../pages/customer/profile/ChangeEmailPage";
-import ChangePhoneNumberPage from "../pages/customer/profile/ChangePhoneNumberPage";
-import HelpPage from "../pages/customer/help/Index";
-import FaqPage from "../pages/customer/help/FaqPage";
-import ChatAdminPage from "../pages/customer/help/ChatAdminPage";
-import ChatPage from "../pages/customer/session/ChatPage";
-
-// --- BARU: Impor halaman edit profil ---
-import ChangeAddressPage from "../pages/customer/profile/ChangeAddressPage"; // <-- KITA AKAN BUAT INI
-// --- AKHIR BARU ---
+import HomePage from "../pages/customer/HomePage.jsx";
+import NotificationPage from "../pages/customer/NotificationPage.jsx";
+import BookingPage from "../pages/customer/booking/Index.jsx";
+import FindCounselorPage from "../pages/customer/booking/FindCounselorPage.jsx";
+import InPersonPage from "../pages/customer/booking/InPersonPage.jsx";
+import LocationDetailPage from "../pages/customer/booking/LocationDetailPage.jsx";
+import PsychologistDetailPage from "../pages/customer/booking/PsychologistDetailPage.jsx";
+import PaymentOnlinePage from "../pages/customer/booking/payment/PaymentOnlinePage.jsx";
+import QrisPaymentPage from "../pages/customer/booking/payment/QrisPaymentPage.jsx";
+import PaymentOfflinePage from "../pages/customer/booking/payment/PaymentOfflinePage.jsx";
+import UploadPaymentProofPage from "../pages/customer/booking/payment/UploadPaymentProofPage.jsx";
+import HistoryPage from "../pages/customer/history/Index.jsx";
+import HistoryDetailPage from "../pages/customer/history/DetailPage.jsx";
+import RatingPage from "../pages/customer/history/RatingPage.jsx";
+import CancelPage from "../pages/customer/history/CancelPage.jsx";
+import CancelDetailPage from "../pages/customer/history/CancelDetailPage.jsx";
+import ReschedulePage from "../pages/customer/history/ReschedulePage.jsx";
+import ProfilePage from "../pages/customer/profile/Index.jsx";
+import EditProfilePage from "../pages/customer/profile/EditPage.jsx";
+import ChangePasswordPage from "../pages/customer/profile/ChangePasswordPage.jsx";
+import ChangeEmailPage from "../pages/customer/profile/ChangeEmailPage.jsx";
+import ChangePhoneNumberPage from "../pages/customer/profile/ChangePhoneNumberPage.jsx";
+import ChangeAddressPage from "../pages/customer/profile/ChangeAddressPage.jsx";
+import HelpPage from "../pages/customer/help/Index.jsx";
+import FaqPage from "../pages/customer/help/FaqPage.jsx";
+import ChatAdminPage from "../pages/customer/help/ChatAdminPage.jsx";
+import ChatPage from "../pages/customer/session/ChatPage.jsx";
 
 // --- Halaman Admin & Super Admin (Website) ---
 import JenisKonselingPage from "../pages/super-admin/konseling/jenis/Index.jsx";
@@ -74,17 +71,38 @@ import VerifikasiDetailPage from "../pages/admin/verifikasi-konselor/Show.jsx";
 import VerifikasiCustomerPage from "../pages/admin/verifikasi-customer/Index.jsx";
 import VerifikasiCustomerDetailPage from "../pages/admin/verifikasi-customer/Show.jsx";
 
-// --- Halaman Konselor ---
-import CounselorHomePage from "../pages/counselor/HomePage";
-import CounselorSchedulePage from "../pages/counselor/schedule/index";
-import CounselorHistoryPage from "../pages/counselor/history/HistoryPage";
-import CounselorProfilePage from "../pages/counselor/profile/Index";
-import PracticeLocationPage from "../pages/counselor/location/index";
-import BankAccountPage from "../pages/counselor/bank-account/index";
-import CounselorChatPage from "../pages/counselor/history/chat/ChatPageCounselor";
-import CounselorNotificationPage from "../pages/counselor/NotificationPage";
+// --- Halaman Konselor (Impor diperbarui dan ditambah) ---
+import CounselorHomePage from "../pages/counselor/HomePage.jsx";
+import CounselorNotificationPage from "../pages/counselor/NotificationPage.jsx";
+// Help
+import CounselorHelpPage from "../pages/counselor/help/Index.jsx";
+import CounselorFaqPage from "../pages/counselor/help/FaqPage.jsx";
+import CounselorChatAdminPage from "../pages/counselor/help/ChatAdminPage.jsx";
+// Schedule
+import CounselorSchedulePage from "../pages/counselor/schedule/index.jsx";
+// History
+import CounselorHistoryPage from "../pages/counselor/history/HistoryPage.jsx";
+import CounselorHistoryEditPage from "../pages/counselor/history/Edit.jsx";
+import CounselorReschedulePage from "../pages/counselor/history/ReSchedulePage.jsx"; // <-- BARU
+// History Chat
+import CounselorChatPage from "../pages/counselor/history/chat/ChatPageCounselor.jsx";
+import CounselorChatEndPage from "../pages/counselor/history/chat/EndPage.jsx";
+import CounselorChatRatingPage from "../pages/counselor/history/chat/RatingPage.jsx";
+import CounselorChatRecallPage from "../pages/counselor/history/chat/RecallPage.jsx";
+import CounselorChatSchedulePage from "../pages/counselor/history/chat/SchedulePage.jsx";
+// Profile (dan file-file yang dipindah)
+import CounselorProfilePage from "../pages/counselor/profile/Index.jsx";
+import CounselorProfileEditPage from "../pages/counselor/profile/EditPage.jsx";
+import CounselorChangeEmailPage from "../pages/counselor/profile/ChangeEmailPage.jsx";
+import CounselorChangePasswordPage from "../pages/counselor/profile/ChangePasswordPage.jsx";
+import CounselorChangePhonePage from "../pages/counselor/profile/ChangePhoneNumberPage.jsx";
+import CounselorChangeBankAccountPage from "../pages/counselor/profile/ChangeBankAccount.jsx"; // <-- BARU (Dipindah)
+import CounselorChangeLocationPage from "../pages/counselor/profile/ChangeLocation.jsx"; // <-- BARU (Dipindah)
+import CounselorChangeSchedulePage from "../pages/counselor/profile/ChangeSchedulePage.jsx"; // <-- BARU (Dipindah)
+// --- AKHIR IMPOR KONSELOR ---
 
 // === GUARDS ===
+// (Guard tidak berubah)
 const GuestGuard = () => {
     const { user } = useAuth();
     if (user) {
@@ -104,7 +122,6 @@ const GuestGuard = () => {
     }
     return <Outlet />;
 };
-
 const ProtectedGuard = () => {
     const { user } = useAuth();
     if (!user) return <Navigate to="/login" />;
@@ -114,7 +131,6 @@ const ProtectedGuard = () => {
         return <Navigate to="/counselor/home" />;
     return <Outlet />;
 };
-
 const CounselorProtectedGuard = () => {
     const { user } = useAuth();
     if (!user) return <Navigate to="/counselor/login" />;
@@ -124,7 +140,6 @@ const CounselorProtectedGuard = () => {
         return <Navigate to="/home" />;
     return <Outlet />;
 };
-
 const AdminGuestGuard = () => {
     const { user } = useAuth();
     return user &&
@@ -134,7 +149,6 @@ const AdminGuestGuard = () => {
         <Outlet />
     );
 };
-
 const AdminProtectedGuard = () => {
     const { user } = useAuth();
     return user &&
@@ -162,18 +176,13 @@ const AppRouter = () => {
         <Routes>
             {/* === AUTH (SEMUA PERAN) === */}
             <Route element={<GuestGuard />}>
-                {/* Rute di dalam AuthLayout (Header Gelombang) */}
                 <Route element={<AuthLayout />}>
                     <Route path="/" element={<OnboardingPage />} />
-
-                    {/* Rute Customer */}
                     <Route path="/login" element={<CustomerLoginPage />} />
                     <Route
                         path="/register"
                         element={<CustomerRegisterPage />}
                     />
-
-                    {/* Rute Konselor */}
                     <Route
                         path="/counselor/login"
                         element={<CounselorLoginPage />}
@@ -183,17 +192,12 @@ const AppRouter = () => {
                         element={<CounselorRegisterPage />}
                     />
                 </Route>
-
-                {/* Rute Multi-step (Header Polos) */}
                 <Route element={<PageLayout />}>
-                    {/* Alur Customer */}
                     <Route path="/address" element={<CustomerAddressPage />} />
                     <Route
                         path="/create-password"
                         element={<CustomerCreatePasswordPage />}
                     />
-
-                    {/* Alur Konselor (BARU) */}
                     <Route
                         path="/counselor/address"
                         element={<CounselorAddressPage />}
@@ -218,9 +222,7 @@ const AppRouter = () => {
                     <Route path="/profile" element={<ProfilePage />} />
                     <Route path="/beranda" element={<Navigate to="/home" />} />
                 </Route>
-
                 <Route element={<PageLayout />}>
-                    {/* Rute Edit Profil */}
                     <Route path="/profile/edit" element={<EditProfilePage />} />
                     <Route
                         path="/profile/change-password"
@@ -234,14 +236,10 @@ const AppRouter = () => {
                         path="/profile/change-phone"
                         element={<ChangePhoneNumberPage />}
                     />
-
                     <Route
                         path="/profile/edit/address"
                         element={<ChangeAddressPage />}
                     />
-                    {/* --- AKHIR BARU --- */}
-
-                    {/* Rute Booking */}
                     <Route
                         path="/booking/find-counselor"
                         element={<FindCounselorPage />}
@@ -278,8 +276,6 @@ const AppRouter = () => {
                         path="/booking/upload-proof/:bookingId"
                         element={<UploadPaymentProofPage />}
                     />
-
-                    {/* Rute History */}
                     <Route
                         path="/history/:id"
                         element={<HistoryDetailPage />}
@@ -300,8 +296,6 @@ const AppRouter = () => {
                         path="/history/rating/:id"
                         element={<RatingPage />}
                     />
-
-                    {/* Rute Bantuan & Sesi */}
                     <Route path="/help" element={<HelpPage />} />
                     <Route path="/help/faq" element={<FaqPage />} />
                     <Route
@@ -312,8 +306,9 @@ const AppRouter = () => {
                 </Route>
             </Route>
 
-            {/* === KONSELOR (PROTECTED) === */}
+            {/* === KONSELOR (PROTECTED) --- (Rute Diperbarui) === */}
             <Route element={<CounselorProtectedGuard />}>
+                {/* Rute Utama (dengan MobileLayout) */}
                 <Route element={<MobileLayout />}>
                     <Route
                         path="/counselor/home"
@@ -332,28 +327,101 @@ const AppRouter = () => {
                         element={<CounselorProfilePage />}
                     />
                     <Route
+                        path="/counselor/notifications"
+                        element={<CounselorNotificationPage />}
+                    />
+                    <Route
                         path="/counselor"
                         element={<Navigate to="/counselor/home" />}
                     />
                 </Route>
+
+                {/* Rute Sekunder (dengan PageLayout) */}
                 <Route element={<PageLayout />}>
+                    {/* Schedule (Hapus rute 'Edit' dan 'Change' lama) */}
+                    {/* <Route path="/counselor/schedule/edit/:id" element={<CounselorScheduleEditPage />} /> */}
+                    {/* <Route path="/counselor/schedule/change" element={<CounselorScheduleChangePage />} /> */}
+
+                    {/* History */}
                     <Route
-                        path="/counselor/location"
-                        element={<PracticeLocationPage />}
+                        path="/counselor/history/edit/:id"
+                        element={<CounselorHistoryEditPage />}
                     />
                     <Route
-                        path="/counselor/bank-account"
-                        element={<BankAccountPage />}
+                        path="/counselor/history/reschedule/:id"
+                        element={<CounselorReschedulePage />}
+                    />
+
+                    {/* History Chat Sub-pages */}
+                    <Route
+                        path="/counselor/chat/:id"
+                        element={<CounselorChatPage />}
                     />
                     <Route
-                        path="/counselor/notifications"
-                        element={<CounselorNotificationPage />}
+                        path="/counselor/chat/:id/end"
+                        element={<CounselorChatEndPage />}
                     />
+                    <Route
+                        path="/counselor/chat/:id/rating"
+                        element={<CounselorChatRatingPage />}
+                    />
+                    <Route
+                        path="/counselor/chat/:id/recall"
+                        element={<CounselorChatRecallPage />}
+                    />
+                    <Route
+                        path="/counselor/chat/:id/schedule"
+                        element={<CounselorChatSchedulePage />}
+                    />
+
+                    {/* Help */}
+                    <Route
+                        path="/counselor/help"
+                        element={<CounselorHelpPage />}
+                    />
+                    <Route
+                        path="/counselor/help/faq"
+                        element={<CounselorFaqPage />}
+                    />
+                    <Route
+                        path="/counselor/help/chat-admin"
+                        element={<CounselorChatAdminPage />}
+                    />
+
+                    {/* Profile & Settings (Rute baru ditambahkan) */}
+                    <Route
+                        path="/counselor/profile/edit"
+                        element={<CounselorProfileEditPage />}
+                    />
+                    <Route
+                        path="/counselor/profile/change-password"
+                        element={<CounselorChangePasswordPage />}
+                    />
+                    <Route
+                        path="/counselor/profile/change-email"
+                        element={<CounselorChangeEmailPage />}
+                    />
+                    <Route
+                        path="/counselor/profile/change-phone"
+                        element={<CounselorChangePhonePage />}
+                    />
+                    <Route
+                        path="/counselor/profile/change-location"
+                        element={<CounselorChangeLocationPage />}
+                    />
+                    <Route
+                        path="/counselor/profile/change-bank"
+                        element={<CounselorChangeBankAccountPage />}
+                    />
+                    <Route
+                        path="/counselor/profile/change-schedule"
+                        element={<CounselorChangeSchedulePage />}
+                    />
+
+                    {/* Rute Lama (Dipindah) */}
+                    {/* <Route path="/counselor/location" element={<PracticeLocationPage />} /> */}
+                    {/* <Route path="/counselor/bank-account" element={<BankAccountPage />} /> */}
                 </Route>
-                <Route
-                    path="/counselor/chat/chat-page"
-                    element={<CounselorChatPage />}
-                />
             </Route>
 
             {/* === ADMIN & SUPER ADMIN === */}
@@ -362,7 +430,6 @@ const AppRouter = () => {
                     <Route path="/admin/login" element={<AdminLoginPage />} />
                 </Route>
             </Route>
-
             <Route element={<AdminProtectedGuard />}>
                 <Route element={<AdminLayout />}>
                     <Route
@@ -378,6 +445,7 @@ const AppRouter = () => {
                             </div>
                         }
                     />
+                    {/* ... (sisa rute admin tidak berubah) ... */}
                     <Route
                         path="/admin/jenis-konseling"
                         element={<JenisKonselingPage />}
@@ -458,7 +526,8 @@ const AppRouter = () => {
                 path="*"
                 element={
                     <div>
-                        <h1>404 - Halaman Tidak Ditemukan</h1>
+                        {" "}
+                        <h1>404 - Halaman Tidak Ditemukan</h1>{" "}
                     </div>
                 }
             />

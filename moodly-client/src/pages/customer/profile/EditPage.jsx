@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"; // <-- PERBAIKAN DI SINI
+import React, { useState, useEffect, useRef } from "react"; // <-- Tambahkan useRef
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import apiClient from "../../../api/axios";
@@ -94,15 +94,14 @@ const XIcon = () => (
 );
 // --- Akhir Komponen Ikon ---
 
-// --- BARU: Komponen Input yang Bisa Diedit (untuk NAMA) ---
+// --- Komponen Input yang Bisa Diedit (untuk NAMA) ---
 const EditableInputItem = ({ label, initialValue, onSave }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [value, setValue] = useState(initialValue);
     const [loading, setLoading] = useState(false);
 
-    // Ini adalah useEffect yang menyebabkan error (baris 103)
     useEffect(() => {
-        setValue(initialValue); // Sinkronkan jika data user dari context berubah
+        setValue(initialValue);
     }, [initialValue]);
 
     const handleSave = async () => {
@@ -112,11 +111,10 @@ const EditableInputItem = ({ label, initialValue, onSave }) => {
         }
         setLoading(true);
         try {
-            await onSave(value); // Panggil API
-            setIsEditing(false); // Tutup setelah sukses
+            await onSave(value);
+            setIsEditing(false);
         } catch (error) {
             console.error("Gagal menyimpan:", error);
-            // Biarkan mode edit tetap aktif untuk diperbaiki user
         } finally {
             setLoading(false);
         }
@@ -169,7 +167,7 @@ const EditableInputItem = ({ label, initialValue, onSave }) => {
         </div>
     );
 };
-// --- AKHIR KOMPONEN BARU ---
+// --- AKHIR KOMPONEN NAMA ---
 
 // --- Komponen Tombol Menu (untuk Telepon, Alamat) ---
 const MenuItem = ({
@@ -210,7 +208,11 @@ const MenuItem = ({
 
 export default function EditProfilePage() {
     const navigate = useNavigate();
-    const { user, getUser } = useAuth(); // Ambil data user DAN fungsi refresh
+    const { user, getUser } = useAuth();
+    const fileInputRef = useRef(null); // <-- Referensi untuk input file
+
+    const [isUploading, setIsUploading] = useState(false); // <-- State loading avatar
+    const [avatarError, setAvatarError] = useState(null);
 
     // Format data untuk ditampilkan
     const profileData = {
@@ -230,24 +232,61 @@ export default function EditProfilePage() {
             : "Belum diatur",
         gender: user?.gender || "Belum diatur",
         avatar:
-            user?.avatar ||
+            user?.avatar_url ||
             `https://ui-avatars.com/api/?name=${encodeURIComponent(
                 user?.name || "U"
-            )}`,
+            )}`, // <-- Gunakan avatar_url
     };
 
     const handleBack = () => {
-        navigate(-1); // Kembali ke halaman profile
+        navigate(-1);
     };
 
-    // --- BARU: Fungsi untuk menyimpan NAMA ---
     const handleSaveName = async (newName) => {
         try {
             await apiClient.post("/api/profile/update", { name: newName });
-            await getUser(); // Refresh data user di seluruh aplikasi
+            await getUser();
         } catch (error) {
             console.error("Gagal update nama:", error);
-            throw error; // Lempar error agar komponen tahu
+            throw error;
+        }
+    };
+
+    // --- FUNGSI BARU: Klik tombol edit avatar ---
+    const handleEditAvatarClick = () => {
+        fileInputRef.current.click(); // Klik input file yang tersembunyi
+    };
+
+    // --- FUNGSI BARU: Handle saat file dipilih ---
+    const handleAvatarChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        setAvatarError(null);
+
+        const formData = new FormData();
+        formData.append("avatar", file);
+
+        try {
+            // Panggil API baru kita
+            await apiClient.post("/api/profile/update-avatar", formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            });
+            // Refresh data user (ini akan otomatis memperbarui gambar)
+            await getUser();
+        } catch (err) {
+            console.error("Gagal upload avatar:", err);
+            const message =
+                err.response?.data?.errors?.avatar?.[0] ||
+                "Gagal mengupload gambar.";
+            setAvatarError(message);
+        } finally {
+            setIsUploading(false);
+            // Reset input file
+            e.target.value = null;
         }
     };
 
@@ -265,18 +304,30 @@ export default function EditProfilePage() {
                 <h1 className="text-lg font-bold text-gray-800 text-center flex-grow">
                     Edit Profile
                 </h1>
-                <div className="w-8"></div> {/* Spacer */}
+                <div className="w-8"></div>
             </header>
 
             {/* Konten Utama */}
             <main className="p-4 space-y-5">
                 {/* Info Profil Atas */}
                 <div className="flex flex-col items-center text-center mb-6">
+                    {/* --- Input File Tersembunyi --- */}
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleAvatarChange}
+                        accept="image/png, image/jpeg"
+                        style={{ display: "none" }}
+                    />
+                    {/* --- Akhir Input File --- */}
+
                     <div className="relative mb-3">
                         <img
                             src={profileData.avatar}
                             alt="Profile Avatar"
-                            className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md"
+                            className={`w-24 h-24 rounded-full object-cover border-4 border-white shadow-md ${
+                                isUploading ? "opacity-50" : ""
+                            }`} // <-- Efek loading
                             onError={(e) => {
                                 e.target.onerror = null;
                                 e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
@@ -284,29 +335,37 @@ export default function EditProfilePage() {
                                 )}`;
                             }}
                         />
-                        <button className="absolute bottom-0 right-0 bg-cyan-500 p-1.5 rounded-full border-2 border-white shadow-md hover:bg-cyan-600 transition-colors">
+                        {/* Tombol loading saat upload */}
+                        {isUploading && (
+                            <div className="absolute inset-0 flex justify-center items-center">
+                                <div className="w-8 h-8 border-4 border-gray-300 border-t-cyan-500 rounded-full animate-spin"></div>
+                            </div>
+                        )}
+
+                        <button
+                            onClick={handleEditAvatarClick}
+                            disabled={isUploading}
+                            className="absolute bottom-0 right-0 bg-cyan-500 p-1.5 rounded-full border-2 border-white shadow-md hover:bg-cyan-600 transition-colors"
+                        >
                             <EditIcon />
                         </button>
                     </div>
+                    {avatarError && (
+                        <p className="text-xs text-red-500">{avatarError}</p>
+                    )}
                 </div>
 
                 {/* Form Items (Menu Hibrid) */}
-
-                {/* Tombol Nama (Bisa diedit di tempat) */}
                 <EditableInputItem
                     label="Nama"
                     initialValue={profileData.name}
                     onSave={handleSaveName}
                 />
-
-                {/* Tombol Nomor (Link ke halaman lain) */}
                 <MenuItem
                     label="Nomor"
                     value={profileData.phone}
                     onClick={() => navigate("/profile/change-phone")}
                 />
-
-                {/* Tombol Alamat 1 (Link ke halaman alamat dengan mode 'full') */}
                 <MenuItem
                     label="Provinsi, Kota, Kecamatan, Kode Pos"
                     value={profileData.location}
@@ -315,9 +374,8 @@ export default function EditProfilePage() {
                         navigate("/profile/edit/address", {
                             state: { mode: "full" },
                         })
-                    } // <-- Kirim state 'full'
+                    }
                 />
-                {/* Tombol Alamat 2 (Link ke halaman alamat dengan mode 'street_only') */}
                 <MenuItem
                     label="Nama Jalan, No Rumah"
                     value={profileData.address}
@@ -326,19 +384,17 @@ export default function EditProfilePage() {
                         navigate("/profile/edit/address", {
                             state: { mode: "street_only" },
                         })
-                    } // <-- Kirim state 'street_only'
+                    }
                 />
-
-                {/* Data Read-Only (Sesuai permintaan Anda) */}
                 <MenuItem
                     label="Tanggal Lahir"
                     value={profileData.dob}
-                    editable={false} // <-- Tidak bisa diklik
+                    editable={false}
                 />
                 <MenuItem
                     label="Jenis Kelamin"
                     value={profileData.gender}
-                    editable={false} // <-- Tidak bisa diklik
+                    editable={false}
                 />
             </main>
         </div>

@@ -1,80 +1,61 @@
-import React from "react";
-// Import ikon-ikon yang kita butuhkan HANYA untuk halaman ini
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext.jsx"; // <-- PERBAIKAN: Path 2x mundur + .jsx
+import apiClient from "../../api/axios.js"; // <-- PERBAIKAN: Path 2x mundur + .js
+
+// Import ikon-ikon
 import {
     Wallet,
     Download,
     Calendar,
     Clock,
-    Bell, // Untuk ikon notifikasi
-    // Ikon untuk NavBar (Home, ClipboardList, User, MessageSquare) TELAH DIHAPUS
-    // karena sudah dipindahkan ke MobileLayout.jsx
+    Bell,
+    ChevronDown, // <-- Ganti ikon panah
 } from "lucide-react";
-
-// --- DATA DUMMY ---
-const scheduleData = [
-    {
-        id: 1,
-        name: "Indira Rahmania Putri",
-        date: "12 - 09 - 2025",
-        time: "16.00 - 17.00",
-        type: "Voice Call",
-        img: "https://randomuser.me/api/portraits/women/68.jpg", // Ganti dengan URL gambar
-    },
-    {
-        id: 2,
-        name: "Nada Edelweis Azkiya",
-        date: "12 - 09 - 2025",
-        time: "16.00 - 17.00",
-        type: "Vidio Call",
-        img: "https://randomuser.me/api/portraits/women/67.jpg", // Ganti dengan URL gambar
-    },
-    {
-        id: 3,
-        name: "Erika Putri Renayma",
-        date: "12 - 09 - 2025",
-        time: "16.00 - 17.00",
-        type: "Vidio Call",
-        img: "https://randomuser.me/api/portraits/women/66.jpg", // Ganti dengan URL gambar
-    },
-];
 
 // --- Komponen-Komponen Kecil ---
 
-const CounselorHeader = () => (
-    // Dibuat sticky agar header tetap di atas saat scroll
-    <header className="flex items-center justify-between p-4 bg-white shadow-sm sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-            <img
-                src="https://randomuser.me/api/portraits/women/4.jpg" // Ganti dengan URL gambar profil konselor
-                alt="Laras Sekarwati"
-                className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
-            />
-            <div>
-                <h1 className="text-base font-semibold text-gray-800">
-                    Laras Sekarwati, M.Psi., Psikolog
-                </h1>
-                <p className="text-sm text-gray-500 flex items-center gap-1">
-                    Yogyakarta, Indonesia{" "}
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="lucide lucide-chevron-down"
-                    >
-                        <path d="m6 9 6 6 6-6" />
-                    </svg>
-                </p>
+// Header sekarang dinamis
+const CounselorHeader = () => {
+    const { user } = useAuth(); // Ambil data user dari context
+    const navigate = useNavigate();
+
+    // Fallback jika user belum ada
+    const counselorName = user?.name || "Konselor Moodly";
+    const counselorAvatar =
+        user?.avatar_url ||
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+            counselorName
+        )}&background=EBF4FF&color=3B82F6`;
+    const counselorCity = user?.city || "Lokasi";
+
+    return (
+        <header className="flex items-center justify-between p-4 bg-white shadow-sm sticky top-0 z-10">
+            <div className="flex items-center gap-3">
+                <img
+                    src={counselorAvatar}
+                    alt={counselorName}
+                    className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
+                    onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = `https://ui-avatars.com/api/?name=K`;
+                    }}
+                />
+                <div>
+                    <h1 className="text-base font-semibold text-gray-800">
+                        {counselorName}
+                    </h1>
+                    <p className="text-sm text-gray-500 flex items-center gap-1">
+                        {counselorCity}, Indonesia <ChevronDown size={16} />
+                    </p>
+                </div>
             </div>
-        </div>
-        <Bell size={24} className="text-gray-600" />
-    </header>
-);
+            <button onClick={() => navigate("/counselor/notifications")}>
+                <Bell size={24} className="text-gray-600" />
+            </button>
+        </header>
+    );
+};
 
 const WelcomeBanner = () => (
     <div className="bg-gradient-to-r from-cyan-400 to-blue-500 rounded-2xl shadow-lg flex items-center overflow-hidden h-32">
@@ -93,91 +74,210 @@ const WelcomeBanner = () => (
     </div>
 );
 
-const BalanceCard = () => (
-    <div className="bg-sky-400 rounded-2xl shadow-lg p-4 flex justify-between items-center text-white">
-        <div className="flex items-center gap-3">
-            <Wallet size={32} />
-            <span className="text-2xl font-bold">Rp 500.000</span>
-        </div>
-        <button className="bg-white/30 p-2 rounded-lg active:bg-white/50 transition-all">
-            <Download size={24} />
-        </button>
-    </div>
-);
+// Saldo sekarang dinamis
+const BalanceCard = ({ balance }) => {
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat("id-ID", {
+            style: "currency",
+            currency: "IDR",
+            minimumFractionDigits: 0,
+        }).format(amount);
+    };
 
-const ScheduleCard = ({ item }) => (
-    <div className="bg-white rounded-xl shadow-md p-4 mb-4 transition-all hover:shadow-lg">
-        <div className="flex justify-between items-start mb-2">
-            <span className="text-xs text-gray-500 font-medium">
-                1 Jam Sesi
-            </span>
-            <img
-                src={item.img}
-                alt={item.name}
-                className="w-12 h-12 rounded-full object-cover border-2 border-gray-100"
-            />
-        </div>
-        <h3 className="text-lg font-bold text-gray-800 mb-3">{item.name}</h3>
-
-        <div className="flex flex-wrap justify-between items-center text-sm gap-y-2">
-            <div className="flex items-center gap-4">
-                <span className="flex items-center gap-1.5 text-gray-600">
-                    <Calendar size={16} className="text-gray-400" />
-                    {item.date}
-                </span>
-                <span className="flex items-center gap-1.5 text-gray-600">
-                    <Clock size={16} className="text-gray-400" />
-                    {item.time}
+    return (
+        <div className="bg-sky-400 rounded-2xl shadow-lg p-4 flex justify-between items-center text-white">
+            <div className="flex items-center gap-3">
+                <Wallet size={32} />
+                <span className="text-2xl font-bold">
+                    {formatCurrency(balance)}
                 </span>
             </div>
-            <span className="font-bold text-blue-500 cursor-pointer">
-                {item.type}
-            </span>
+            <button className="bg-white/30 p-2 rounded-lg active:bg-white/50 transition-all">
+                <Download size={24} />
+            </button>
         </div>
-    </div>
-);
+    );
+};
 
-// --- Komponen BottomNavBar TELAH DIHAPUS DARI SINI ---
-// (Karena sudah di-handle oleh MobileLayout.jsx)
+// Kartu Jadwal sekarang dinamis
+const ScheduleCard = ({ booking }) => {
+    // Helper untuk format tanggal & waktu
+    const formatDate = (dateString) => {
+        if (!dateString) return "...";
+        try {
+            return new Date(dateString)
+                .toLocaleDateString("id-ID", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                })
+                .replace(/\//g, " - ");
+        } catch (e) {
+            return dateString;
+        }
+    };
 
+    const formatTimeRange = (startTime, durationMinutes) => {
+        if (!startTime || !durationMinutes) return startTime || "...";
+        try {
+            const start = startTime.substring(0, 5); // "16:00"
+            const minutes = parseInt(durationMinutes);
+            if (isNaN(minutes)) return start;
 
-// --- Komponen Utama (Nama diubah agar sesuai nama file) ---
-export default function HomePage() {
+            const [startHour, startMin] = start.split(":").map(Number);
+            const endDate = new Date();
+            endDate.setHours(startHour, startMin + minutes, 0, 0);
+
+            const endHour = String(endDate.getHours()).padStart(2, "0");
+            const endMin = String(endDate.getMinutes()).padStart(2, "0");
+
+            return `${start} - ${endHour}:${endMin}`;
+        } catch (e) {
+            return startTime.substring(0, 5);
+        }
+    };
+
+    const customer = booking.customer || {};
+    const duration = booking.durasi_konseling || {};
+
+    const customerName = customer.name || "Customer";
+    const customerAvatar =
+        customer.avatar_url ||
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(customerName)}`;
+
     return (
-        // Kontainer utama untuk seluruh halaman
+        <div className="bg-white rounded-xl shadow-md p-4 mb-4 transition-all hover:shadow-lg">
+            <div className="flex justify-between items-start mb-2">
+                <span className="text-xs text-gray-500 font-medium">
+                    {duration.durasi_menit || "?"} Menit Sesi
+                </span>
+                <img
+                    src={customerAvatar}
+                    alt={customerName}
+                    className="w-12 h-12 rounded-full object-cover border-2 border-gray-100"
+                    onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = `https://ui-avatars.com/api/?name=C`;
+                    }}
+                />
+            </div>
+            <h3 className="text-lg font-bold text-gray-800 mb-3">
+                {customerName}
+            </h3>
+
+            <div className="flex flex-wrap justify-between items-center text-sm gap-y-2">
+                <div className="flex items-center gap-4">
+                    <span className="flex items-center gap-1.5 text-gray-600">
+                        <Calendar size={16} className="text-gray-400" />
+                        {formatDate(booking.tanggal_konsultasi)}
+                    </span>
+                    <span className="flex items-center gap-1.5 text-gray-600">
+                        <Clock size={16} className="text-gray-400" />
+                        {formatTimeRange(
+                            booking.jam_konsultasi,
+                            duration.durasi_menit
+                        )}
+                    </span>
+                </div>
+                <span className="font-bold text-blue-500">
+                    {booking.metode_konsultasi}
+                </span>
+            </div>
+        </div>
+    );
+};
+
+// --- Komponen Utama (Sekarang Dinamis) ---
+export default function HomePage() {
+    const [dashboardData, setDashboardData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            try {
+                setLoading(true);
+                // Panggil API baru kita
+                const response = await apiClient.get(
+                    "/api/counselor/dashboard-data"
+                );
+                setDashboardData(response.data);
+                setError(null);
+            } catch (err) {
+                console.error("Gagal mengambil data dashboard:", err);
+                setError("Gagal memuat data dashboard.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDashboardData();
+    }, []); // Hanya jalankan sekali saat halaman dimuat
+
+    return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
-            {/* Header */}
+            {/* Header sekarang dinamis (mengambil dari useAuth) */}
             <CounselorHeader />
 
-            {/* Konten utama yang bisa discroll */}
-            {/* pb-24 untuk memberi ruang bottom nav DARI LAYOUT */}
-            <main className="flex-grow p-4 space-y-6 pb-24"> 
+            {/* Konten utama */}
+            <main className="flex-grow p-4 space-y-6 pb-24">
                 <WelcomeBanner />
-                <BalanceCard />
-                {/* Bagian Jadwal Terbaru */}
-                <div>
-                    <div className="flex justify-between items-center mb-3 px-1">
-                        <h2 className="text-lg font-bold text-gray-800">
-                            Jadwal Terbaru
-                        </h2>
-                        <a
-                            href="#" // Ganti dengan <Link to="/counselor/schedule"> jika perlu
-                            className="text-sm font-medium text-cyan-500 hover:text-cyan-600"
-                        >
-                            Lihat Semua
-                        </a>
-                    </div>
 
-                    {/* List Jadwal */}
-                    <div>
-                        {scheduleData.map((item) => (
-                            <ScheduleCard key={item.id} item={item} />
-                        ))}
+                {/* Tampilkan Loading atau Error jika ada */}
+                {loading && (
+                    <div className="text-center p-10">
+                        <div className="w-8 h-8 border-4 border-gray-300 border-t-cyan-500 rounded-full animate-spin mx-auto"></div>
+                        <p className="mt-2 text-sm text-gray-500">
+                            Memuat data...
+                        </p>
                     </div>
-                </div>
+                )}
+
+                {error && (
+                    <div className="p-4 text-center text-red-600 bg-red-100 rounded-lg">
+                        {error}
+                    </div>
+                )}
+
+                {/* Tampilkan data jika sukses dimuat */}
+                {dashboardData && !loading && !error && (
+                    <>
+                        <BalanceCard balance={dashboardData.balance} />
+
+                        <div>
+                            <div className="flex justify-between items-center mb-3 px-1">
+                                <h2 className="text-lg font-bold text-gray-800">
+                                    Jadwal Terbaru
+                                </h2>
+                                <Link
+                                    to="/counselor/schedule" // <-- Ganti ke Link
+                                    className="text-sm font-medium text-cyan-500 hover:text-cyan-600"
+                                >
+                                    Lihat Semua
+                                </Link>
+                            </div>
+
+                            {/* List Jadwal Dinamis */}
+                            <div>
+                                {dashboardData.upcomingSchedules.length > 0 ? (
+                                    dashboardData.upcomingSchedules.map(
+                                        (item) => (
+                                            <ScheduleCard
+                                                key={item.id}
+                                                booking={item}
+                                            />
+                                        )
+                                    )
+                                ) : (
+                                    <div className="text-center text-gray-500 p-6 bg-white rounded-lg shadow-md">
+                                        <p>Tidak ada jadwal akan datang.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </>
+                )}
             </main>
-
-            {/* Pemanggilan <BottomNavBar /> TELAH DIHAPUS DARI SINI */}
         </div>
     );
 }

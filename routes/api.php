@@ -22,6 +22,9 @@ use App\Http\Controllers\Customer\BookingFlowController;
 use App\Http\Controllers\Customer\ProfileController;
 use App\Http\Controllers\BookingChatController;
 
+use App\Http\Controllers\Counselor\DashboardController;
+use App\Http\Controllers\Counselor\ScheduleController;
+
 use App\Http\Middleware\RoleMiddleware;
 use App\Models\User;
 use App\Models\Booking;
@@ -46,12 +49,18 @@ Route::group(['middleware' => [
             return $request->user();
         });
 
+        Route::get('/counselor/dashboard-data', [DashboardController::class, 'getDashboardData'])
+            ->middleware(RoleMiddleware::class . ':konselor');
+        Route::get('/counselor/schedules', [ScheduleController::class, 'index'])
+            ->middleware(RoleMiddleware::class . ':konselor');
+
         // --- RUTE UNTUK CUSTOMER ---
         Route::get('/beranda-data', [BerandaController::class, 'getBerandaData']);
         Route::post('/profile/update', [ProfileController::class, 'update']);
         Route::post('/profile/change-password', [ProfileController::class, 'updatePassword']);
         Route::post('/profile/change-email', [ProfileController::class, 'updateEmail']);
         Route::post('/profile/change-phone', [ProfileController::class, 'updatePhone']);
+        Route::post('/profile/update-avatar', [ProfileController::class, 'updateAvatar']);
 
         Route::get('/history', [HistoryController::class, 'index']);
         Route::get('/history/{booking}', [HistoryController::class, 'show']);
@@ -67,10 +76,8 @@ Route::group(['middleware' => [
         Route::get('/booking/counselors/{konselor}/schedule-options', [BookingFlowController::class, 'getScheduleOptions'])
             ->where('konselor', '[0-9]+');
         Route::post('/booking/create', [BookingFlowController::class, 'storeBooking']);
-
         Route::post('/booking/{booking}/upload-proof', [BookingFlowController::class, 'uploadPaymentProof'])
             ->where('booking', '[0-9]+');
-
         Route::prefix('booking/{booking}/chat')->group(function () {
             Route::get('/messages', [BookingChatController::class, 'index'])->where('booking', '[0-9]+');
             Route::post('/messages', [BookingChatController::class, 'store'])->where('booking', '[0-9]+');
