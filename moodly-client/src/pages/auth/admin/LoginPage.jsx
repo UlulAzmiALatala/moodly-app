@@ -1,138 +1,198 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { useAuth } from "../../../context/AuthContext"; // Path 3x mundur
+import React, { useState, useEffect } from "react";
 
-// --- Komponen Ikon (Disederhanakan) ---
-function UserIcon() {
-    return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        >
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>{" "}
-            <circle cx="12" cy="7" r="4"></circle>
-        </svg>
-    );
-}
-function LockIcon() {
-    return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        >
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>{" "}
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-        </svg>
-    );
-}
-// --- Akhir Ikon ---
+// MOCK (hapus jika pakai useAuth asli)
+const useAuth = () => ({
+    loginAdmin: async ({ email, password }) => {
+        if (password !== "admin") {
+            throw new Error("Password salah. (Coba 'admin')");
+        }
+        console.log("Login sukses!");
+    },
+});
 
-export default function AdminLoginPage() {
-    // --- PERBAIKAN: Panggil 'loginAdmin' ---
+export default function LoginPage() {
     const { loginAdmin } = useAuth();
-    // --- AKHIR PERBAIKAN ---
-
     const [email, setEmail] = useState("");
     const [pwd, setPwd] = useState("");
+    const [rememberMe, setRememberMe] = useState(false);
     const [errors, setErrors] = useState(null);
-    const [isSubmitting, setIsSubmitting] = useState(false); // <-- Tambahkan state submitting
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    useEffect(() => {
+        document.body.style.overflow = "hidden";
+        return () => (document.body.style.overflow = "auto");
+    }, []);
 
     const onSubmit = async (e) => {
         e.preventDefault();
         setErrors(null);
-        setIsSubmitting(true); // <-- Set loading
+        setIsSubmitting(true);
 
         if (!email || !pwd) {
             setErrors({ message: "Harap isi semua kolom." });
-            setIsSubmitting(false); // <-- Stop loading
+            setIsSubmitting(false);
             return;
         }
+
         try {
-            // --- PERBAIKAN: Panggil 'loginAdmin' ---
             await loginAdmin({ email, password: pwd });
-            // Guard di router akan menangani redirect ke /admin/dashboard
         } catch (error) {
-            // Tangkap error (termasuk "Akun ini bukan akun admin.")
             setErrors({ message: error.message || "Login gagal." });
-            setIsSubmitting(false); // <-- Stop loading
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-            <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
-                <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
-                    Admin Moodly
-                </h1>
+        <div className="w-full h-screen flex bg-white overflow-hidden">
+            {/* ============================
+                BAGIAN KIRI - CARD PREMIUM
+               ============================ */}
+            <div className="hidden md:flex h-full w-1/2 lg:w-[45%] xl:w-[40%] items-center justify-center">
+                <div
+                    className="
+                        w-[85%] h-[88%]
+                        rounded-[28px]
+                        bg-[#0BAEFF]
+                        shadow-[0_18px_35px_rgba(0,0,0,0.18)]
+                        relative overflow-hidden
+                        flex flex-col items-center justify-center
+                        transition-all duration-300
+                    "
+                >
+                    {/* GLASS SHEEN HIGHLIGHT */}
+                    <div
+                        className="
+                            absolute top-0 left-0 w-full h-1/4
+                            bg-white/20
+                            blur-xl
+                        "
+                    />
 
-                <form className="space-y-4" onSubmit={onSubmit} noValidate>
-                    <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                            <UserIcon />
-                        </span>
-                        <input
-                            type="email"
-                            placeholder="Email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            disabled={isSubmitting} // <-- Disable saat loading
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none"
-                        />
-                    </div>
+                    {/* IMAGE */}
+                    <img
+                        src="/public/images/3.png"
+                        alt="moodly"
+                        className="
+                            w-[55%] h-auto object-contain
+                            drop-shadow-xl
+                            transition-all duration-500
+                            hover:scale-[1.04]
+                        "
+                    />
 
-                    <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                            <LockIcon />
-                        </span>
-                        <input
-                            type="password"
-                            placeholder="Kata sandi"
-                            value={pwd}
-                            onChange={(e) => setPwd(e.target.value)}
-                            required
-                            disabled={isSubmitting} // <-- Disable saat loading
-                            className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none"
-                        />
-                    </div>
+                    {/* MOODLY TEXT */}
+                    <p className="mt-6 text-white text-2xl font-bold tracking-[0.12em] drop-shadow">
+                        MOODLY
+                    </p>
+                </div>
+            </div>
 
-                    <button
-                        type="submit"
-                        disabled={isSubmitting} // <-- Disable saat loading
-                        className="w-full py-3 bg-black text-white rounded-full font-semibold hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:bg-gray-400"
-                    >
-                        {isSubmitting ? "Memproses..." : "Masuk"}
-                    </button>
-                </form>
+            {/* ============================
+                BAGIAN KANAN - FORM LOGIN
+               ============================ */}
+            <div className="w-full md:w-1/2 h-full flex items-center justify-center px-10 md:px-20">
+                <div className="w-full max-w-lg">
+                    <h2 className="text-4xl font-bold text-gray-800 mb-2 tracking-tight">
+                        Welcome Back !
+                    </h2>
 
-                {errors && (
-                    <div className="text-red-600 text-xs mt-3 text-center">
-                        {/* --- PERBAIKAN: Tampilkan error dengan benar --- */}
-                        {errors.message}
-                    </div>
-                )}
+                    <p className="mb-8 text-gray-600">
+                        <span className="font-semibold text-sky-500 cursor-pointer hover:underline">
+                            Log in
+                        </span>{" "}
+                        untuk melanjutkan ke curhat
+                    </p>
 
-                <div className="text-center text-sm text-gray-600 mt-6">
-                    <Link
-                        to="/"
-                        className="text-sky-500 font-semibold hover:underline"
-                    >
-                        Kembali ke Halaman Utama
-                    </Link>
+                    <form onSubmit={onSubmit} className="space-y-6">
+                        {/* EMAIL */}
+                        <div>
+                            <label className="block text-sm font-semibold mb-2">
+                                Email
+                            </label>
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                disabled={isSubmitting}
+                                placeholder="Masukkan Email"
+                                className="
+                                    w-full px-4 py-3 rounded-lg
+                                    border border-gray-300
+                                    shadow-inner
+                                    focus:ring-2 focus:ring-sky-400
+                                    focus:outline-none
+                                    transition-all duration-200
+                                "
+                            />
+                        </div>
+
+                        {/* PASSWORD */}
+                        <div>
+                            <label className="block text-sm font-semibold mb-2">
+                                Password
+                            </label>
+                            <input
+                                type="password"
+                                value={pwd}
+                                onChange={(e) => setPwd(e.target.value)}
+                                disabled={isSubmitting}
+                                placeholder="Masukkan Password"
+                                className="
+                                    w-full px-4 py-3 rounded-lg
+                                    border border-gray-300
+                                    shadow-inner
+                                    focus:ring-2 focus:ring-sky-400
+                                    focus:outline-none
+                                    transition-all duration-200
+                                "
+                            />
+                        </div>
+
+                        {/* REMEMBER / LUPA */}
+                        <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    checked={rememberMe}
+                                    onChange={(e) =>
+                                        setRememberMe(e.target.checked)
+                                    }
+                                    className="w-4 h-4 accent-sky-500"
+                                />
+                                <span className="text-gray-600 text-sm">
+                                    Remember me
+                                </span>
+                            </div>
+
+                            <span className="text-sm text-sky-500 font-semibold cursor-pointer hover:underline">
+                                Lupa Password?
+                            </span>
+                        </div>
+
+                        {/* BUTTON */}
+                        <button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="
+                                w-full py-3 rounded-full
+                                bg-gradient-to-r from-sky-500 to-sky-600
+                                text-white font-semibold
+                                transition-all duration-300
+                                hover:scale-[1.02] hover:shadow-lg
+                                disabled:bg-sky-300 disabled:scale-100
+                            "
+                        >
+                            {isSubmitting ? "Memproses..." : "Log In"}
+                        </button>
+
+                        {/* ERROR */}
+                        {errors && (
+                            <p className="text-center text-sm text-red-600">
+                                {errors.message}
+                            </p>
+                        )}
+                    </form>
                 </div>
             </div>
         </div>

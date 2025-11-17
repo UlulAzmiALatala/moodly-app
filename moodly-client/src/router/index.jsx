@@ -1,5 +1,6 @@
 import React from "react";
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
+// --- MENGGUNAKAN PATH RELATIF '../' (DIKEMBALIKAN) ---
 import { useAuth } from "../context/AuthContext.jsx";
 import Commet from "../components/Commet.jsx";
 
@@ -20,7 +21,13 @@ import CounselorLoginPage from "../pages/auth/counselor/LoginPage.jsx";
 import CounselorRegisterPage from "../pages/auth/counselor/RegisterPage.jsx";
 import CounselorAddressPage from "../pages/auth/counselor/AddressPage.jsx";
 import CounselorCreatePasswordPage from "../pages/auth/counselor/CreatePasswordPage.jsx";
+
+// --- Admin Auth (/pages/admin/auth/admin/) ---
 import AdminLoginPage from "../pages/auth/admin/LoginPage.jsx";
+import NewPasswordPage from "../pages/auth/admin/NewPasswordPage.jsx";
+import AdminForgotPasswordPage from "../pages/auth/admin/ForgotPasswordPage.jsx";
+
+// --- Auth Umum (Customer) ---
 import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage.jsx";
 import ResetPasswordPage from "../pages/auth/ResetPasswordPage.jsx";
 import VerifyCodePage from "../pages/auth/VerifyCodePage.jsx";
@@ -105,16 +112,19 @@ import CounselorChangeSchedulePage from "../pages/counselor/profile/ChangeSchedu
 // --- AKHIR IMPOR KONSELOR ---
 
 // === GUARDS ===
-// (Guard tidak berubah)
+// (Logika Guard ini SUDAH BENAR)
 const GuestGuard = () => {
     const { user } = useAuth();
     if (user) {
-        if (
-            user.role?.includes("admin") ||
-            user.role?.includes("super-admin")
-        ) {
+        // Cek role yang LEBIH TINGGI (super-admin) DULU
+        if (user.role?.includes("super-admin")) {
+            return <Navigate to="/super-admin/dashboard" />;
+        }
+        // Baru cek role di bawahnya (admin)
+        if (user.role?.includes("admin")) {
             return <Navigate to="/admin/dashboard" />;
         }
+
         if (
             user.role?.includes("konselor") ||
             user.role?.includes("counselor")
@@ -128,8 +138,13 @@ const GuestGuard = () => {
 const ProtectedGuard = () => {
     const { user } = useAuth();
     if (!user) return <Navigate to="/login" />;
-    if (user.role?.includes("admin") || user.role?.includes("super-admin"))
-        return <Navigate to="/admin/dashboard" />;
+
+    // Cek role yang LEBIH TINGGI (super-admin) DULU
+    if (user.role?.includes("super-admin"))
+        return <Navigate to="/super-admin/dashboard" />;
+    // Baru cek role di bawahnya (admin)
+    if (user.role?.includes("admin")) return <Navigate to="/admin/dashboard" />;
+
     if (user.role?.includes("konselor") || user.role?.includes("counselor"))
         return <Navigate to="/counselor/home" />;
     return <Outlet />;
@@ -137,20 +152,31 @@ const ProtectedGuard = () => {
 const CounselorProtectedGuard = () => {
     const { user } = useAuth();
     if (!user) return <Navigate to="/counselor/login" />;
-    if (user.role?.includes("admin") || user.role?.includes("super-admin"))
-        return <Navigate to="/admin/dashboard" />;
+
+    // Cek role yang LEBIH TINGGI (super-admin) DULU
+    if (user.role?.includes("super-admin"))
+        return <Navigate to="/super-admin/dashboard" />;
+    // Baru cek role di bawahnya (admin)
+    if (user.role?.includes("admin")) return <Navigate to="/admin/dashboard" />;
+
     if (!user.role?.includes("konselor") && !user.role?.includes("counselor"))
         return <Navigate to="/home" />;
     return <Outlet />;
 };
 const AdminGuestGuard = () => {
     const { user } = useAuth();
-    return user &&
-        (user.role?.includes("admin") || user.role?.includes("super-admin")) ? (
-        <Navigate to="/admin/dashboard" />
-    ) : (
-        <Outlet />
-    );
+
+    if (user) {
+        // Cek role yang LEBIH TINGGI (super-admin) DULU
+        if (user.role?.includes("super-admin")) {
+            return <Navigate to="/super-admin/dashboard" />;
+        }
+        // Baru cek role di bawahnya (admin)
+        if (user.role?.includes("admin")) {
+            return <Navigate to="/admin/dashboard" />;
+        }
+    }
+    return <Outlet />;
 };
 const AdminProtectedGuard = () => {
     const { user } = useAuth();
@@ -355,7 +381,6 @@ const AppRouter = () => {
                 {/* Rute Sekunder (dengan PageLayout) */}
                 <Route element={<PageLayout />}>
                     {/* --- PERBAIKAN: Rute Schedule --- */}
-                    {/* Rute ini adalah untuk detail 'pintar' yang baru kita buat */}
                     <Route
                         path="/counselor/schedule/:id"
                         element={<CounselorScheduleDetailPage />}
@@ -372,12 +397,10 @@ const AppRouter = () => {
                     />
 
                     {/* --- PERBAIKAN: Rute Chat & Konseling Digabung --- */}
-                    {/* Halaman chat konselor */}
                     <Route
                         path="/counselor/chat/:id"
                         element={<CounselorChatPage />}
                     />
-                    {/* Rute-rute lama di 'konseling' sudah dihapus karena digabung ke DetailPage */}
 
                     {/* Help */}
                     <Route
@@ -427,8 +450,18 @@ const AppRouter = () => {
 
             {/* === ADMIN & SUPER ADMIN === */}
             <Route element={<AdminGuestGuard />}>
+                {/* --- PERBAIKAN: Menggabungkan rute di bawah satu AuthAdminLayout --- */}
                 <Route element={<AuthAdminLayout />}>
                     <Route path="/admin/login" element={<AdminLoginPage />} />
+                    <Route
+                        path="/admin/ganti-password"
+                        element={<NewPasswordPage />}
+                    />
+                    {/* --- PERBAIKAN: Menggunakan variabel yang benar --- */}
+                    <Route
+                        path="/admin/kesulitan-login"
+                        element={<AdminForgotPasswordPage />}
+                    />
                 </Route>
             </Route>
             <Route element={<AdminProtectedGuard />}>
