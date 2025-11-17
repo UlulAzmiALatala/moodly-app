@@ -5,7 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule; // <-- Import Rule
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Validator; // <-- TAMBAHAN: Import Validator
 
 class JadwalKonsultasiController extends Controller
 {
@@ -61,5 +62,44 @@ class JadwalKonsultasiController extends Controller
 
         // Kembalikan respons sukses beserta data booking yang sudah diupdate
         return response()->json($booking);
+    }
+
+    // --- TAMBAHAN BARU UNTUK GMEET ---
+    /**
+     * Update link Gmeet untuk booking tertentu.
+     */
+    public function updateGmeetLink(Request $request, Booking $booking)
+    {
+        $validator = Validator::make($request->all(), [
+            // Validasi link harus URL dan dari meet.google.com
+            // Kita buat nullable agar Admin juga bisa MENGHAPUS link jika perlu
+            'gmeet_link' => ['nullable', 'url', 'starts_with:https://meet.google.com/'],
+        ], [
+            'gmeet_link.url' => 'Link Gmeet harus berupa URL yang valid.',
+            'gmeet_link.starts_with' => 'Link Gmeet harus dimulai dengan https://meet.google.com/',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Data tidak valid.',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        if (!in_array($booking->metode_konsultasi, ['Video Call', 'Call'])) {
+            return response()->json(['message' => 'Metode layanan booking ini bukan VC atau Call.'], 400);
+        }
+
+        $booking->update([
+            'gmeet_link' => $request->gmeet_link,
+        ]);
+
+        // Muat ulang relasi agar data yang dikirim balik lengkap
+        $booking->load('customer', 'konselor', 'jenisKonseling');
+
+        return response()->json([
+            'message' => 'Link Gmeet berhasil diperbarui.',
+            'booking' => $booking, // Kirim booking terbaru
+        ]);
     }
 }

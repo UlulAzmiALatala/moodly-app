@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import apiClient from "../../../api/axios";
 import DeleteModal from "./modals/DeleteModal";
 
-// --- Komponen Ikon ---
+// --- Komponen Ikon (Ikon Lama) ---
 const DetailIcon = () => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -53,10 +53,60 @@ const ChevronDownIconMini = () => (
     </svg>
 );
 
-// --- Komponen Status Dropdown ---
+// --- TAMBAHAN IKON BARU UNTUK METODE ---
+const VideoIcon = () => (
+    <svg
+        className="w-4 h-4 text-blue-500"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={1.5}
+        stroke="currentColor"
+    >
+        <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9A2.25 2.25 0 0 0 13.5 5.25h-9A2.25 2.25 0 0 0 2.25 7.5v9A2.25 2.25 0 0 0 4.5 18.75Z"
+        />
+    </svg>
+);
+const PhoneIcon = () => (
+    <svg
+        className="w-4 h-4 text-green-500"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={1.5}
+        stroke="currentColor"
+    >
+        <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.211-.99-.553-1.348l-3.04-3.04c-.34-.34-.832-.553-1.348-.553h-1.372a2.25 2.25 0 0 0-2.25 2.25v1.372c0 .516.211.99.553 1.348l3.04 3.04c.34.34.832.553 1.348.553h1.372c.621 0 1.125-.504 1.125-1.125V19.5a.75.75 0 0 0-.75-.75h-2.25C6.75 18.75 2.25 14.284 2.25 6.75Z"
+        />
+    </svg>
+);
+const ChatIcon = () => (
+    <svg
+        className="w-4 h-4 text-purple-500"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={1.5}
+        stroke="currentColor"
+    >
+        <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-3.694 8.25-8.25 8.25a8.25 8.25 0 0 1-8.25-8.25c0-4.556 3.694-8.25 8.25-8.25a8.25 8.25 0 0 1 8.25 8.25Z"
+        />
+    </svg>
+);
+// --- AKHIR IKON BARU ---
+
+// --- Komponen Status Dropdown (Tidak Berubah) ---
 const StatusDropdown = ({ currentStatus, bookingId, onStatusChange }) => {
     const [isOpen, setIsOpen] = useState(false);
-    // Urutan status yang logis untuk diubah oleh Admin
     const statuses = [
         "Menunggu Konfirmasi",
         "Dijadwalkan",
@@ -67,7 +117,7 @@ const StatusDropdown = ({ currentStatus, bookingId, onStatusChange }) => {
     const statusStyles = {
         Selesai: "bg-green-100 text-green-700 border-green-200",
         Batal: "bg-red-100 text-red-700 border-red-200",
-        Proses: "bg-yellow-100 text-yellow-700 border-yellow-200", // Mungkin tidak dipakai Admin
+        Proses: "bg-yellow-100 text-yellow-700 border-yellow-200",
         Dijadwalkan: "bg-blue-100 text-blue-700 border-blue-200",
         Berlangsung: "bg-purple-100 text-purple-700 border-purple-200",
         "Menunggu Konfirmasi": "bg-gray-100 text-gray-700 border-gray-200",
@@ -83,13 +133,11 @@ const StatusDropdown = ({ currentStatus, bookingId, onStatusChange }) => {
 
     const handleChange = (newStatus) => {
         if (newStatus !== currentStatus) {
-            // Hanya panggil API jika status berubah
             onStatusChange(bookingId, newStatus);
         }
         setIsOpen(false);
     };
 
-    // Menutup dropdown jika klik di luar
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (isOpen && !event.target.closest(`.dropdown-${bookingId}`)) {
@@ -124,8 +172,6 @@ const StatusDropdown = ({ currentStatus, bookingId, onStatusChange }) => {
 
             {isOpen && (
                 <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20">
-                    {" "}
-                    {/* Tambah z-index */}
                     <div
                         className="py-1"
                         role="menu"
@@ -135,21 +181,18 @@ const StatusDropdown = ({ currentStatus, bookingId, onStatusChange }) => {
                             <button
                                 key={status}
                                 onClick={() => handleChange(status)}
-                                // Nonaktifkan pilihan status saat ini
                                 disabled={status === currentStatus}
                                 className={`block w-full text-left px-4 py-2 text-sm transition-colors duration-150 
-                                            ${
-                                                statusStyles[status] ||
-                                                statusStyles[
-                                                    "Menunggu Konfirmasi"
-                                                ]
-                                            } 
-                                            ${
-                                                status !== currentStatus
-                                                    ? `${hoverStyles[status]} text-gray-900`
-                                                    : "opacity-50 cursor-not-allowed"
-                                            }
-                                         `}
+                                        ${
+                                            statusStyles[status] ||
+                                            statusStyles["Menunggu Konfirmasi"]
+                                        } 
+                                        ${
+                                            status !== currentStatus
+                                                ? `${hoverStyles[status]} text-gray-900`
+                                                : "opacity-50 cursor-not-allowed"
+                                        }
+                                      `}
                                 role="menuitem"
                             >
                                 {status}
@@ -162,15 +205,16 @@ const StatusDropdown = ({ currentStatus, bookingId, onStatusChange }) => {
     );
 };
 
+// --- Komponen Utama Halaman ---
 const JadwalKonsultasiPage = () => {
     const [jadwalList, setJadwalList] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [filterStatus, setFilterStatus] = useState(""); // State untuk filter dropdown utama
+    const [filterStatus, setFilterStatus] = useState("");
     const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
     const [selectedJadwal, setSelectedJadwal] = useState(null);
 
-    // --- Fungsi Fetch Data ---
+    // --- Fungsi Fetch Data (Tidak Berubah) ---
     const fetchData = async () => {
         try {
             setLoading(true);
@@ -189,12 +233,11 @@ const JadwalKonsultasiPage = () => {
         }
     };
 
-    // Panggil fetchData saat komponen dimuat atau filter berubah
     useEffect(() => {
         fetchData();
     }, [filterStatus]);
 
-    // --- Fungsi Hapus ---
+    // --- Fungsi Hapus (Tidak Berubah) ---
     const handleDelete = async () => {
         if (!selectedJadwal) return;
         try {
@@ -203,25 +246,22 @@ const JadwalKonsultasiPage = () => {
             );
             setDeleteModalOpen(false);
             setSelectedJadwal(null);
-            fetchData(); // Muat ulang data
+            fetchData();
         } catch (err) {
             console.error("Gagal menghapus jadwal:", err);
-            // TODO: Tampilkan notifikasi error
         }
     };
 
-    // --- Fungsi Buka Modal ---
     const openModal = (setter, jadwal = null) => {
         setSelectedJadwal(jadwal);
         setter(true);
     };
 
-    // --- Fungsi Format Tanggal ---
+    // --- Fungsi Format Tanggal (Tidak Berubah) ---
     const formatDate = (dateString) => {
         if (!dateString) return "-";
         try {
             const date = new Date(dateString);
-            // Format: 05-Januari-2024
             return date
                 .toLocaleDateString("id-ID", {
                     day: "2-digit",
@@ -235,12 +275,10 @@ const JadwalKonsultasiPage = () => {
         }
     };
 
-    // --- FUNGSI BARU UNTUK UPDATE STATUS ---
+    // --- Fungsi Update Status (Tidak Berubah) ---
     const handleStatusChange = async (bookingId, newStatus) => {
-        // Simpan state lama jika perlu rollback
         const oldJadwalList = [...jadwalList];
         try {
-            // Optimistic UI update
             setJadwalList((prevList) =>
                 prevList.map((jadwal) =>
                     jadwal.id === bookingId
@@ -249,7 +287,6 @@ const JadwalKonsultasiPage = () => {
                 )
             );
 
-            // Panggil API backend
             await apiClient.patch(
                 `/api/admin/jadwal-konsultasi/${bookingId}/status`,
                 {
@@ -258,14 +295,11 @@ const JadwalKonsultasiPage = () => {
             );
         } catch (err) {
             console.error("Gagal mengubah status jadwal:", err);
-            // Rollback UI update jika API gagal
             setJadwalList(oldJadwalList);
-            // Tampilkan notifikasi error (misalnya pakai library 'react-toastify')
             alert(`Gagal mengubah status: ${err.message}`);
         }
     };
 
-    // --- Daftar Status untuk Filter Utama ---
     const filterOptions = [
         "Semua Status",
         "Menunggu Konfirmasi",
@@ -275,13 +309,14 @@ const JadwalKonsultasiPage = () => {
         "Batal",
     ];
 
+    // --- Render JSX ---
     return (
         <div className="p-6">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold text-gray-800">
                     Jadwal Konsultasi {filterStatus && `(${filterStatus})`}
                 </h1>
-                {/* Dropdown Filter Status */}
+                {/* Dropdown Filter Status (Tidak Berubah) */}
                 <div className="relative">
                     <select
                         value={filterStatus}
@@ -309,34 +344,36 @@ const JadwalKonsultasiPage = () => {
                 </div>
             </div>
 
+            {/* --- PERBAIKAN TAMPILAN TABEL --- */}
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
                 <table className="w-full text-left text-sm">
-                    {" "}
-                    {/* Kecilkan font tabel */}
-                    <thead className="bg-blue-100 text-gray-700 uppercase text-xs">
-                        {" "}
-                        {/* Kecilkan font header */}
+                    {/* Header Tabel Lebih Rapi */}
+                    <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
                         <tr>
                             <th className="p-3">ID Pemesanan</th>
                             <th className="p-3">Tanggal</th>
                             <th className="p-3">Jam</th>
                             <th className="p-3">Jenis Konsultasi</th>
                             <th className="p-3">Nama Customer</th>
+                            <th className="p-3">Metode</th>{" "}
+                            {/* <-- KOLOM BARU */}
                             <th className="p-3">Status</th>
                             <th className="p-3">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody className="text-gray-600">
+                    <tbody className="text-gray-700">
                         {loading ? (
                             <tr>
-                                <td colSpan="7" className="p-4 text-center">
+                                {/* --- COLSPAN DIPERBARUI --- */}
+                                <td colSpan="8" className="p-4 text-center">
                                     Memuat jadwal...
                                 </td>
                             </tr>
                         ) : error ? (
                             <tr>
+                                {/* --- COLSPAN DIPERBARUI --- */}
                                 <td
-                                    colSpan="7"
+                                    colSpan="8"
                                     className="p-4 text-center text-red-500"
                                 >
                                     {error}
@@ -361,9 +398,34 @@ const JadwalKonsultasiPage = () => {
                                         {jadwal.jenis_konseling
                                             ?.jenis_konseling || "N/A"}
                                     </td>
+
+                                    {/* --- AVATAR CUSTOMER DITAMBAHKAN --- */}
                                     <td className="p-3 font-medium text-gray-800">
-                                        {jadwal.customer?.name || "N/A"}
+                                        <div className="flex items-center gap-2">
+                                            <img
+                                                src={`https://ui-avatars.com/api/?name=${jadwal.customer?.name}&background=EBF4FF&color=3B82F6&size=32&rounded=true`}
+                                                alt="Avatar"
+                                                className="w-8 h-8 rounded-full"
+                                            />
+                                            <span>
+                                                {jadwal.customer?.name || "N/A"}
+                                            </span>
+                                        </div>
                                     </td>
+
+                                    {/* --- KOLOM METODE BARU DENGAN IKON --- */}
+                                    <td className="p-3">
+                                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium">
+                                            {jadwal.metode_konsultasi ===
+                                                "Video Call" && <VideoIcon />}
+                                            {jadwal.metode_konsultasi ===
+                                                "Call" && <PhoneIcon />}
+                                            {jadwal.metode_konsultasi ===
+                                                "Chat" && <ChatIcon />}
+                                            {jadwal.metode_konsultasi}
+                                        </span>
+                                    </td>
+
                                     <td className="p-3">
                                         <StatusDropdown
                                             currentStatus={
@@ -398,8 +460,9 @@ const JadwalKonsultasiPage = () => {
                             ))
                         ) : (
                             <tr>
+                                {/* --- COLSPAN DIPERBARUI --- */}
                                 <td
-                                    colSpan="7"
+                                    colSpan="8"
                                     className="p-4 text-center text-gray-500"
                                 >
                                     Tidak ada jadwal konsultasi{" "}
@@ -411,8 +474,8 @@ const JadwalKonsultasiPage = () => {
                         )}
                     </tbody>
                 </table>
-                {/* TODO: Tambahkan pagination jika perlu */}
             </div>
+
             <DeleteModal
                 isOpen={isDeleteModalOpen}
                 onClose={() => setDeleteModalOpen(false)}

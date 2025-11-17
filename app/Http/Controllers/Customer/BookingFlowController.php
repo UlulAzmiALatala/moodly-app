@@ -9,11 +9,11 @@ use App\Models\User;
 use App\Models\DurasiKonseling;
 use App\Models\Booking;
 use App\Models\CounselorAvailability;
-use App\Models\PaymentMethod; // <-- Import untuk QRIS
+use App\Models\PaymentMethod;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Storage; // <-- Pastikan import ini ada
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use Carbon\CarbonInterval;
 
@@ -24,8 +24,8 @@ class BookingFlowController extends Controller
      * GET /api/booking/tempat-konseling
      */
     public function getTempatKonseling()
-    // ... (code dari getTempatKonseling() sampai getCounselors() tidak berubah) ...
     {
+        // ... (Fungsi ini tidak berubah) ...
         try {
             $tempatList = TempatKonseling::where('status', 'Aktif')
                 ->select('id', 'nama_tempat', 'alamat', 'image', 'rating', 'review_count')
@@ -47,6 +47,7 @@ class BookingFlowController extends Controller
      */
     public function getTempatDetail(TempatKonseling $tempatKonseling)
     {
+        // ... (Fungsi ini tidak berubah) ...
         try {
             Log::info('Tempat Detail fetched:', $tempatKonseling->toArray());
             return response()->json($tempatKonseling);
@@ -62,36 +63,29 @@ class BookingFlowController extends Controller
     /**
      * Mengambil daftar konselor yang aktif dan terverifikasi.
      * GET /api/booking/counselors
-     * [PERBAIKAN] Sekarang memfilter berdasarkan serviceId (jenis_konseling_id)
      */
     public function getCounselors(Request $request)
     {
+        // ... (Fungsi ini tidak berubah) ...
         try {
             $query = User::where('role', 'konselor')
                 ->where('status', 'Terverifikasi')
                 ->select('id', 'name', 'avatar', 'universitas', 'spesialisasi', 'rating');
 
-            // --- TAMBAHAN LOGIKA FILTER ---
             if ($request->has('serviceId')) {
-                // Pastikan serviceId adalah integer
                 $serviceId = (int) $request->query('serviceId');
-
-                // Asumsi 'spesialisasi' adalah kolom JSON yang menyimpan array ID [1, 5, 7]
-                // yang sesuai dengan 'jenis_konselings.id'
                 $query->whereJsonContains('spesialisasi', $serviceId);
-
                 Log::info('Filtering counselors for serviceId:', ['serviceId' => $serviceId]);
             } else {
                 Log::info('Fetching all counselors, no serviceId provided.');
             }
-            // --- AKHIR TAMBAHAN ---
 
             $counselors = $query->orderBy('name')->get();
             return response()->json($counselors);
         } catch (\Exception $e) {
             Log::error('Error fetching counselors list:', [
                 'error' => $e->getMessage(),
-                'params' => $request->all() // Tambahkan params ke log
+                'params' => $request->all()
             ]);
             return response()->json([
                 'message' => 'Gagal mengambil data konselor.',
@@ -106,6 +100,7 @@ class BookingFlowController extends Controller
      */
     public function showCounselor(User $konselor)
     {
+        // ... (Fungsi ini tidak berubah) ...
         try {
             if ($konselor->role !== 'konselor' || $konselor->status !== 'Terverifikasi') {
                 return response()->json(['message' => 'Konselor tidak ditemukan atau tidak aktif.'], 404);
@@ -114,23 +109,14 @@ class BookingFlowController extends Controller
             $konselorData = $konselor->only([
                 'id',
                 'name',
-                'avatar', // Akan otomatis di-append oleh $appends di Model
+                'avatar',
                 'universitas',
                 'spesialisasi',
                 'rating',
                 'surat_izin_praktik',
-                // 'metode_layanan' akan ditambahkan di bawah
             ]);
-
-            // --- PERBAIKAN: Mengambil data dinamis dari database ---
-            // 'metode_layanan' adalah kolom JSON 'array' yang sudah kita siapkan di tabel users
-            // Model User.php akan otomatis men-cast ini sebagai array PHP
-            // Ini HANYA berisi metode online (['Chat'], ['Chat', 'Video Call'], dll)
-            $konselorData['metode_layanan'] = $konselor->metode_layanan ?? []; // Ambil dari DB, fallback ke array kosong
-
-            // 'reviews' kita hapus dulu hardcode-nya, nanti bisa diisi dari relasi
-            $konselorData['reviews'] = null; // Hapus hardcode
-            // --- AKHIR PERBAIKAN ---
+            $konselorData['metode_layanan'] = $konselor->metode_layanan ?? [];
+            $konselorData['reviews'] = null;
 
             Log::info('Counselor Detail fetched:', $konselorData);
             return response()->json($konselorData);
@@ -143,7 +129,9 @@ class BookingFlowController extends Controller
         }
     }
 
-    // --- METHOD JADWAL DINAMIS ---
+    // --- ================================================ ---
+    // --- ============ PERBAIKAN UTAMA DI SINI ============ ---
+    // --- ================================================ ---
     /**
      * Mengambil opsi durasi dan jadwal dinamis untuk konselor tertentu.
      * GET /api/booking/counselors/{konselor}/schedule-options
@@ -160,61 +148,63 @@ class BookingFlowController extends Controller
             $durations = DurasiKonseling::select('id', 'durasi_menit', 'harga')
                 ->orderBy('harga')
                 ->get();
-
             if ($durations->isEmpty()) {
                 Log::warning('Tidak ada data DurasiKonseling di database.');
                 return response()->json(['message' => 'Data durasi konseling tidak ditemukan.'], 404);
             }
 
-            // Dapatkan durasi terpendek untuk interval (fallback ke 60 menit)
             $minDuration = $durations->min('durasi_menit');
             $interval = CarbonInterval::minutes($minDuration ?? 60);
 
-            // 2. Ambil Ketersediaan Konselor
+            // 2. Ambil Ketersediaan Konselor (BERDASARKAN TANGGAL)
+            $today = Carbon::today();
             $availabilities = CounselorAvailability::where('counselor_id', $konselor->id)
-                ->get()
-                ->keyBy('day_of_week'); // Kunci berdasarkan hari (0=Minggu, 1=Senin, ...)
+                // --- PERBAIKAN: Ganti 'day_of_week' menjadi 'tanggal_konsultasi' ---
+                ->where('tanggal_konsultasi', '>=', $today)
+                ->orderBy('tanggal_konsultasi', 'asc')
+                ->orderBy('start_time', 'asc')
+                ->get();
+            // --- AKHIR PERBAIKAN ---
 
             // 3. Ambil Booking Mendatang (untuk filter slot)
             $upcomingBookings = Booking::where('konselor_id', $konselor->id)
-                ->where('tanggal_konsultasi', '>=', Carbon::today())
-                ->whereIn('status_pesanan', ['Dijadwalkan', 'Aktif', 'Menunggu Pembayaran'])
-                ->with('durasiKonseling:id,durasi_menit') // Eager load durasi
+                ->where('tanggal_konsultasi', '>=', $today)
+                ->whereIn('status_pesanan', ['Dijadwalkan', 'Aktif', 'Menunggu Pembayaran', 'Proses', 'Menunggu Konfirmasi'])
+                ->with('durasiKonseling:id,durasi_menit')
                 ->get(['id', 'tanggal_konsultasi', 'jam_konsultasi', 'durasi_konseling_id']);
 
             $bookedSlots = [];
             foreach ($upcomingBookings as $booking) {
-                // Pastikan durasiKonseling ada
                 if (!$booking->durasiKonseling) continue;
-
                 $startTime = Carbon::parse($booking->jam_konsultasi);
                 $durationMinutes = $booking->durasiKonseling->durasi_menit;
                 $endTime = $startTime->copy()->addMinutes($durationMinutes);
-
-                // Buat daftar semua slot yang terisi oleh booking ini
                 $currentSlot = $startTime->copy();
+
+                // Tandai slot yang sudah dibooking
                 while ($currentSlot < $endTime) {
                     $bookedSlots[$booking->tanggal_konsultasi . '_' . $currentSlot->format('H:i')] = true;
                     $currentSlot->add($interval);
                 }
             }
 
-
-            // 4. Generate Tanggal (7 hari ke depan)
+            // 4. Generate Tanggal (BERDASARKAN KETERSEDIAAN)
             $availableDates = [];
-            $today = Carbon::today();
 
-            for ($i = 0; $i < 7; $i++) {
-                $date = $today->copy()->addDays($i);
-                $dayOfWeek = $date->dayOfWeek; // 0=Minggu, 1=Senin, ...
+            // --- PERBAIKAN: Loop berdasarkan ketersediaan (bukan 7 hari) ---
+            $uniqueDates = $availabilities->unique('tanggal_konsultasi');
 
-                // Cek apakah konselor tersedia di hari ini
-                if (isset($availabilities[$dayOfWeek])) {
-                    $availability = $availabilities[$dayOfWeek];
+            foreach ($uniqueDates as $availabilityDate) {
+                $date = Carbon::parse($availabilityDate->tanggal_konsultasi);
+
+                // Ambil semua ketersediaan di hari ini (bisa jadi ada > 1, misal 09-12 dan 14-17)
+                $dayAvailabilities = $availabilities->where('tanggal_konsultasi', $date->toDateString());
+
+                $slots = [];
+
+                foreach ($dayAvailabilities as $availability) {
                     $startTime = Carbon::parse($availability->start_time);
                     $endTime = Carbon::parse($availability->end_time);
-
-                    $slots = [];
                     $currentTime = $startTime->copy();
 
                     // Generate slot berdasarkan interval
@@ -229,48 +219,41 @@ class BookingFlowController extends Controller
                                 $slots[] = $slotStart;
                             }
                         }
-
                         $currentTime->add($interval);
                     }
+                }
 
-                    // Jika ada slot tersedia di hari ini, tambahkan ke array
-                    if (!empty($slots)) {
-                        $groupedSlots = [
-                            'Pagi' => [],
-                            'Siang' => [],
-                            'Sore' => [],
-                            'Malam' => [],
+                // Jika ada slot tersedia di hari ini, tambahkan ke array
+                if (!empty($slots)) {
+                    $groupedSlots = [
+                        'Pagi' => [],
+                        'Siang' => [],
+                        'Sore' => [],
+                        'Malam' => [],
+                    ];
+
+                    foreach ($slots as $slot) {
+                        $hour = (int) substr($slot, 0, 2);
+                        if ($hour >= 6 && $hour < 11) $groupedSlots['Pagi'][] = $slot;
+                        elseif ($hour >= 11 && $hour < 15) $groupedSlots['Siang'][] = $slot;
+                        elseif ($hour >= 15 && $hour < 18) $groupedSlots['Sore'][] = $slot;
+                        elseif ($hour >= 18 && $hour < 22) $groupedSlots['Malam'][] = $slot;
+                    }
+
+                    $availableSlotsGrouped = array_filter($groupedSlots);
+
+                    if (!empty($availableSlotsGrouped)) {
+                        $availableDates[] = [
+                            'date' => $date->toDateString(), // YYYY-MM-DD
+                            'dayName' => $date->translatedFormat('l'),
+                            'dayOfMonth' => $date->day,
+                            'monthName' => $date->translatedFormat('M'),
+                            'availableTimes' => $availableSlotsGrouped,
                         ];
-
-                        foreach ($slots as $slot) {
-                            $hour = (int) substr($slot, 0, 2);
-                            if ($hour >= 6 && $hour < 11) {
-                                $groupedSlots['Pagi'][] = $slot;
-                            } elseif ($hour >= 11 && $hour < 15) {
-                                $groupedSlots['Siang'][] = $slot;
-                            } elseif ($hour >= 15 && $hour < 18) {
-                                $groupedSlots['Sore'][] = $slot;
-                            } elseif ($hour >= 18 && $hour < 22) {
-                                $groupedSlots['Malam'][] = $slot;
-                            }
-                        }
-
-                        // Hanya tambahkan grup yang tidak kosong
-                        $availableSlotsGrouped = array_filter($groupedSlots);
-
-                        // Hanya tambahkan tanggal jika ada slot
-                        if (!empty($availableSlotsGrouped)) {
-                            $availableDates[] = [
-                                'date' => $date->toDateString(), // YYYY-MM-DD
-                                'dayName' => $date->translatedFormat('l'),
-                                'dayOfMonth' => $date->day,
-                                'monthName' => $date->translatedFormat('M'),
-                                'availableTimes' => $availableSlotsGrouped,
-                            ];
-                        }
                     }
                 }
             }
+            // --- AKHIR PERBAIKAN ---
 
             return response()->json([
                 'durations' => $durations,
@@ -288,10 +271,9 @@ class BookingFlowController extends Controller
             ], 500);
         }
     }
-    // --- AKHIR METHOD JADWAL DINAMIS ---
+    // --- AKHIR PERBAIKAN METHOD JADWAL DINAMIS ---
 
 
-    // --- METHOD BARU UNTUK MEMBUAT BOOKING ---
     /**
      * Menyimpan booking baru.
      * POST /api/booking/create
@@ -313,10 +295,7 @@ class BookingFlowController extends Controller
         }
 
         $validated = $validator->validated();
-
-        // Buat log request yang diterima
         Log::info('Store booking request validated:', $validated);
-
 
         try {
             $user = Auth::user();
@@ -326,32 +305,31 @@ class BookingFlowController extends Controller
                 return response()->json(['message' => 'Durasi konseling tidak valid.'], 404);
             }
 
-            // --- Validasi Ketersediaan ---
-            $dayOfWeek = Carbon::parse($validated['date'])->dayOfWeek; // 0=Minggu, 1=Senin
+            // --- Validasi Ketersediaan (BERDASARKAN TANGGAL) ---
             $slotStartTime = Carbon::parse($validated['time']);
             $slotEndTime = $slotStartTime->copy()->addMinutes($durasi->durasi_menit);
 
             Log::info('Validating availability:', [
                 'counselorId' => $validated['counselorId'],
-                'dayOfWeek' => $dayOfWeek,
+                'date' => $validated['date'],
                 'startTime' => $slotStartTime->format('H:i:s'),
                 'endTime' => $slotEndTime->format('H:i:s')
             ]);
 
+            // --- PERBAIKAN: Query validasi berdasarkan TANGGAL ---
             $availability = CounselorAvailability::where('counselor_id', $validated['counselorId'])
-                ->where('day_of_week', $dayOfWeek)
+                ->where('tanggal_konsultasi', $validated['date']) // Cek TANGGAL
                 ->where('start_time', '<=', $slotStartTime->format('H:i:s'))
                 ->where('end_time', '>=', $slotEndTime->format('H:i:s'))
                 ->first();
+            // --- AKHIR PERBAIKAN ---
 
             if (!$availability) {
                 Log::warning('Availability check failed:', [
                     'counselor_id' => $validated['counselorId'],
-                    'day_of_week' => $dayOfWeek,
-                    // --- PERBAIKAN: Menghapus tanda kutip (') di antara key ---
+                    'date' => $validated['date'],
                     'start_time_req' => $slotStartTime->format('H:i:s'),
                     'end_time_req' => $slotEndTime->format('H:i:s')
-                    // --- AKHIR PERBAIKAN ---
                 ]);
                 return response()->json(['message' => 'Jadwal tidak tersedia atau durasi tidak cukup.'], 409); // 409 Conflict
             }
@@ -359,10 +337,10 @@ class BookingFlowController extends Controller
             Log::info('Availability check passed.');
 
             // Cek tumpang tindih dengan booking lain
-            // --- PERBAIKAN: Query tumpang tindih yang lebih sederhana ---
+            // (Logika ini sudah benar karena menggunakan 'tanggal_konsultasi')
             $existingBooking = Booking::where('konselor_id', $validated['counselorId'])
                 ->where('tanggal_konsultasi', $validated['date'])
-                ->whereIn('status_pesanan', ['Dijadwalkan', 'Aktif', 'Menunggu Pembayaran'])
+                ->whereIn('status_pesanan', ['Dijadwalkan', 'Aktif', 'Menunggu Pembayaran', 'Proses', 'Menunggu Konfirmasi'])
                 ->with('durasiKonseling:id,durasi_menit')
                 ->where(function ($query) use ($slotStartTime, $slotEndTime) {
                     $query->where(function ($q) use ($slotStartTime, $slotEndTime) {
@@ -376,8 +354,7 @@ class BookingFlowController extends Controller
                     });
                 })
                 ->join('durasi_konselings', 'bookings.durasi_konseling_id', '=', 'durasi_konselings.id')
-                ->exists(); // Cukup cek exists()
-            // --- AKHIR PERBAIKAN QUERY ---
+                ->exists();
 
             if ($existingBooking) {
                 Log::warning('Booking conflict detected:', $validated);
@@ -388,7 +365,7 @@ class BookingFlowController extends Controller
 
 
             $hargaKonsultasi = $durasi->harga;
-            $biayaLayanan = 5000; // Hardcoded
+            $biayaLayanan = 5000;
             $totalHarga = $hargaKonsultasi + $biayaLayanan;
 
             $booking = Booking::create([
@@ -405,7 +382,6 @@ class BookingFlowController extends Controller
             ]);
 
             $booking->load('customer:id,name', 'konselor:id,name', 'jenisKonseling', 'durasiKonseling', 'tempatKonseling');
-
             Log::info('Booking created successfully:', ['booking_id' => $booking->id]);
 
             return response()->json([
@@ -415,7 +391,7 @@ class BookingFlowController extends Controller
         } catch (\Exception $e) {
             Log::error('Error creating booking:', [
                 'user_id' => Auth::id(),
-                'request' => $validated ?? $request->all(), // Fallback jika validasi gagal
+                'request' => $validated ?? $request->all(),
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -425,23 +401,19 @@ class BookingFlowController extends Controller
             ], 500);
         }
     }
-    // --- AKHIR METHOD BARU ---
 
-    // --- METHOD BARU UNTUK AMBIL QRIS ---
     /**
      * Mengambil daftar metode pembayaran yang aktif untuk customer.
      * GET /api/payment-methods
      */
     public function getPaymentMethods()
     {
+        // ... (Fungsi ini tidak berubah) ...
         try {
-            // --- PERBAIKAN: Ambil HANYA SATU (yang pertama) ---
             $methods = PaymentMethod::where('status', 'Aktif')
-                ->whereNotNull('image') // Pastikan ada gambar
-                ->orderBy('id', 'desc') // Urutkan (opsional, tapi bagus)
-                ->get(); // <-- UBAH DARI first() MENJADI get()
-
-            // Kembalikan semua, atau array kosong jika tidak ada
+                ->whereNotNull('image')
+                ->orderBy('id', 'desc')
+                ->get();
             return response()->json($methods);
         } catch (\Exception $e) {
             Log::error('Error fetching payment methods:', ['error' => $e->getMessage()]);
@@ -454,17 +426,12 @@ class BookingFlowController extends Controller
 
     public function getPaymentMethodImage(PaymentMethod $paymentMethod)
     {
+        // ... (Fungsi ini tidak berubah) ...
         try {
-            // Pastikan gambar ada
             if (!$paymentMethod->image || !Storage::disk('public')->exists($paymentMethod->image)) {
                 return response()->json(['message' => 'Gambar tidak ditemukan.'], 404);
             }
-
-            // Ambil path lengkap ke file
             $path = Storage::disk('public')->path($paymentMethod->image);
-
-            // Kirim file sebagai respons
-            // Ini akan otomatis ditangani oleh middleware cors.php
             return response()->file($path);
         } catch (\Exception $e) {
             Log::error('Error fetching payment method image:', ['id' => $paymentMethod->id, 'error' => $e->getMessage()]);
@@ -475,29 +442,24 @@ class BookingFlowController extends Controller
         }
     }
 
-    // --- TAMBAHAN BARU: METHOD UPLOAD BUKTI PEMBAYARAN ---
     /**
      * Menerima upload bukti pembayaran dari customer.
      * POST /api/booking/{booking}/upload-proof
      */
     public function uploadPaymentProof(Request $request, Booking $booking)
     {
-        // 1. Otorisasi: Pastikan booking ini milik user yang login
+        // ... (Fungsi ini tidak berubah) ...
         if ($booking->customer_id !== Auth::id()) {
             return response()->json(['message' => 'Tidak diizinkan'], 403);
         }
-
-        // 2. Validasi Status: Hanya boleh upload jika status 'Menunggu Pembayaran'
         if ($booking->status_pesanan !== 'Menunggu Pembayaran') {
             return response()->json([
                 'message' => 'Tidak dapat mengupload bukti untuk pesanan ini.',
                 'status' => $booking->status_pesanan
-            ], 400); // 400 Bad Request
+            ], 400);
         }
-
-        // 3. Validasi Input
         $validator = Validator::make($request->all(), [
-            'image' => 'required|image|mimes:jpg,jpeg,png|max:2048', // 2MB max
+            'image' => 'required|image|mimes:jpg,jpeg,png|max:2048',
             'keterangan' => 'nullable|string|max:500',
         ], [
             'image.required' => 'File gambar bukti pembayaran wajib diisi.',
@@ -505,24 +467,16 @@ class BookingFlowController extends Controller
             'image.mimes' => 'Format gambar harus JPG atau PNG.',
             'image.max' => 'Ukuran gambar maksimal 2MB.',
         ]);
-
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
-
         try {
-            // 4. Simpan File
             $path = $request->file('image')->store('payment_proofs', 'public');
-
-            // 5. Update Booking
             $booking->payment_proof_image = $path;
             $booking->payment_proof_notes = $request->input('keterangan');
-            $booking->status_pesanan = 'Menunggu Verifikasi'; // <-- Status Baru!
+            $booking->status_pesanan = 'Menunggu Verifikasi';
             $booking->save();
-
             Log::info('Payment proof uploaded successfully:', ['booking_id' => $booking->id, 'path' => $path]);
-
-            // 6. Kembalikan respons sukses
             return response()->json([
                 'message' => 'Bukti pembayaran berhasil diupload.',
                 'booking' => $booking
@@ -538,5 +492,4 @@ class BookingFlowController extends Controller
             ], 500);
         }
     }
-    // --- AKHIR TAMBAHAN BARU ---
 }

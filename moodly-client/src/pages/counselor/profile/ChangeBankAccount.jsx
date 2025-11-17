@@ -1,5 +1,7 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../../context/AuthContext.jsx"; // Path 3x mundur
+import apiClient from "../../../api/axios.js"; // Path 3x mundur
 
 // --- Komponen Ikon ---
 const BackArrowIcon = () => (
@@ -13,111 +15,152 @@ const BackArrowIcon = () => (
         strokeWidth="2.5"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="text-white" // Ikon di header biru
+        className="text-white"
     >
         <line x1="19" y1="12" x2="5" y2="12"></line>
         <polyline points="12 19 5 12 12 5"></polyline>
     </svg>
 );
 
-const SearchIcon = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-gray-400"
-    >
-        <circle cx="11" cy="11" r="8"></circle>
-        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-    </svg>
-);
-
-// Komponen placeholder logo bank
+// --- BARU: Komponen Kartu Rekening (dari file dummy Anda) ---
 const BankLogo = ({ bankName }) => {
-    const getLogoClass = () => {
-        if (bankName.toLowerCase() === "bri") {
-            return "bg-blue-600 text-white";
-        }
-        if (bankName.toLowerCase() === "bni") {
-            return "bg-orange-500 text-white";
-        }
-        return "bg-gray-200 text-gray-700";
-    };
+    const name = bankName || "N/A";
+    let logoClass = "bg-gray-200 text-gray-700"; // Default
+    if (name.toLowerCase().includes("bri"))
+        logoClass = "bg-blue-600 text-white";
+    if (name.toLowerCase().includes("bni"))
+        logoClass = "bg-orange-500 text-white";
+    if (name.toLowerCase().includes("bca"))
+        logoClass = "bg-blue-800 text-white";
 
     return (
         <div
-            className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm ${getLogoClass()}`}
+            className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm ${logoClass}`}
         >
-            {bankName.substring(0, 3).toUpperCase()}
+            {name.substring(0, 3).toUpperCase()}
         </div>
     );
 };
-// --- Akhir Komponen Ikon ---
 
-// --- Data Dummy (ganti dengan data dari API) ---
-const dummyAccounts = [
-    {
-        id: 1,
-        bankName: "BRI",
-        accountHolder: "KIM SEOKJIN",
-        accountNumber: "1122 3344 5566 778",
-    },
-    {
-        id: 2,
-        bankName: "BNI",
-        accountHolder: "SDRI KIM SEOKJIN",
-        accountNumber: "1122 3344 55",
-    },
-    // Tambahkan data lain jika perlu
-];
-
-// --- Komponen Kartu Rekening ---
 const BankAccountCard = ({ account }) => (
-    <div className="flex items-center gap-4 p-4 border-b border-gray-100 last:border-b-0">
+    <div className="flex items-center gap-4 p-4">
         <BankLogo bankName={account.bankName} />
         <div className="flex-grow">
             <h3 className="text-sm font-semibold text-gray-900">
-                {account.accountHolder}
+                {account.accountHolder || "Belum Diatur"}
             </h3>
             <p className="text-sm text-gray-600 mt-0.5">
-                {account.bankName} . {account.accountNumber}
+                {account.bankName || "Nama Bank"} .{" "}
+                {account.accountNumber || "No. Rekening"}
             </p>
         </div>
     </div>
 );
+// --- AKHIR KOMPONEN BARU ---
 
-// --- Komponen Utama ---
-export default function BankAccountPage() {
+// --- Helper Komponen Form ---
+const InputField = ({
+    label,
+    name,
+    type = "text",
+    value,
+    onChange,
+    placeholder,
+    error,
+}) => (
+    <div>
+        <label
+            htmlFor={name}
+            className="block text-sm font-medium text-gray-700 mb-1"
+        >
+            {label}
+        </label>
+        <input
+            type={type}
+            id={name}
+            name={name}
+            value={value || ""}
+            onChange={onChange}
+            placeholder={placeholder}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none"
+        />
+        {error && <small className="text-red-500 mt-1">{error[0]}</small>}
+    </div>
+);
+// --- Akhir Helper Form ---
+
+export default function ChangeBankAccountPage() {
     const navigate = useNavigate();
-    const [searchQuery, setSearchQuery] = useState("");
+    const { user, getUser } = useAuth();
+
+    const [formData, setFormData] = useState({
+        bank_name: "",
+        account_holder_name: "",
+        account_number: "",
+    });
+
+    const [errors, setErrors] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [successMessage, setSuccessMessage] = useState("");
+
+    // Isi form saat data 'user' dari AuthContext tersedia
+    useEffect(() => {
+        if (user) {
+            setFormData({
+                bank_name: user.bank_name || "",
+                account_holder_name: user.account_holder_name || "",
+                account_number: user.account_number || "",
+            });
+        }
+    }, [user]);
 
     const handleBack = () => {
-        navigate(-1); // Kembali ke halaman profile
+        navigate(-1); // Kembali ke halaman /profile/edit
     };
 
-    // Logika untuk memfilter rekening berdasarkan pencarian
-    const filteredAccounts = useMemo(() => {
-        const query = searchQuery.toLowerCase();
-        if (!query) {
-            return dummyAccounts;
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        setErrors(null);
+        setSuccessMessage("");
+
+        try {
+            // Panggil API (data bank ada di CounselorProfileController@update)
+            await apiClient.post("/api/counselor/profile/update", formData);
+            await getUser(); // Refresh data user global
+            setSuccessMessage("Rekening bank berhasil diperbarui!");
+
+            setTimeout(() => {
+                navigate("/counselor/profile/edit");
+            }, 1500);
+        } catch (err) {
+            if (err.response && err.response.status === 422) {
+                setErrors(err.response.data.errors);
+            } else {
+                setErrors({
+                    general: [err.message || "Gagal memperbarui rekening."],
+                });
+            }
+        } finally {
+            setIsSubmitting(false);
         }
-        return dummyAccounts.filter(
-            (acc) =>
-                acc.accountHolder.toLowerCase().includes(query) ||
-                acc.bankName.toLowerCase().includes(query) ||
-                acc.accountNumber.includes(query)
-        );
-    }, [searchQuery]);
+    };
+
+    // --- Data untuk kartu tampilan (read-only) ---
+    const currentAccount = {
+        bankName: user?.bank_name,
+        accountHolder: user?.account_holder_name,
+        accountNumber: user?.account_number,
+    };
 
     return (
-        <div className="bg-white-50 min-h-screen font-sans">
-            {/* Header Halaman (Biru Sesuai Desain) */}
+        <div className="bg-white min-h-screen font-sans">
+            {/* Header Halaman */}
             <header className="bg-cyan-500 p-4 pt-6 flex items-center sticky top-0 z-20 text-white rounded-b-3xl shadow-lg">
                 <button
                     onClick={handleBack}
@@ -129,42 +172,72 @@ export default function BankAccountPage() {
                 <h1 className="text-xl font-bold text-center flex-grow -translate-x-4">
                     Daftar Rekening
                 </h1>
-                <div className="w-8"></div> {/* Spacer */}
+                <div className="w-8"></div>
             </header>
 
             {/* Konten Utama */}
             <main className="p-4 space-y-4">
-                {/* Search Bar */}
-                <div className="relative">
-                    <input
-                        type="text"
-                        placeholder="Cari nama bank atau No. Rekening"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                    />
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2">
-                        <SearchIcon />
-                    </div>
-                </div>
-
-                {/* Judul Daftar Rekening */}
+                {/* --- BAGIAN 1: DAFTAR REKENING SAAT INI --- */}
                 <h2 className="text-base font-semibold text-gray-800 px-1 pt-2">
-                    Daftar Rekening Anda
+                    Rekening Anda Saat Ini
                 </h2>
-
-                {/* List Rekening */}
                 <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
-                    {filteredAccounts.length > 0 ? (
-                        filteredAccounts.map((acc) => (
-                            <BankAccountCard key={acc.id} account={acc} />
-                        ))
-                    ) : (
-                        <p className="p-4 text-center text-gray-500 text-sm">
-                            Rekening tidak ditemukan.
-                        </p>
-                    )}
+                    {/* Kita hanya tampilkan satu kartu, karena DB hanya simpan satu */}
+                    <BankAccountCard account={currentAccount} />
                 </div>
+                {/* --- AKHIR BAGIAN 1 --- */}
+
+                {/* --- BAGIAN 2: FORM EDIT/TAMBAH --- */}
+                <h2 className="text-base font-semibold text-gray-800 px-1 pt-4">
+                    Ubah Rekening
+                </h2>
+                <form className="space-y-4" onSubmit={handleSubmit}>
+                    {successMessage && (
+                        <div className="p-3 text-center text-sm text-green-700 bg-green-100 rounded-lg">
+                            {successMessage}
+                        </div>
+                    )}
+                    {errors?.general && (
+                        <div className="p-3 text-center text-sm text-red-700 bg-red-100 rounded-lg">
+                            {errors.general[0]}
+                        </div>
+                    )}
+
+                    <InputField
+                        label="Nama Bank"
+                        name="bank_name"
+                        value={formData.bank_name}
+                        onChange={handleChange}
+                        error={errors?.bank_name}
+                        placeholder="Contoh: BCA, BRI, BNI"
+                    />
+                    <InputField
+                        label="Nama Pemilik Rekening"
+                        name="account_holder_name"
+                        value={formData.account_holder_name}
+                        onChange={handleChange}
+                        error={errors?.account_holder_name}
+                        placeholder="Masukkan nama sesuai di buku tabungan"
+                    />
+                    <InputField
+                        label="Nomor Rekening"
+                        name="account_number"
+                        type="number"
+                        value={formData.account_number}
+                        onChange={handleChange}
+                        error={errors?.account_number}
+                        placeholder="Masukkan nomor rekening"
+                    />
+
+                    <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="w-full mt-6 bg-cyan-500 text-white font-bold py-3 px-4 rounded-lg shadow hover:bg-cyan-600 transition-colors active:scale-95 disabled:bg-gray-400"
+                    >
+                        {isSubmitting ? "Menyimpan..." : "Simpan Perubahan"}
+                    </button>
+                </form>
+                {/* --- AKHIR BAGIAN 2 --- */}
             </main>
         </div>
     );

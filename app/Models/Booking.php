@@ -5,16 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany; // <-- TAMBAHKAN Import HasMany
-
-// --- TAMBAHAN BARU ---
-use Illuminate\Database\Eloquent\Casts\Attribute; // Untuk Accessor
-use Illuminate\Support\Facades\Storage; // Untuk URL Storage
-// --- AKHIR TAMBAHAN BARU ---
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Support\Facades\Storage;
 
 class Booking extends Model
 {
-    // ... (kode $fillable, $appends, relasi tidak berubah) ...
     use HasFactory;
 
     protected $fillable = [
@@ -25,28 +21,24 @@ class Booking extends Model
         'tempat_konseling_id',
         'tanggal_konsultasi',
         'jam_konsultasi',
-        'metode_konsultasi',
+        'metode_konsultasi', // Anda mungkin punya 'metode_layanan' di sini?
         'status_pesanan',
         'total_harga',
-        'alasan_pembatalan', // <-- Pastikan ada dari migrasi sebelumnya
-        'catatan_pembatalan', // <-- Pastikan ada dari migrasi sebelumnya
-
-        // --- TAMBAHAN DARI MIGRARI BARU ---
+        'alasan_pembatalan',
+        'catatan_pembatalan',
         'payment_proof_image',
         'payment_proof_notes',
-        // --- AKHIR TAMBAHAN ---
+        'gmeet_link', // <-- Saya tambahkan dari rencana Gmeet kita
     ];
 
-    // --- TAMBAHAN BARU: Appends ---
     /**
      * The accessors to append to the model's array form.
      *
      * @var array
      */
     protected $appends = [
-        'payment_proof_image_url' // <-- Kita ingin URL ini selalu ada di JSON
+        'payment_proof_image_url'
     ];
-    // --- AKHIR TAMBAHAN BARU ---
 
 
     /**
@@ -73,7 +65,6 @@ class Booking extends Model
         return $this->belongsTo(JenisKonseling::class);
     }
 
-    // --- RELASI BARU ---
     /**
      * Get all of the chat messages for the booking.
      */
@@ -81,20 +72,23 @@ class Booking extends Model
     {
         return $this->hasMany(ChatMessage::class);
     }
-    // --- AKHIR RELASI BARU ---
 
-    // Tambahkan relasi lain jika perlu (Durasi, Tempat)
+    /**
+     * Get the durasi konseling associated with the booking.
+     */
     public function durasiKonseling(): BelongsTo
     {
         return $this->belongsTo(DurasiKonseling::class);
     }
 
+    /**
+     * Get the tempat konseling associated with the booking.
+     */
     public function tempatKonseling(): BelongsTo
     {
         return $this->belongsTo(TempatKonseling::class);
     }
 
-    // --- TAMBAHAN BARU: Accessor untuk Bukti Pembayaran ---
     /**
      * Dapatkan URL lengkap untuk gambar bukti pembayaran.
      *
@@ -103,15 +97,10 @@ class Booking extends Model
     protected function paymentProofImageUrl(): Attribute
     {
         return Attribute::make(
-            // --- PERBAIKAN: Panggil Rute API Proxy ---
-            // Alih-alih memanggil Storage::url() (yang menyebabkan error CORS
-            // di php artisan serve), kita panggil rute API proxy yang sudah
-            // kita daftarkan di routes/api.php
+            // Panggil Rute API Proxy
             get: fn() => $this->payment_proof_image
                 ? url('/api/super-admin/booking-management/' . $this->id . '/payment-proof-image')
                 : null,
-            // --- AKHIR PERBAIKAN ---
         );
     }
-    // --- AKHIR TAMBAHAN BARU & PERBAIKAN ---
 }
