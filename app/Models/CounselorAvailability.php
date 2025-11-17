@@ -10,17 +10,22 @@ class CounselorAvailability extends Model
 {
     use HasFactory;
 
+    // Tentukan nama tabel jika tidak standar
+    protected $table = 'counselor_availabilities';
+
+    /**
+     * The attributes that are mass assignable.
+     * (Ini adalah perbaikan untuk error 500)
+     */
     protected $fillable = [
-        // --- PERBAIKAN: Tambahkan counselor_id ---
         'counselor_id',
-        // --- AKHIR PERBAIKAN ---
-        'day_of_week',
+        'tanggal_konsultasi', // <-- Kita ganti dari day_of_week
         'start_time',
         'end_time',
     ];
 
     /**
-     * Relasi ke User (Konselor) yang memiliki jadwal ini.
+     * Relasi ke konselor (User model).
      */
     public function counselor(): BelongsTo
     {

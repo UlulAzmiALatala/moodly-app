@@ -9,7 +9,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\HasApiTokens;
-// HAPUS: use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use App\Models\CounselorAvailability;
 
 class User extends Authenticatable
 {
@@ -38,9 +39,12 @@ class User extends Authenticatable
         'password',
         'surat_izin_praktik',
         'spesialisasi',
-        'metode_layanan', // <-- TAMBAHKAN INI
+        'metode_layanan',
         'rating',
         'universitas',
+        'bank_name',
+        'account_holder_name',
+        'account_number',
     ];
 
     /**
@@ -94,9 +98,24 @@ class User extends Authenticatable
             /** @phpstan-ignore-next-line */
             return Storage::disk('public')->url($this->attributes['avatar']);
         }
-
-        // Fallback ke UI Avatars jika tidak ada avatar
         $name = urlencode($this->name);
         return "https://ui-avatars.com/api/?name={$name}&background=EBF4FF&color=3B82F6&bold=true";
+    }
+
+    /**
+     * Tempat praktik di mana konselor ini tersedia.
+     */
+    public function practiceLocations(): BelongsToMany
+    {
+        // (Nama tabel pivot, foreign key model ini, foreign key model yg join)
+        return $this->belongsToMany(TempatKonseling::class, 'tempat_konseling_user', 'user_id', 'tempat_konseling_id');
+    }
+
+    /**
+     * Ketersediaan (hari/jam) milik konselor ini.
+     */
+    public function availabilities(): HasMany
+    {
+        return $this->hasMany(CounselorAvailability::class, 'counselor_id');
     }
 }

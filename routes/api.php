@@ -25,6 +25,7 @@ use App\Http\Controllers\BookingChatController;
 use App\Http\Controllers\Counselor\DashboardController;
 use App\Http\Controllers\Counselor\ScheduleController;
 use App\Http\Controllers\Counselor\HistoryController as CounselorHistoryController;
+use App\Http\Controllers\Counselor\ProfileController as CounselorProfileController;
 
 use App\Http\Middleware\RoleMiddleware;
 use App\Models\User;
@@ -50,6 +51,7 @@ Route::group(['middleware' => [
             return $request->user();
         });
 
+        // --- RUTE KONSELOR ---
         Route::get('/counselor/dashboard-data', [DashboardController::class, 'getDashboardData'])
             ->middleware(RoleMiddleware::class . ':konselor');
         Route::get('/counselor/schedules', [ScheduleController::class, 'index'])
@@ -61,6 +63,24 @@ Route::group(['middleware' => [
         Route::get('/counselor/history', [CounselorHistoryController::class, 'index'])
             ->middleware(RoleMiddleware::class . ':konselor');
 
+        Route::prefix('counselor/profile')->middleware(RoleMiddleware::class . ':konselor')->group(function () {
+            Route::post('/update', [CounselorProfileController::class, 'update']);
+            Route::post('/update-avatar', [CounselorProfileController::class, 'updateAvatar']);
+            Route::post('/change-password', [CounselorProfileController::class, 'updatePassword']);
+            Route::post('/change-email', [CounselorProfileController::class, 'updateEmail']);
+            Route::get('/practice-locations', [CounselorProfileController::class, 'getPracticeLocations']);
+            Route::post('/practice-locations', [CounselorProfileController::class, 'updatePracticeLocations']);
+        });
+
+        Route::prefix('counselor/availability')->middleware(RoleMiddleware::class . ':konselor')->group(function () {
+            Route::get('/', [KonselorManagementController::class, 'getAvailabilities'])
+                ->scopeBindings();
+            Route::post('/', [KonselorManagementController::class, 'storeAvailability'])
+                ->scopeBindings();
+            Route::delete('/{availability}', [KonselorManagementController::class, 'destroyAvailability'])
+                ->scopeBindings();
+        });
+
         // --- RUTE UNTUK CUSTOMER ---
         Route::get('/beranda-data', [BerandaController::class, 'getBerandaData']);
         Route::post('/profile/update', [ProfileController::class, 'update']);
@@ -68,12 +88,10 @@ Route::group(['middleware' => [
         Route::post('/profile/change-email', [ProfileController::class, 'updateEmail']);
         Route::post('/profile/change-phone', [ProfileController::class, 'updatePhone']);
         Route::post('/profile/update-avatar', [ProfileController::class, 'updateAvatar']);
-
         Route::get('/history', [HistoryController::class, 'index']);
         Route::get('/history/{booking}', [HistoryController::class, 'show']);
         Route::patch('/history/{booking}/cancel', [HistoryController::class, 'cancel']);
         Route::patch('/history/{booking}/reschedule', [HistoryController::class, 'reschedule']);
-
         Route::get('/booking/tempat-konseling', [BookingFlowController::class, 'getTempatKonseling']);
         Route::get('/booking/tempat-konseling/{tempatKonseling}', [BookingFlowController::class, 'getTempatDetail'])
             ->where('tempatKonseling', '[0-9]+');
@@ -90,7 +108,6 @@ Route::group(['middleware' => [
             Route::post('/messages', [BookingChatController::class, 'store'])->where('booking', '[0-9]+');
         });
 
-
         // --- RUTE UNTUK SUPER ADMIN ---
         Route::middleware(RoleMiddleware::class . ':super-admin')->prefix('super-admin')->group(function () {
             Route::apiResource('jenis-konseling', JenisKonselingController::class);
@@ -98,21 +115,17 @@ Route::group(['middleware' => [
             Route::apiResource('durasi-konseling', DurasiKonselingController::class);
             Route::apiResource('tempat-konseling', TempatKonselingController::class);
             Route::post('tempat-konseling/{tempatKonseling}', [TempatKonselingController::class, 'update']);
-
             Route::post('admin-management/{user}/block', [AdminManagementController::class, 'block']);
             Route::post('admin-management/{user}/unblock', [AdminManagementController::class, 'unblock']);
             Route::apiResource('admin-management', AdminManagementController::class)->parameters(['admin-management' => 'user']);
-
             Route::post('konselor-management/{user}/block', [KonselorManagementController::class, 'block']);
             Route::post('konselor-management/{user}/unblock', [KonselorManagementController::class, 'unblock']);
             Route::apiResource('konselor-management', KonselorManagementController::class)->parameters(['konselor-management' => 'user']);
             Route::post('konselor-management/{user}', [KonselorManagementController::class, 'update']);
-
             Route::get('konselor-management/{user}/availabilities', [KonselorManagementController::class, 'getAvailabilities']);
             Route::post('konselor-management/{user}/availabilities', [KonselorManagementController::class, 'storeAvailability']);
             Route::put('konselor-management/{user}/availabilities/{availability}', [KonselorManagementController::class, 'updateAvailability']);
             Route::delete('konselor-management/{user}/availabilities/{availability}', [KonselorManagementController::class, 'destroyAvailability']);
-
             Route::apiResource('payment-methods', PaymentMethodController::class);
             Route::post('payment-methods/{paymentMethod}', [PaymentMethodController::class, 'update']);
             Route::post('customer-management/{user}/block', [CustomerManagementController::class, 'block']);
@@ -125,7 +138,6 @@ Route::group(['middleware' => [
 
             Route::post('booking-management/{booking}/approve-payment', [BookingManagementController::class, 'approvePayment']);
             Route::post('booking-management/{booking}/reject-payment', [BookingManagementController::class, 'rejectPayment']);
-
             Route::get('booking-management/{booking}/payment-proof-image', [BookingManagementController::class, 'getPaymentProofImage']);
         });
 
@@ -135,12 +147,11 @@ Route::group(['middleware' => [
             Route::get('jadwal-konsultasi/{booking:id}', [JadwalKonsultasiController::class, 'show']);
             Route::delete('jadwal-konsultasi/{booking:id}', [JadwalKonsultasiController::class, 'destroy']);
             Route::patch('jadwal-konsultasi/{booking:id}/status', [JadwalKonsultasiController::class, 'updateStatus']);
-
+            Route::post('jadwal-konsultasi/{booking:id}/update-gmeet', [JadwalKonsultasiController::class, 'updateGmeetLink']);
             Route::get('verifikasi-konselor', [KonselorVerificationController::class, 'index']);
             Route::get('verifikasi-konselor/{user:id}', [KonselorVerificationController::class, 'show']);
             Route::post('verifikasi-konselor/{user:id}/approve', [KonselorVerificationController::class, 'approve']);
             Route::post('verifikasi-konselor/{user:id}/reject', [KonselorVerificationController::class, 'reject']);
-
             Route::get('verifikasi-customer', [CustomerVerificationController::class, 'index']);
             Route::get('verifikasi-customer/{user:id}', [CustomerVerificationController::class, 'show']);
             Route::post('verifikasi-customer/{user:id}/approve', [CustomerVerificationController::class, 'approve']);

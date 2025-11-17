@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import apiClient from "../../../api/axios";
 
-// Komponen DetailField & BackIcon (sama seperti sebelumnya)
+// Komponen DetailField & BackIcon (tidak berubah)
 const DetailField = ({ label, value }) => (
     <div>
         <label className="text-sm text-gray-500">{label}</label>
@@ -27,7 +27,7 @@ const BackIcon = () => (
         <polyline points="12 19 5 12 12 5"></polyline>
     </svg>
 );
-// Star Icon (jika perlu tampilkan rating konselor)
+// Star Icon (tidak berubah)
 const StarIcon = () => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -48,17 +48,26 @@ const StarIcon = () => (
 const JadwalDetailPage = () => {
     const { id } = useParams();
     const [jadwal, setJadwal] = useState(null);
-    // ... (state loading & error) ...
+    const [loading, setLoading] = useState(true);
+
+    const [gmeetLink, setGmeetLink] = useState("");
+    const [linkError, setLinkError] = useState(null);
+    const [linkSuccess, setLinkSuccess] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         const fetchJadwal = async () => {
+            setLoading(true);
             try {
                 const response = await apiClient.get(
                     `/api/admin/jadwal-konsultasi/${id}`
                 );
                 setJadwal(response.data);
+                setGmeetLink(response.data.gmeet_link || "");
             } catch (error) {
                 console.error("Gagal load detail jadwal:", error);
+            } finally {
+                setLoading(false);
             }
         };
         fetchJadwal();
@@ -74,7 +83,39 @@ const JadwalDetailPage = () => {
         });
     };
 
-    if (!jadwal) return <div className="p-6">Loading...</div>;
+    const handleLinkSubmit = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        setLinkError(null);
+        setLinkSuccess(null);
+
+        try {
+            const response = await apiClient.post(
+                `/api/admin/jadwal-konsultasi/${id}/update-gmeet`,
+                { gmeet_link: gmeetLink }
+            );
+
+            setJadwal(response.data.booking);
+            setGmeetLink(response.data.booking.gmeet_link || "");
+            setLinkSuccess(
+                response.data.message || "Link Gmeet berhasil diperbarui!"
+            );
+        } catch (error) {
+            console.error("Gagal update Gmeet link:", error);
+            if (error.response && error.response.status === 422) {
+                setLinkError(error.response.data.errors.gmeet_link[0]);
+            } else if (error.response && error.response.data.message) {
+                setLinkError(error.response.data.message);
+            } else {
+                setLinkError("Terjadi kesalahan saat menyimpan link.");
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    if (loading) return <div className="p-6">Loading...</div>;
+    if (!jadwal) return <div className="p-6">Data jadwal tidak ditemukan.</div>;
 
     return (
         <div className="p-6">
@@ -88,7 +129,6 @@ const JadwalDetailPage = () => {
                         Detail Jadwal Konsultasi
                     </h1>
                 </Link>
-                {/* Tombol Kembali saja di halaman detail */}
                 <Link
                     to="/admin/jadwal-konsultasi"
                     className="px-5 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
@@ -96,8 +136,11 @@ const JadwalDetailPage = () => {
                     Kembali
                 </Link>
             </div>
+
+            {/* BARIS DEBUG SUDAH DIHAPUS */}
+
             <div className="bg-white rounded-lg shadow-md p-8 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                {/* Kolom Kiri: Info Customer */}
+                {/* Kolom Kiri: Info Customer (tidak berubah) */}
                 <div>
                     <div className="flex items-center gap-6 mb-8">
                         <img
@@ -112,8 +155,6 @@ const JadwalDetailPage = () => {
                             <p className="text-gray-500">
                                 {jadwal.customer?.email}
                             </p>
-                            {/* Tampilkan rating customer jika ada */}
-                            {/* <div className="flex items-center gap-1 text-lg mt-1"><StarIcon /> <span>4.8</span></div> */}
                         </div>
                     </div>
                     <h3 className="text-lg font-semibold border-b pb-2 mb-2">
@@ -131,7 +172,7 @@ const JadwalDetailPage = () => {
                     <DetailField label="Kota" value={jadwal.customer?.city} />
                 </div>
 
-                {/* Kolom Kanan: Info Konsultasi */}
+                {/* Kolom Kanan: Info Konsultasi (tidak berubah) */}
                 <div>
                     <h3 className="text-lg font-semibold mb-3">
                         Informasi Konsultasi
@@ -158,8 +199,73 @@ const JadwalDetailPage = () => {
                         value={jadwal.metode_konsultasi}
                     />
                     <DetailField label="Status" value={jadwal.status_pesanan} />
-                    {/* TODO: Tambahkan tombol/logika untuk ubah status */}
                 </div>
+
+                {/* --- BAGIAN BARU MANAJEMEN GMEET --- */}
+
+                {/* === PERBAIKAN DI SINI === */}
+                {(jadwal.metode_konsultasi === "Video Call" ||
+                    jadwal.metode_konsultasi === "Call") && (
+                    // === AKHIR PERBAIKAN ===
+
+                    <div className="md:col-span-2 mt-4 pt-6 border-t border-gray-200">
+                        <h3 className="text-lg font-semibold mb-3">
+                            Manajemen Link Gmeet
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-4">
+                            Metode konsultasi untuk sesi ini adalah{" "}
+                            <strong>{jadwal.metode_konsultasi}</strong>.
+                            Masukkan link Gmeet di bawah ini. Kosongkan field
+                            lalu simpan untuk menghapus link.
+                        </p>
+
+                        <form onSubmit={handleLinkSubmit} className="space-y-4">
+                            <div>
+                                <label
+                                    htmlFor="gmeet_link"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    URL Gmeet
+                                </label>
+                                <input
+                                    type="text"
+                                    id="gmeet_link"
+                                    value={gmeetLink}
+                                    onChange={(e) =>
+                                        setGmeetLink(e.target.value)
+                                    }
+                                    placeholder="https://meet.google.com/xxx-xxxx-xxx"
+                                    className="w-full px-4 py-2 mt-1 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                />
+                            </div>
+
+                            {/* Tampilkan pesan Error atau Sukses */}
+                            {linkError && (
+                                <div className="text-sm text-red-600">
+                                    {linkError}
+                                </div>
+                            )}
+                            {linkSuccess && (
+                                <div className="text-sm text-green-600">
+                                    {linkSuccess}
+                                </div>
+                            )}
+
+                            <div>
+                                <button
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="px-5 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400"
+                                >
+                                    {isSubmitting
+                                        ? "Menyimpan..."
+                                        : "Simpan Link"}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                )}
+                {/* --- AKHIR BAGIAN GMEET --- */}
             </div>
         </div>
     );

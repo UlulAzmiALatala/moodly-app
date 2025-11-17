@@ -15,21 +15,23 @@ return new class extends Migration
             $table->id();
             // Foreign key ke tabel users (untuk konselor)
             $table->foreignId('counselor_id')->constrained('users')->onDelete('cascade');
-            // Hari dalam seminggu (0 = Minggu, 1 = Senin, ..., 6 = Sabtu)
-            $table->tinyInteger('day_of_week');
+
+            // --- PERBAIKAN: Ganti 'day_of_week' menjadi 'tanggal_konsultasi' ---
+            $table->date('tanggal_konsultasi');
+            // --- AKHIR PERBAIKAN ---
+
             // Jam mulai tersedia (format HH:MM:SS)
             $table->time('start_time');
             // Jam selesai tersedia (format HH:MM:SS)
             $table->time('end_time');
+
             $table->timestamps(); // created_at and updated_at
 
             // Index untuk performa query
-            $table->index(['counselor_id', 'day_of_week']);
+            $table->index(['counselor_id', 'tanggal_konsultasi']);
 
-            // --- PERBAIKAN: Memberikan nama constraint yang lebih pendek ---
-            // Pastikan tidak ada duplikat jadwal pada hari yang sama untuk konselor yang sama
-            $table->unique(['counselor_id', 'day_of_week', 'start_time'], 'counselor_availability_unique');
-            // --- AKHIR PERBAIKAN ---
+            // Pastikan tidak ada duplikat jadwal pada TANGGAL yang sama untuk konselor yang sama
+            $table->unique(['counselor_id', 'tanggal_konsultasi', 'start_time'], 'counselor_availability_unique');
         });
     }
 

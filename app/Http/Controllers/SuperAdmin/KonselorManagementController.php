@@ -4,12 +4,14 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\CounselorAvailability; // <-- Import Model Jadwal
+use App\Models\CounselorAvailability;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage; // <-- Import Storage
-use Illuminate\Validation\Rule;         // <-- Import Rule
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class KonselorManagementController extends Controller
 {
@@ -185,71 +187,128 @@ class KonselorManagementController extends Controller
         return response()->json($user);
     }
 
-    // --- METHOD BARU UNTUK MANAJEMEN JADWAL ---
-
     /**
      * Menampilkan daftar jadwal ketersediaan untuk konselor tertentu.
      * GET /api/super-admin/konselor-management/{user}/availabilities
      */
-    public function getAvailabilities(User $user)
+    public function getAvailabilities(Request $request, ?User $user = null)
     {
-        // Pastikan user adalah konselor
-        if ($user->role !== 'konselor') {
-            return response()->json(['message' => 'User bukan konselor.'], 404);
+        // Tentukan user (jika dari rute admin, $user ada, jika dari rute konselor, $user null)
+        $counselor = $user ?? Auth::user();
+        /** @var \App\Models\User $counselor */ // <-- Petunjuk untuk Linter
+
+        if (!$counselor || $counselor->role !== 'konselor') {
+            return response()->json(['message' => 'Konselor tidak ditemukan.'], 404);
         }
 
-        $availabilities = CounselorAvailability::where('counselor_id', $user->id)
-            ->orderBy('day_of_week')
-            ->orderBy('start_time')
+        // --- PERBAIKAN: Order berdasarkan TANGGAL (bukan hari) ---
+        $availabilities = $counselor->availabilities()
+            ->orderBy('tanggal_konsultasi', 'asc')
+            ->orderBy('start_time', 'asc')
             ->get();
+        // --- AKHIR PERBAIKAN ---
 
         return response()->json($availabilities);
     }
 
     /**
      * Menyimpan jadwal ketersediaan baru untuk konselor.
-     * POST /api/super-admin/konselor-management/{user}/availabilities
+     * Dipakai oleh Super Admin (POST /super-admin/konselor-management/{user}/availabilities)
+     * DAN oleh Konselor (POST /counselor/availability)
      */
-    public function storeAvailability(Request $request, User $user)
+    // --- PERBAIKAN: Tambahkan ?User agar $user bisa null ---
+    public function storeAvailability(Request $request, ?User $user = null)
     {
-        if ($user->role !== 'konselor') {
-            return response()->json(['message' => 'User bukan konselor.'], 404);
+        $counselor = $user ?? Auth::user();
+        /** @var \App\Models\User $counselor */ // <-- Petunjuk untuk Linter
+
+        if (!$counselor || $counselor->role !== 'konselor') {
+            return response()->json(['message' => 'Konselor tidak ditemukan.'], 404);
         }
 
+        // --- PERBAIKAN: Validasi berdasarkan TANGGAL (bukan hari) ---
         $validated = $request->validate([
-            'day_of_week' => 'required|integer|between:0,6', // 0=Minggu, 6=Sabtu
-            'start_time' => 'required|date_format:H:i', // Format jam:menit (e.g., 09:00)
-            'end_time' => 'required|date_format:H:i|after:start_time',
+            'tanggal_konsultasi' => ['required', 'date', 'after_or_equal:today'],
+            'start_time' => ['required', 'date_format:H:i'], // Format "HH:MM"
+            'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
         ]);
+        // --- AKHIR PERBAIKAN ---
 
-        // Cek overlapping schedule (opsional tapi bagus)
-        // TODO: Tambahkan logika untuk mencegah jadwal tumpang tindih
+        try {
+            // --- PERBAIKAN: Simpan data ketersediaan ---
+            $availability = $counselor->availabilities()->create([
+                'counselor_id' => $counselor->id, // counselor_id di-set otomatis oleh relasi
+                'tanggal_konsultasi' => $validated['tanggal_konsultasi'], // <-- Simpan TANGGAL
+                'start_time' => $validated['start_time'] . ':00', // Tambahkan detik
+                'end_time' => $validated['end_time'] . ':00', // Tambahkan detik
+                // Hapus 'day_of_week'
+            ]);
+            // --- AKHIR PERBAIKAN ---
 
-        $availability = CounselorAvailability::create([
-            'counselor_id' => $user->id,
-            'day_of_week' => $validated['day_of_week'],
-            'start_time' => $validated['start_time'] . ':00', // Tambahkan detik
-            'end_time' => $validated['end_time'] . ':00', // Tambahkan detik
-        ]);
-
-        return response()->json($availability, 201);
+            Log::info('Ketersediaan baru ditambahkan:', ['user_id' => $counselor->id, 'data' => $validated]);
+            return response()->json($availability, 201);
+        } catch (\Exception $e) {
+            Log::error('Gagal menambah ketersediaan:', ['user_id' => $counselor->id, 'error' => $e->getMessage()]);
+            if (str_contains($e->getMessage(), 'Duplicate entry') || str_contains($e->getMessage(), 'Constraint violation')) {
+                return response()->json(['message' => 'Jadwal pada tanggal dan jam ini sudah ada.'], 409); // 409 Conflict
+            }
+            return response()->json(['message' => 'Gagal menyimpan jadwal.'], 500);
+        }
     }
 
     /**
      * Menghapus jadwal ketersediaan.
-     * DELETE /api/super-admin/konselor-management/{user}/availabilities/{availability}
+     * Dipakai oleh Super Admin (DELETE /super-admin/konselor-management/{user}/availabilities/{availability})
+     * DAN oleh Konselor (DELETE /counselor/availability/{availability})
      */
-    public function destroyAvailability(User $user, CounselorAvailability $availability)
+    // --- PERBAIKAN: Tambahkan ?User agar $user bisa null ---
+    public function destroyAvailability(Request $request, ?User $user = null, CounselorAvailability $availability)
     {
-        // Pastikan availability milik user yang benar
-        if ($availability->counselor_id !== $user->id) {
-            return response()->json(['message' => 'Jadwal tidak ditemukan untuk konselor ini.'], 404);
+        $counselor = $user ?? Auth::user();
+        /** @var \App\Models\User $counselor */ // <-- Petunjuk untuk Linter
+
+        // Otorisasi: Pastikan availability ini milik konselor yang benar
+        if ($availability->counselor_id !== $counselor->id) {
+            return response()->json(['message' => 'Tidak diizinkan.'], 403);
         }
 
-        $availability->delete();
-
-        return response()->json(['message' => 'Jadwal berhasil dihapus.'], 200);
+        try {
+            $availability->delete();
+            Log::info('Ketersediaan dihapus:', ['id' => $availability->id, 'user_id' => $counselor->id]);
+            return response()->json(null, 204); // 204 No Content
+        } catch (\Exception $e) {
+            Log::error('Gagal menghapus ketersediaan:', ['id' => $availability->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Gagal menghapus jadwal.'], 500);
+        }
     }
 
-    // --- AKHIR METHOD BARU ---
+    /**
+     * Mengupdate jadwal ketersediaan.
+     * (Kita tambahkan ini juga untuk jaga-jaga)
+     * PUT /api/super-admin/konselor-management/{user}/availabilities/{availability}
+     */
+    public function updateAvailability(Request $request, User $user, CounselorAvailability $availability)
+    {
+        if ($availability->counselor_id !== $user->id) {
+            return response()->json(['message' => 'Jadwal tidak ditemukan.'], 404);
+        }
+
+        $validated = $request->validate([
+            'tanggal_konsultasi' => ['required', 'date', 'after_or_equal:today'],
+            'start_time' => ['required', 'date_format:H:i'],
+            'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
+        ]);
+
+        try {
+            $availability->update([
+                'tanggal_konsultasi' => $validated['tanggal_konsultasi'],
+                'start_time' => $validated['start_time'] . ':00',
+                'end_time' => $validated['end_time'] . ':00',
+            ]);
+            return response()->json($availability);
+        } catch (\Exception $e) {
+            Log::error('Gagal update ketersediaan:', ['id' => $availability->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Gagal mengupdate jadwal.'], 500);
+        }
+    }
 }
