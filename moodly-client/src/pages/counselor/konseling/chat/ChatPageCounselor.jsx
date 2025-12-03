@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react"; // 1. Import useMemo
 import { useNavigate, useParams, Link } from "react-router-dom";
 import apiClient from "../../../../api/axios.js";
 import { useAuth } from "../../../../context/AuthContext.jsx";
@@ -7,7 +7,7 @@ import Echo from "laravel-echo";
 import Pusher from "pusher-js";
 window.Pusher = Pusher;
 
-// --- PERBAIKAN: Tambahkan 'client: apiClient' ---
+// --- Echo Config (Tidak Berubah) ---
 const echo = new Echo({
     broadcaster: "reverb",
     key: import.meta.env.VITE_REVERB_APP_KEY || "reverb_key",
@@ -16,7 +16,6 @@ const echo = new Echo({
     wssPort: import.meta.env.VITE_REVERB_PORT || 8080,
     forceTLS: (import.meta.env.VITE_REVERB_SCHEME || "http") === "https",
     enabledTransports: ["ws", "wss"],
-    // client: apiClient, // <-- BARIS KUNCI ADA DI SINI
     authorizer: (channel, options) => {
         return {
             authorize: (socketId, callback) => {
@@ -35,9 +34,8 @@ const echo = new Echo({
         };
     },
 });
-// --- AKHIR PERBAIKAN ---
 
-// --- Komponen Layout & Ikon ---
+// --- Komponen Layout & Ikon (Tidak Berubah) ---
 const MobileLayout = ({ children }) => (
     <div className="flex justify-center min-h-screen bg-white">
         <div className="w-full max-w-md min-h-screen bg-white flex flex-col border-x">
@@ -79,9 +77,23 @@ const SendIcon = () => (
 );
 // --- Akhir Komponen Layout & Ikon ---
 
+// --- 2. HELPER BARU: Format Sisa Waktu ---
+const formatTimeRemaining = (ms) => {
+    if (ms <= 0) return "00:00:00";
+    const totalSeconds = Math.floor(ms / 1000);
+    const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
+    const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(
+        2,
+        "0"
+    );
+    const seconds = String(totalSeconds % 60).padStart(2, "0");
+    return `${hours}:${minutes}:${seconds}`;
+};
+// --- AKHIR HELPER ---
+
 export default function ChatPageCounselor() {
     const navigate = useNavigate();
-    const { id: bookingId } = useParams(); // Ambil bookingId dari URL
+    const { id: bookingId } = useParams();
     const { user: authUser } = useAuth(); // Ini adalah Konselor
 
     const [messages, setMessages] = useState([]);
@@ -92,13 +104,17 @@ export default function ChatPageCounselor() {
     const [error, setError] = useState(null);
     const [sending, setSending] = useState(false);
 
+    // --- 3. STATE BARU UNTUK TIMER ---
+    const [timeRemainingString, setTimeRemainingString] = useState("Memuat...");
+    // --- AKHIR STATE BARU ---
+
     const messagesEndRef = useRef(null);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    // 1. Fetch data chat DAN Dengarkan Event Real-Time
+    // 1. Fetch data chat (Tidak Berubah)
     useEffect(() => {
         if (!bookingId || !authUser) {
             setLoading(true);
@@ -107,11 +123,9 @@ export default function ChatPageCounselor() {
 
         const channelName = `chat.${bookingId}`;
 
-        // Fungsi ini sekarang menjadi SATU-SATUNYA sumber data baru
         const handleNewMessage = (event) => {
             const newMessage = event.message;
             setMessages((prevMessages) => {
-                // Cek duplikat
                 if (!prevMessages.find((msg) => msg.id === newMessage.id)) {
                     return [...prevMessages, newMessage];
                 }
@@ -122,18 +136,21 @@ export default function ChatPageCounselor() {
         const fetchChatData = async () => {
             try {
                 setLoading(true);
+                // Pastikan endpoint ini juga me-return booking.durasiKonseling
                 const response = await apiClient.get(
                     `/api/booking/${bookingId}/chat/messages`
                 );
 
+                const booking = response.data.booking || null;
                 setMessages(response.data.messages || []);
-                setBookingInfo(response.data.booking || null);
+                setBookingInfo(booking); // <-- Simpan info booking
 
                 const endedStatus = ["Selesai", "Dibatalkan", "Tidak Hadir"];
                 if (
                     endedStatus.includes(response.data.booking?.status_pesanan)
                 ) {
                     setIsChatEnded(true);
+                    setTimeRemainingString("Sesi Selesai"); // Set timer jika sudah selesai
                 } else {
                     console.log(
                         `Konselor mendengarkan di channel: ${channelName}`
@@ -146,6 +163,7 @@ export default function ChatPageCounselor() {
                 setError(null);
             } catch (err) {
                 console.error("Gagal mengambil data chat (Konselor):", err);
+                // ... (error handling tidak berubah) ...
                 if (err.response && err.response.status === 403) {
                     setError(
                         err.response.data.message ||
@@ -161,18 +179,63 @@ export default function ChatPageCounselor() {
 
         fetchChatData();
 
-        // --- Fungsi Cleanup ---
         return () => {
             console.log(`Konselor berhenti mendengarkan: ${channelName}`);
             echo.leave(channelName);
         };
     }, [bookingId, authUser]);
 
+    // --- 4. EFEK BARU UNTUK TIMER "KICK-OUT" ---
+    useEffect(() => {
+        if (!bookingInfo || isChatEnded) {
+            return;
+        }
+
+        const { tanggal_konsultasi, jam_konsultasi, durasi_konseling } =
+            bookingInfo;
+
+        if (
+            !tanggal_konsultasi ||
+            !jam_konsultasi ||
+            !durasi_konseling?.durasi_menit
+        ) {
+            setTimeRemainingString("Durasi tidak valid");
+            return;
+        }
+
+        // Hitung waktu berakhir
+        const startTime = new Date(`${tanggal_konsultasi}T${jam_konsultasi}`);
+        const durationInMinutes = parseInt(durasi_konseling.durasi_menit);
+        const endTime = new Date(
+            startTime.getTime() + durationInMinutes * 60000
+        );
+
+        // Mulai interval timer
+        const interval = setInterval(() => {
+            const now = new Date();
+            const remainingMs = endTime.getTime() - now.getTime();
+
+            if (remainingMs <= 0) {
+                // WAKTU HABIS
+                clearInterval(interval);
+                setTimeRemainingString("Sesi Selesai");
+                setIsChatEnded(true); // <-- INI YANG AKAN MENGUNCI INPUT
+            } else {
+                // Update timer
+                setTimeRemainingString(formatTimeRemaining(remainingMs));
+            }
+        }, 1000); // Setiap 1 detik
+
+        // Cleanup interval saat komponen unmount
+        return () => clearInterval(interval);
+    }, [bookingInfo, isChatEnded]); // <-- Dijalankan saat bookingInfo dimuat
+    // --- AKHIR EFEK BARU ---
+
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
 
-    // 3. Fungsi kirim pesan (HANYA MENGIRIM)
+    // 3. Fungsi kirim pesan (Tidak Berubah)
     const sendMessage = async (e) => {
         e.preventDefault();
         if (!input.trim() || isChatEnded || sending) return;
@@ -182,14 +245,12 @@ export default function ChatPageCounselor() {
         setInput("");
 
         try {
-            // Panggil API untuk menyimpan pesan
-            // (Listener Echo (handleNewMessage) yang akan menangani update UI)
             await apiClient.post(`/api/booking/${bookingId}/chat/messages`, {
                 message: sentInput,
             });
         } catch (err) {
             console.error("Gagal mengirim pesan (Konselor):", err);
-            setInput(sentInput); // Kembalikan teks jika gagal
+            setInput(sentInput);
             if (err.response && err.response.data.message) {
                 alert(err.response.data.message);
                 if (err.response.status === 403) setIsChatEnded(true);
@@ -201,7 +262,7 @@ export default function ChatPageCounselor() {
         }
     };
 
-    // --- Tampilan Loading, Error ---
+    // --- Tampilan Loading, Error (Tidak Berubah) ---
     if (loading || !authUser) {
         return (
             <MobileLayout>
@@ -235,8 +296,9 @@ export default function ChatPageCounselor() {
             </MobileLayout>
         );
     }
+    // --- Akhir Tampilan Loading ---
 
-    // --- Tampilan Chat Dinamis ---
+    // --- Tampilan Chat Dinamis (Logika Avatar Dibalik) ---
     const customer = bookingInfo.customer;
     const counselorAvatar =
         authUser.avatar_url ||
@@ -277,20 +339,31 @@ export default function ChatPageCounselor() {
                         <h2 className="font-semibold text-sm leading-tight">
                             {customer.name}
                         </h2>
-                        {!isChatEnded && (
-                            <span className="text-xs text-white/80 flex items-center">
-                                <span className="w-2 h-2 bg-green-400 rounded-full mr-1.5"></span>
-                                Online
-                            </span>
-                        )}
+
+                        {/* --- 5. TAMPILKAN TIMER --- */}
+                        <span
+                            className={`text-xs text-white/80 flex items-center ${
+                                isChatEnded ? "font-bold text-yellow-300" : ""
+                            }`}
+                        >
+                            <span
+                                className={`w-2 h-2 rounded-full mr-1.5 ${
+                                    isChatEnded ? "bg-red-500" : "bg-green-400"
+                                }`}
+                            ></span>
+                            {isChatEnded
+                                ? timeRemainingString
+                                : `Sisa Waktu: ${timeRemainingString}`}
+                        </span>
+                        {/* --- AKHIR TAMPILAN TIMER --- */}
                     </div>
                 </div>
             </header>
 
-            {/* Chat Area */}
+            {/* Chat Area (Logika Bubble Dibalik) */}
             <main className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#F9FAFB]">
                 {messages.map((msg, i) => {
-                    const isSenderMe = msg.sender_id === authUser.id;
+                    const isSenderMe = msg.sender_id === authUser.id; // 'Me' = Konselor
 
                     return (
                         <div
@@ -314,8 +387,8 @@ export default function ChatPageCounselor() {
                             <div
                                 className={`whitespace-pre-line px-4 py-3 text-sm leading-relaxed text-white max-w-[75%] shadow-sm ${
                                     isSenderMe
-                                        ? "bg-[#4C6ED7] rounded-2xl rounded-br-none"
-                                        : "bg-[#175694] rounded-2xl rounded-bl-none"
+                                        ? "bg-[#4C6ED7] rounded-2xl rounded-br-none" // Konselor (Me)
+                                        : "bg-[#175694] rounded-2xl rounded-bl-none" // Customer (Other)
                                 } ${msg.isOptimistic ? "opacity-70" : ""}`}
                             >
                                 {msg.message}
@@ -335,29 +408,23 @@ export default function ChatPageCounselor() {
                         </div>
                     );
                 })}
-                <div ref={messagesEndRef} /> {/* Untuk auto-scroll */}
-                {/* Pesan penutup jika sesi selesai */}
+                <div ref={messagesEndRef} />
+
+                {/* Pesan penutup jika sesi selesai (Sudah benar) */}
                 {isChatEnded && (
                     <div className="flex flex-col items-center text-center mt-8 animate-fadeIn">
-                        <div className="bg-gradient-to-br from-[#FFD700] via-[#FFEA94] to-[#FFF8DC] border border-[#E6C200] rounded-2xl shadow-md p-5 text-gray-800 leading-relaxed w-full">
-                            <p className="font-semibold text-[15px]">
-                                ✨ Sesi percakapan telah berakhir.
-                            </p>
-                            <p className="mt-2 text-sm">
-                                Status sesi ini: {bookingInfo.status_pesanan}
+                        {/* (Style dari file Anda sebelumnya) */}
+                        <div className="border border-[#00A9E0] rounded-lg bg-white p-3 text-xs text-gray-600 leading-relaxed w-full">
+                            <p>
+                                Sesi chat ini telah berakhir (Status:{" "}
+                                {bookingInfo.status_pesanan}).
                             </p>
                         </div>
-                        <Link
-                            to={`/counselor/schedule/${bookingId}`}
-                            className="mt-4 w-full max-w-[85%] bg-gray-700 text-white font-semibold py-3 rounded-full shadow-md hover:bg-gray-800 transition"
-                        >
-                            Kembali ke Detail Sesi
-                        </Link>
                     </div>
                 )}
             </main>
 
-            {/* Input area */}
+            {/* Input area (Logika disabled sudah benar) */}
             {!isChatEnded && (
                 <form
                     onSubmit={sendMessage}

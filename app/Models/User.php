@@ -10,6 +10,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Casts\Attribute; // Pastikan ini di-import
 use App\Models\CounselorAvailability;
 
 class User extends Authenticatable
@@ -54,7 +55,6 @@ class User extends Authenticatable
      */
     protected $appends = ['avatar_url'];
 
-
     /**
      * The attributes that should be hidden for serialization.
      *
@@ -63,7 +63,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
-        'avatar', // Sembunyikan path mentah 'avatar'
+        'avatar', // Sembunyikan path mentah 'avatar' agar frontend pakai 'avatar_url'
     ];
 
     /**
@@ -88,18 +88,28 @@ class User extends Authenticatable
     }
 
     /**
-     * PERBAIKAN: Accessor (gaya LAMA) untuk mendapatkan URL avatar.
-     *
-     * @return string|null
+     * Accessor Modern untuk avatar_url.
+     * Otomatis dipanggil saat $user->avatar_url diakses.
      */
-    public function getAvatarUrlAttribute()
+    protected function avatarUrl(): Attribute
     {
-        if (isset($this->attributes['avatar']) && $this->attributes['avatar']) {
-            /** @phpstan-ignore-next-line */
-            return Storage::disk('public')->url($this->attributes['avatar']);
-        }
-        $name = urlencode($this->name);
-        return "https://ui-avatars.com/api/?name={$name}&background=EBF4FF&color=3B82F6&bold=true";
+        return Attribute::make(
+            get: function () {
+                // 1. Jika avatar kosong, return UI Avatars default
+                if (empty($this->avatar)) {
+                    $name = urlencode($this->name);
+                    return "https://ui-avatars.com/api/?name={$name}&background=EBF4FF&color=3B82F6&bold=true";
+                }
+
+                // 2. Jika avatar sudah berupa link lengkap (misal: login Google), return langsung
+                if (str_starts_with($this->avatar, 'http')) {
+                    return $this->avatar;
+                }
+
+                // 3. Jika avatar adalah path storage, convert jadi URL lengkap
+                return url('storage/' . $this->avatar);
+            },
+        );
     }
 
     /**
@@ -117,5 +127,10 @@ class User extends Authenticatable
     public function availabilities(): HasMany
     {
         return $this->hasMany(CounselorAvailability::class, 'counselor_id');
+    }
+
+    public function helpMessages()
+    {
+        return $this->hasMany(HelpMessage::class, 'user_id');
     }
 }

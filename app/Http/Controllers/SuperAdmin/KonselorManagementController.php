@@ -15,11 +15,30 @@ use Illuminate\Support\Facades\Auth;
 
 class KonselorManagementController extends Controller
 {
-    // Mengambil semua user dengan role 'konselor'
-    public function index()
+    /**
+     * Mengambil semua user dengan role 'konselor' (Support Search & Pagination)
+     */
+    public function index(Request $request)
     {
-        // Eager load relasi jika ada, atau ambil data dasar
-        return User::where('role', 'konselor')->latest()->get();
+        $search = $request->query('search');
+
+        $query = User::where('role', 'konselor');
+
+        // Logika Pencarian
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    // Pencarian kolom baru
+                    ->orWhere('universitas', 'like', "%{$search}%")
+                    ->orWhere('city', 'like', "%{$search}%")
+                    ->orWhere('status', 'like', "%{$search}%");
+            });
+        }
+
+        // Pagination 10 item per halaman
+        return $query->latest()->paginate(10);
     }
 
     /**
@@ -33,19 +52,15 @@ class KonselorManagementController extends Controller
             'password' => ['required', 'confirmed', Password::defaults()],
             'phone' => 'nullable|string|max:20',
             'city' => 'nullable|string|max:255',
-            // --- Validasi Kolom Baru ---
             'universitas' => 'nullable|string|max:255',
-            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Max 2MB
-            'spesialisasi' => 'nullable|array', // Validasi jika Anda ingin mengirim spesialisasi dari sini
-            'spesialisasi.*' => 'string|max:100', // Validasi tiap item array
-            'rating' => 'nullable|numeric|min:0|max:5', // Tambahkan jika perlu
-            // Tambahkan validasi lain jika ada (provinsi, alamat, dll.)
+            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'spesialisasi' => 'nullable|array',
+            'spesialisasi.*' => 'string|max:100',
+            'rating' => 'nullable|numeric|min:0|max:5',
         ]);
 
         $avatarPath = null;
         if ($request->hasFile('avatar')) {
-            // Simpan gambar ke storage/app/public/avatars
-            // Pastikan folder 'avatars' ada atau dibuat otomatis
             $avatarPath = $request->file('avatar')->store('avatars', 'public');
         }
 
@@ -55,33 +70,34 @@ class KonselorManagementController extends Controller
             'password' => Hash::make($validated['password']),
             'phone' => $validated['phone'] ?? null,
             'city' => $validated['city'] ?? null,
-            'universitas' => $validated['universitas'] ?? null, // Simpan universitas
-            'avatar' => $avatarPath, // Simpan path avatar
-            'spesialisasi' => $validated['spesialisasi'] ?? null, // Simpan spesialisasi (jika dikirim)
-            'rating' => $validated['rating'] ?? null, // Simpan rating (jika dikirim)
-            'role' => 'konselor', // Otomatis set role sebagai konselor
-            // Status awal mungkin lebih baik 'Terverifikasi' jika dibuat lgsg oleh Super Admin?
-            // Atau tetap 'Verifikasi' jika butuh approval Admin? Sesuaikan.
+            'universitas' => $validated['universitas'] ?? null,
+            'avatar' => $avatarPath,
+            'spesialisasi' => $validated['spesialisasi'] ?? null,
+            'rating' => $validated['rating'] ?? null,
+            'role' => 'konselor',
             'status' => 'Verifikasi',
         ]);
 
-        return response()->json($konselor, 21);
+        return response()->json($konselor, 201);
     }
 
 
-    // Menampilkan detail satu konselor
+    /**
+     * Menampilkan detail satu konselor
+     */
     public function show(User $user)
     {
         if ($user->role !== 'konselor') {
             abort(404);
         }
+        // Jika ada relasi practiceLocations, pastikan model User memilikinya
+        // Jika error, hapus ->load(...) ini sementara
+        // $user->load(['practiceLocations']); 
         return $user;
     }
 
-    // --- METHOD UPDATE BARU ---
     /**
      * Memperbarui data konselor yang sudah ada.
-     * Menggunakan POST dengan _method=PUT karena FormData
      */
     public function update(Request $request, User $user)
     {
@@ -90,9 +106,7 @@ class KonselorManagementController extends Controller
         }
 
         $validated = $request->validate([
-            // 'sometimes' berarti hanya validasi jika field dikirim
             'name' => 'sometimes|required|string|max:255',
-            // Abaikan email unik milik user ini sendiri
             'email' => ['sometimes', 'required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'phone' => 'nullable|string|max:20',
             'city' => 'nullable|string|max:255',
@@ -101,62 +115,44 @@ class KonselorManagementController extends Controller
             'spesialisasi' => 'nullable|array',
             'spesialisasi.*' => 'string|max:100',
             'rating' => 'nullable|numeric|min:0|max:5',
-            // Password tidak diupdate di sini, bisa dibuat endpoint terpisah jika perlu
         ]);
 
-        $avatarPath = $user->avatar; // Simpan path lama defaultnya
+        $avatarPath = $user->avatar;
 
         if ($request->hasFile('avatar')) {
-            // 1. Hapus avatar lama jika ada
             if ($user->avatar) {
                 Storage::disk('public')->delete($user->avatar);
             }
-            // 2. Simpan avatar baru
             $avatarPath = $request->file('avatar')->store('avatars', 'public');
-            $validated['avatar'] = $avatarPath; // Masukkan path baru ke data yg akan diupdate
+            $validated['avatar'] = $avatarPath;
         } else {
-            // Jika tidak ada file baru, pastikan 'avatar' tidak ikut diupdate
-            // (kecuali jika ada fitur hapus avatar, bisa ditambahkan logikanya)
             unset($validated['avatar']);
         }
 
-
-        // Update data user
-        // Filter hanya data yg divalidasi dan bukan null (kecuali yg memang boleh null)
         $updateData = collect($validated)->filter(function ($value, $key) {
-            return $value !== null || in_array($key, ['phone', 'city', 'universitas', 'avatar', 'spesialisasi', 'rating']); // Kolom yg boleh null
+            return $value !== null || in_array($key, ['phone', 'city', 'universitas', 'avatar', 'spesialisasi', 'rating']);
         })->all();
 
-
-        // Update spesialisasi secara terpisah jika dikirim
         if (isset($validated['spesialisasi'])) {
             $updateData['spesialisasi'] = $validated['spesialisasi'];
         }
 
-        // Tambahkan path avatar ke updateData jika ada file baru atau path lama (jika tidak ada file baru)
-        // Ini memastikan kolom avatar di database selalu terisi path yang benar
         $updateData['avatar'] = $avatarPath;
-
-
         $user->update($updateData);
-
-
-        // Load ulang data user untuk mendapatkan URL avatar terbaru
         $user->refresh();
 
         return response()->json($user);
     }
-    // --- AKHIR METHOD UPDATE ---
 
-
-    // Menghapus konselor
+    /**
+     * Menghapus konselor
+     */
     public function destroy(User $user)
     {
         if ($user->role !== 'konselor') {
             abort(404);
         }
 
-        // Hapus avatar dari storage jika ada
         if ($user->avatar) {
             Storage::disk('public')->delete($user->avatar);
         }
@@ -165,7 +161,9 @@ class KonselorManagementController extends Controller
         return response()->json(null, 204);
     }
 
-    // --- METODE KHUSUS UNTUK STATUS ---
+    /**
+     * Metode khusus untuk status
+     */
     public function block(User $user)
     {
         if ($user->role !== 'konselor') {
@@ -180,73 +178,58 @@ class KonselorManagementController extends Controller
         if ($user->role !== 'konselor') {
             abort(404);
         }
-        // Saat di-unblock, kembalikan ke status 'Terverifikasi' jika sebelumnya aktif,
-        // atau 'Verifikasi' jika belum pernah diverifikasi (logika ini bisa disesuaikan)
-        // Untuk sederhana, kita set ke 'Terverifikasi'
         $user->update(['status' => 'Terverifikasi']);
         return response()->json($user);
     }
 
     /**
      * Menampilkan daftar jadwal ketersediaan untuk konselor tertentu.
-     * GET /api/super-admin/konselor-management/{user}/availabilities
      */
     public function getAvailabilities(Request $request, ?User $user = null)
     {
-        // Tentukan user (jika dari rute admin, $user ada, jika dari rute konselor, $user null)
         $counselor = $user ?? Auth::user();
-        /** @var \App\Models\User $counselor */ // <-- Petunjuk untuk Linter
+        /** @var \App\Models\User $counselor */
 
         if (!$counselor || $counselor->role !== 'konselor') {
             return response()->json(['message' => 'Konselor tidak ditemukan.'], 404);
         }
 
-        // --- PERBAIKAN: Order berdasarkan TANGGAL (bukan hari) ---
         $availabilities = $counselor->availabilities()
             ->orderBy('tanggal_konsultasi', 'asc')
             ->orderBy('start_time', 'asc')
             ->get();
-        // --- AKHIR PERBAIKAN ---
 
         return response()->json($availabilities);
     }
 
     /**
      * Menyimpan jadwal ketersediaan baru untuk konselor.
-     * Dipakai oleh Super Admin (POST /super-admin/konselor-management/{user}/availabilities)
-     * DAN oleh Konselor (POST /counselor/availability)
      */
-    // --- PERBAIKAN: Tambahkan ?User agar $user bisa null ---
     public function storeAvailability(Request $request, ?User $user = null)
     {
         $counselor = $user ?? Auth::user();
-        /** @var \App\Models\User $counselor */ // <-- Petunjuk untuk Linter
+        /** @var \App\Models\User $counselor */
 
         if (!$counselor || $counselor->role !== 'konselor') {
             return response()->json(['message' => 'Konselor tidak ditemukan.'], 404);
         }
 
-        // --- PERBAIKAN: Validasi berdasarkan TANGGAL (bukan hari) ---
         $validated = $request->validate([
             'tanggal_konsultasi' => ['required', 'date', 'after_or_equal:today'],
             'start_time' => ['required', 'date_format:H:i'], // Format "HH:MM"
             'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
         ]);
-        // --- AKHIR PERBAIKAN ---
 
         try {
-            // --- PERBAIKAN: Simpan data ketersediaan ---
             $availability = $counselor->availabilities()->create([
-                'counselor_id' => $counselor->id, // counselor_id di-set otomatis oleh relasi
-                'tanggal_konsultasi' => $validated['tanggal_konsultasi'], // <-- Simpan TANGGAL
-                'start_time' => $validated['start_time'] . ':00', // Tambahkan detik
-                'end_time' => $validated['end_time'] . ':00', // Tambahkan detik
-                // Hapus 'day_of_week'
+                'tanggal_konsultasi' => $validated['tanggal_konsultasi'],
+                'start_time' => $validated['start_time'] . ':00',
+                'end_time' => $validated['end_time'] . ':00',
             ]);
-            // --- AKHIR PERBAIKAN ---
 
             Log::info('Ketersediaan baru ditambahkan:', ['user_id' => $counselor->id, 'data' => $validated]);
-            return response()->json($availability, 201);
+
+            return response()->json(['availability' => $availability], 201);
         } catch (\Exception $e) {
             Log::error('Gagal menambah ketersediaan:', ['user_id' => $counselor->id, 'error' => $e->getMessage()]);
             if (str_contains($e->getMessage(), 'Duplicate entry') || str_contains($e->getMessage(), 'Constraint violation')) {
@@ -258,16 +241,12 @@ class KonselorManagementController extends Controller
 
     /**
      * Menghapus jadwal ketersediaan.
-     * Dipakai oleh Super Admin (DELETE /super-admin/konselor-management/{user}/availabilities/{availability})
-     * DAN oleh Konselor (DELETE /counselor/availability/{availability})
      */
-    // --- PERBAIKAN: Tambahkan ?User agar $user bisa null ---
     public function destroyAvailability(Request $request, ?User $user = null, CounselorAvailability $availability)
     {
         $counselor = $user ?? Auth::user();
-        /** @var \App\Models\User $counselor */ // <-- Petunjuk untuk Linter
+        /** @var \App\Models\User $counselor */
 
-        // Otorisasi: Pastikan availability ini milik konselor yang benar
         if ($availability->counselor_id !== $counselor->id) {
             return response()->json(['message' => 'Tidak diizinkan.'], 403);
         }
@@ -284,8 +263,6 @@ class KonselorManagementController extends Controller
 
     /**
      * Mengupdate jadwal ketersediaan.
-     * (Kita tambahkan ini juga untuk jaga-jaga)
-     * PUT /api/super-admin/konselor-management/{user}/availabilities/{availability}
      */
     public function updateAvailability(Request $request, User $user, CounselorAvailability $availability)
     {

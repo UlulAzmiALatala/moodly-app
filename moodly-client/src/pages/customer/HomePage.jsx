@@ -1,142 +1,58 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import apiClient from "../../api/axios"; // Sesuaikan path jika perlu
-import { useAuth } from "../../context/AuthContext"; // Sesuaikan path jika perlu
+import apiClient from "../../api/axios";
+import { useAuth } from "../../context/AuthContext";
 
-// --- Fungsi Helper untuk Format Mata Uang ---
-const formatRupiah = (number) => {
-    if (typeof number !== "number") {
-        number = 0;
-    }
-    return new Intl.NumberFormat("id-ID", {
-        style: "currency",
-        currency: "IDR",
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    }).format(number);
-};
+// --- IMPORT ECHO & PUSHER (REAL-TIME) ---
+import Echo from "laravel-echo";
+import Pusher from "pusher-js";
+import { Bell, ChevronDown } from "lucide-react"; // Import Ikon
 
-// --- Komponen Ikon (Tetap Sama) ---
-const BalanceIcon = () => (
-    <svg
-        width="32"
-        height="32"
-        viewBox="0 0 24 24"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        className="text-white"
-    >
-        {/* ... (kode SVG ikon) ... */}
-        <path
-            d="M2 20V11C2 9.34315 3.34315 8 5 8H19C20.6569 8 22 9.34315 22 11V20"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        />
-        <path
-            d="M4 20V22"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        />
-        <path
-            d="M10 20V22"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        />
-        <path
-            d="M16 20V22"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        />
-        <path
-            d="M20 20V22"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        />
-        <path
-            d="M12 2C9.23858 2 7 4.23858 7 7V8H17V7C17 4.23858 14.7614 2 12 2Z"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        />
-    </svg>
-);
-const TransferIcon = () => (
-    <svg
-        width="28"
-        height="28"
-        viewBox="0 0 24 24"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        className="text-white"
-    >
-        {/* ... (kode SVG ikon) ... */}
-        <rect
-            width="18"
-            height="18"
-            rx="2"
-            transform="matrix(1 0 0 -1 3 21)"
-            stroke="currentColor"
-            strokeWidth="2"
-        />
-        <path
-            d="M8 14L11 11L14 14"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        />
-        <path
-            d="M11 11V16"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        />
-        <path
-            d="M16 10L13 7L10 10"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        />
-        <path
-            d="M13 13V8"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        />
-    </svg>
-);
+window.Pusher = Pusher;
+
+// --- KONFIGURASI ECHO ---
+const echo = new Echo({
+    broadcaster: "reverb",
+    key: import.meta.env.VITE_REVERB_APP_KEY || "reverb_key",
+    wsHost: import.meta.env.VITE_REVERB_HOST || "127.0.0.1",
+    wsPort: import.meta.env.VITE_REVERB_PORT || 8080,
+    wssPort: import.meta.env.VITE_REVERB_PORT || 8080,
+    forceTLS: (import.meta.env.VITE_REVERB_SCHEME || "http") === "https",
+    enabledTransports: ["ws", "wss"],
+    authorizer: (channel, options) => {
+        return {
+            authorize: (socketId, callback) => {
+                apiClient
+                    .post("/api/broadcasting/auth", {
+                        socket_id: socketId,
+                        channel_name: channel.name,
+                    })
+                    .then((response) => callback(null, response.data))
+                    .catch((error) => callback(error));
+            },
+        };
+    },
+});
+
+// --- Ikon SVG Statis (Arrow, Building, ThumbsUp) ---
 const ArrowRightIcon = () => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
-        width="16"
-        height="16"
+        width="14"
+        height="14"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="text-cyan-500"
+        className="text-white ml-1"
     >
-        {/* ... (kode SVG ikon) ... */}
         <line x1="5" y1="12" x2="19" y2="12"></line>
         <polyline points="12 5 19 12 12 19"></polyline>
     </svg>
 );
+
 const BuildingIcon = () => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -148,14 +64,14 @@ const BuildingIcon = () => (
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="text-gray-500"
+        className="text-gray-400"
     >
-        {/* ... (kode SVG ikon) ... */}
         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
         <line x1="3" y1="9" x2="21" y2="9"></line>
         <line x1="9" y1="21" x2="9" y2="9"></line>
     </svg>
 );
+
 const ThumbsUpIcon = () => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -167,108 +83,302 @@ const ThumbsUpIcon = () => (
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="text-gray-500"
+        className="text-yellow-500"
     >
-        {/* ... (kode SVG ikon) ... */}
         <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
     </svg>
 );
 
-// --- Komponen Pembantu (Dibuat Dinamis) ---
-const SectionHeader = ({ title, to = "#" }) => (
-    <div className="flex justify-between items-center pt-6 px-4">
-        <h3 className="font-bold text-gray-800 text-lg">{title}</h3>
-        <Link to={to} className="text-sm font-semibold text-cyan-500">
-            Lihat Semua
-        </Link>
+// --- KOMPONEN HEADER CUSTOMER (DINAMIS & REAL-TIME) ---
+const CustomerHeader = () => {
+    const { user } = useAuth();
+    const navigate = useNavigate();
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    // 1. Fetch Status Notifikasi Awal
+    useEffect(() => {
+        const fetchNotifStatus = async () => {
+            try {
+                const response = await apiClient.get(
+                    "/api/notifications/status"
+                );
+                setUnreadCount(response.data.unreadCount || 0);
+            } catch (err) {
+                console.error("Gagal ambil status notifikasi:", err);
+            }
+        };
+        fetchNotifStatus();
+    }, []);
+
+    // 2. Real-time Listener
+    useEffect(() => {
+        if (!user) return;
+        const channelName = `customer.${user.id}`;
+
+        const handleNewNotification = () => {
+            setUnreadCount((prev) => prev + 1);
+        };
+
+        echo.private(channelName).notification(handleNewNotification);
+        return () => echo.leave(channelName);
+    }, [user]);
+
+    // Ambil nama depan
+    const firstName = user?.name ? user.name.split(" ")[0] : "Teman";
+
+    // PERBAIKAN: Hapus rounded-b-3xl agar menjadi navbar yang rata
+    return (
+        <header className="flex items-center justify-between px-6 py-5 bg-white shadow-sm sticky top-0 z-30 border-b border-gray-100">
+            <div className="flex items-center gap-3">
+                {/* Foto Profil Customer */}
+                <img
+                    src={
+                        user?.avatar_url ||
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                            user?.name || "U"
+                        )}&background=EBF4FF&color=3B82F6&bold=true`
+                    }
+                    alt="Profil"
+                    className="w-12 h-12 rounded-full object-cover border-2 border-gray-100 shadow-sm bg-gray-50"
+                />
+                <div>
+                    <h2 className="font-extrabold text-xl text-gray-800 leading-tight">
+                        Hi, {firstName}! 👋
+                    </h2>
+                    <p className="text-xs text-gray-500 mt-0.5 font-medium">
+                        Bagaimana perasaanmu?
+                    </p>
+                </div>
+            </div>
+
+            {/* Tombol Notifikasi */}
+            <button
+                onClick={() => navigate("/notifications")}
+                className="w-12 h-12 flex items-center justify-center bg-gray-50 rounded-2xl text-gray-600 hover:bg-cyan-50 hover:text-cyan-600 transition-all active:scale-95 relative border border-gray-100 shadow-sm"
+            >
+                <Bell size={24} strokeWidth={2} />
+                {unreadCount > 0 && (
+                    <span className="absolute top-2.5 right-3 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
+                )}
+            </button>
+        </header>
+    );
+};
+
+// --- KOMPONEN CAROUSEL IKLAN ---
+const AdCarousel = () => {
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const ads = [
+        {
+            id: 1,
+            title: "Kesehatan Mental Itu Penting",
+            desc: "Dapatkan diskon 50% untuk sesi pertamamu bersama psikolog terbaik.",
+            bg: "bg-gradient-to-r from-blue-400 to-indigo-400",
+            emoji: "🧠",
+        },
+        {
+            id: 2,
+            title: "Paket Hemat 4 Sesi",
+            desc: "Komitmen untuk pulih lebih hemat dengan paket bundling bulanan.",
+            bg: "bg-gradient-to-r from-teal-400 to-emerald-500",
+            emoji: "🌱",
+        },
+        {
+            id: 3,
+            title: "Webinar: Stress Release",
+            desc: "Gabung sesi gratis setiap Jumat malam via Zoom. Daftar sekarang!",
+            bg: "bg-gradient-to-r from-rose-400 to-pink-500",
+            emoji: "🧘‍♀️",
+        },
+        {
+            id: 4,
+            title: "Tantangan 7 Hari Self-Love",
+            desc: "Ikuti panduan harian gratis untuk lebih mencintai dirimu sendiri.",
+            bg: "bg-gradient-to-r from-amber-300 to-orange-400",
+            emoji: "🧡",
+        },
+    ];
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentIndex((prevIndex) => (prevIndex + 1) % ads.length);
+        }, 5000);
+        return () => clearInterval(interval);
+    }, [ads.length]);
+
+    return (
+        <div className="px-4 w-full overflow-hidden mt-4 mb-2">
+            <div className="relative w-full h-32 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                <div
+                    className="flex h-full transition-transform duration-1000 ease-in-out"
+                    style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+                >
+                    {ads.map((ad) => (
+                        <div
+                            key={ad.id}
+                            className={`w-full h-full flex-shrink-0 ${ad.bg} text-white flex items-center justify-between px-6`}
+                        >
+                            <div className="w-2/3">
+                                <h3 className="font-bold text-lg leading-tight drop-shadow-sm">
+                                    {ad.title}
+                                </h3>
+                                <p className="text-xs opacity-95 mt-1.5 font-medium leading-snug">
+                                    {ad.desc}
+                                </p>
+                            </div>
+                            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm shadow-inner">
+                                <span className="text-3xl filter drop-shadow-md">
+                                    {ad.emoji}
+                                </span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
+                    {ads.map((_, idx) => (
+                        <div
+                            key={idx}
+                            className={`h-1.5 rounded-full transition-all duration-500 ${
+                                idx === currentIndex
+                                    ? "bg-white w-4 opacity-100"
+                                    : "bg-white/40 w-1.5"
+                            }`}
+                        />
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- Section Header ---
+const SectionHeader = ({ title, to }) => (
+    <div className="flex justify-between items-center pt-6 px-4 mb-3">
+        <h3 className="font-bold text-gray-800 text-lg tracking-tight">
+            {title}
+        </h3>
+        {to ? (
+            <Link
+                to={to}
+                className="text-xs font-bold text-cyan-600 hover:text-cyan-700 transition-colors bg-cyan-50 px-2 py-1 rounded-md"
+            >
+                Lihat Semua
+            </Link>
+        ) : (
+            <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">
+                Rekomendasi
+            </span>
+        )}
     </div>
 );
 
+// --- Card Layanan ---
 const ServiceCard = ({ service, highlighted = false }) => {
     const navigate = useNavigate();
 
     const handleBook = () => {
-        // Arahkan ke halaman booking, kirim state jenis layanan
         navigate("/booking", {
             state: {
                 selectedService: service.id,
-                serviceName: service.jenis_konseling, // <-- PERBAIKAN: dari 'nama'
+                serviceName: service.jenis_konseling,
             },
         });
     };
 
     return (
         <div
-            className={`bg-white p-3 rounded-2xl border-2 ${
-                highlighted ? "border-cyan-400" : "border-gray-200"
-            } shadow-sm transition-all duration-300 ease-in-out hover:shadow-lg hover:-translate-y-1 flex flex-col items-center text-center`}
+            className={`bg-white p-4 rounded-2xl border ${
+                highlighted
+                    ? "border-cyan-100 bg-gradient-to-b from-white to-cyan-50/30"
+                    : "border-gray-100"
+            } shadow-sm transition-all active:scale-95 flex flex-col items-center text-center h-full justify-between hover:border-cyan-200`}
         >
-            <div className="w-16 h-16 flex items-center justify-center">
+            <div className="w-14 h-14 flex items-center justify-center mb-3 bg-white rounded-2xl shadow-sm border border-gray-50 p-2">
                 <img
                     src={
                         service.image_url ||
-                        "https://placehold.co/64x64/EBF4FF/3B82F6?text=?"
+                        "https://placehold.co/64x64/EBF4FF/3B82F6?text=Logo"
                     }
-                    alt={service.jenis_konseling} // <-- PERBAIKAN: dari 'nama'
-                    className="w-16 h-16 object-contain" // Tambah object-contain
+                    alt={service.jenis_konseling}
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src =
+                            "https://placehold.co/64x64/EBF4FF/3B82F6?text=Img";
+                    }}
                 />
             </div>
-            <p className="font-semibold text-gray-700 mt-2 text-sm leading-tight">
-                {service.jenis_konseling} {/* <-- PERBAIKAN: dari 'nama' */}
-            </p>
+            <div className="w-full mb-3">
+                <p className="font-bold text-gray-800 text-xs leading-tight line-clamp-2 min-h-[2.5em]">
+                    {service.jenis_konseling}
+                </p>
+                <p className="text-[10px] text-gray-400 mt-1">
+                    {service.tipe_layanan}
+                </p>
+            </div>
+
             <button
                 onClick={handleBook}
-                className="mt-4 flex items-center gap-1.5 text-xs font-bold text-gray-800"
+                className="w-full py-2 px-3 flex items-center justify-center gap-1 text-[10px] font-bold text-white bg-cyan-500 rounded-xl hover:bg-cyan-600 transition-colors shadow-sm shadow-cyan-100"
             >
-                <span>Book</span> <ArrowRightIcon />
+                <span>Pesan</span> <ArrowRightIcon />
             </button>
         </div>
     );
 };
 
+// --- Card Konselor ---
 const CounselorCard = ({ counselor }) => (
-    <Link
-        to={`/booking/find-counselor?counselor=${counselor.id}`}
-        className="relative flex-shrink-0 w-[280px] md:w-full bg-white border-2 border-gray-200 rounded-2xl shadow-sm p-4 transition-all duration-300 ease-in-out hover:shadow-lg hover:-translate-y-1"
-    >
-        <div className="flex gap-4">
-            <img
-                src={
-                    counselor.avatar ||
-                    `https://ui-avatars.com/api/?name=${counselor.name}&background=EBF4FF&color=3B82F6&bold=true`
-                }
-                alt={counselor.name}
-                className="w-24 h-32 rounded-xl object-cover"
-            />
-            <div className="space-y-1.5 flex flex-col">
-                <h4 className="font-bold text-base text-gray-800 leading-tight">
-                    {counselor.name}
-                </h4>
-                <div className="flex items-center gap-1.5">
-                    <BuildingIcon />
-                    <p className="text-xs text-gray-500">
-                        {counselor.universitas || "Universitas"}
-                    </p>
-                </div>
-                <div className="flex items-center gap-1.5">
-                    <ThumbsUpIcon />
-                    {/* <-- PERBAIKAN: Tampilkan rating desimal --> */}
-                    <p className="text-xs text-gray-500">
-                        {counselor.rating
-                            ? `${counselor.rating} / 5.0`
-                            : "Baru"}
-                    </p>
-                </div>
-                <p className="text-xs text-gray-500 pt-1">
-                    {/* <-- PERBAIKAN: Ambil spesialisasi pertama dari array --> */}
-                    Spesialisasi: {counselor.spesialisasi?.[0] || "Umum"}
+    <div className="relative flex-shrink-0 w-[300px] bg-white border border-gray-100 rounded-2xl shadow-sm p-4 flex gap-4 items-center snap-center transition-transform">
+        <img
+            src={
+                counselor.avatar ||
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    counselor.name
+                )}&background=EBF4FF&color=3B82F6&bold=true`
+            }
+            alt={counselor.name}
+            className="w-20 h-24 rounded-xl object-cover bg-gray-50 border border-gray-100"
+        />
+        <div className="flex-1 min-w-0 py-1">
+            <h4 className="font-extrabold text-base text-gray-800 truncate mb-1">
+                {counselor.name}
+            </h4>
+
+            <div className="flex items-center gap-1.5 mb-1.5">
+                <ThumbsUpIcon />
+                <p className="text-xs font-bold text-gray-600">
+                    {counselor.rating
+                        ? `${parseFloat(counselor.rating).toFixed(1)} / 5.0`
+                        : "Konselor Baru"}
                 </p>
             </div>
+
+            <div className="flex items-center gap-1.5 mb-2 text-gray-500">
+                <BuildingIcon />
+                <p className="text-[11px] truncate max-w-[150px]">
+                    {counselor.universitas || "-"}
+                </p>
+            </div>
+
+            <div className="flex flex-wrap gap-1">
+                {(counselor.spesialisasi || ["Psikolog Klinis"])
+                    .slice(0, 2)
+                    .map((spec, idx) => (
+                        <span
+                            key={idx}
+                            className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-md truncate max-w-full border border-blue-100"
+                        >
+                            {spec}
+                        </span>
+                    ))}
+            </div>
         </div>
-    </Link>
+    </div>
 );
 
-// --- Komponen Halaman Beranda (Diganti menjadi HomePage) ---
+// --- PAGE UTAMA ---
 export default function HomePage() {
     const { user } = useAuth();
     const [services, setServices] = useState([]);
@@ -280,16 +390,13 @@ export default function HomePage() {
         const fetchData = async () => {
             try {
                 setLoading(true);
-
-                // <-- PERBAIKAN: Panggil endpoint baru -->
                 const response = await apiClient.get("/api/beranda-data");
-
                 setServices(response.data.services);
                 setCounselors(response.data.counselors);
                 setError(null);
             } catch (err) {
                 console.error("Gagal mengambil data beranda:", err);
-                setError("Gagal memuat data. Coba lagi nanti.");
+                setError("Gagal memuat data.");
             } finally {
                 setLoading(false);
             }
@@ -298,92 +405,97 @@ export default function HomePage() {
         fetchData();
     }, []);
 
-    // Filter layanan berdasarkan tipe
-    // <-- PERBAIKAN: Ubah 'online' (lowercase) menjadi 'Online' (Capital) -->
     const onlineServices = services.filter((s) => s.tipe_layanan === "Online");
     const offlineServices = services.filter(
         (s) => s.tipe_layanan === "Offline"
     );
 
     if (loading) {
-        return <div className="p-4 text-center">Loading data...</div>;
+        return (
+            <div className="flex h-screen items-center justify-center bg-gray-50">
+                <div className="flex flex-col items-center gap-3 animate-pulse">
+                    <div className="w-10 h-10 bg-gray-300 rounded-full"></div>
+                    <div className="h-3 w-24 bg-gray-300 rounded"></div>
+                </div>
+            </div>
+        );
     }
 
-    if (error) {
-        return <div className="p-4 text-center text-red-500">{error}</div>;
-    }
-
+    // PERBAIKAN: Struktur Halaman
     return (
-        <main className="space-y-4 bg-white pb-6">
-            {/* Promo Banner */}
-            <div className="px-4 mt-4">
-                {/* ... (Banner statis tidak berubah) ... */}
-                <div className="bg-cyan-400 rounded-2xl text-white relative overflow-hidden h-40">
-                    <div className="absolute -left-4 -bottom-2 h-44 w-auto z-0">
+        <main className="bg-[#FAFAFA] min-h-screen pb-2">
+            {/* 1. Header (Dinamis) - DI LUAR CONTAINER AGAR JADI NAVBAR STICKY */}
+            <CustomerHeader />
+
+            {/* 2. Banner & Ads Container - Rounded di bawah saja */}
+            <div className="bg-white pb-6 rounded-b-[2rem] shadow-[0_4px_20px_-12px_rgba(0,0,0,0.1)] pt-2 z-10 relative">
+                {/* Banner Biru */}
+                <div className="px-4 mb-2 mt-4">
+                    <div className="bg-cyan-500 rounded-3xl p-6 text-white relative overflow-hidden h-48 shadow-lg shadow-cyan-200/50 flex items-center">
+                        <div className="relative z-10 w-[65%]">
+                            <h2 className="font-extrabold text-lg leading-tight mb-2 drop-shadow-md">
+                                Ceritakan masalahmu hari ini
+                            </h2>
+                            <p className="text-xs text-cyan-50 opacity-90 mb-5 leading-relaxed font-medium pr-2">
+                                Kami siap mendengarkan tanpa menghakimi.
+                            </p>
+                            <Link
+                                to="/booking"
+                                className="inline-block bg-white text-cyan-600 font-bold py-2.5 px-6 rounded-full text-xs shadow-md hover:shadow-lg hover:scale-105 transition-all active:scale-95"
+                            >
+                                Mulai Konsultasi
+                            </Link>
+                        </div>
                         <img
-                            src="images/beranda/dokter1.png" // Gambar ini bisa tetap statis
-                            alt="Dokter"
-                            className="h-full w-full object-contain"
+                            src="images/beranda/dokter1.png"
+                            alt="Hero"
+                            className="absolute -bottom-4 -right-4 w-48 h-auto object-contain z-0 drop-shadow-xl filter brightness-105"
+                            onError={(e) => (e.target.style.display = "none")}
                         />
                     </div>
-                    <div className="absolute left-[35%] top-1/2 -translate-y-1/2 w-3/5 z-10">
-                        <h2 className="font-bold text-lg leading-tight">
-                            Tumpahkan isi hatimu,{" "}
-                            <span className="font-extrabold">MOODLY</span>
-                            <br />
-                            temukan solusi dari masalahmu.
-                        </h2>
-                        <Link
-                            to="/booking"
-                            className="mt-3 inline-block bg-white text-cyan-500 font-bold py-2 px-6 rounded-full text-sm shadow-md transform transition-transform duration-300 hover:scale-105 active:scale-95"
-                        >
-                            Book Now
-                        </Link>
-                    </div>
                 </div>
+
+                {/* Carousel Iklan */}
+                <AdCarousel />
             </div>
 
-            {/* Balance Card (Dinamis) */}
-            <div className="px-4">
-                <div className="bg-cyan-500 rounded-2xl p-3 flex items-center justify-between text-white">
-                    <div className="flex items-center gap-3">
-                        <BalanceIcon />
-                        <p className="text-2xl font-bold">
-                            {formatRupiah(user?.balance)}{" "}
-                            {/* <-- PERBAIKAN: Kolom 'balance' sudah ada --> */}
-                        </p>
-                    </div>
-                    <TransferIcon />
-                </div>
-            </div>
-
-            {/* Services Sections (Dinamis) */}
-            <div>
-                <SectionHeader title="Online" to="/booking?type=Online" />
-                <div className="grid grid-cols-2 gap-4 mt-2 px-4">
+            {/* 3. Layanan Online */}
+            <div className="mt-2">
+                <SectionHeader
+                    title="Konseling Online"
+                    to="/booking?type=Online"
+                />
+                <div className="grid grid-cols-2 gap-3 px-4">
                     {onlineServices.length > 0 ? (
                         onlineServices
-                            .slice(0, 2) // Batasi hanya 2
+                            .slice(0, 2)
                             .map((service) => (
                                 <ServiceCard
                                     key={service.id}
                                     service={service}
+                                    highlighted
                                 />
                             ))
                     ) : (
-                        <p className="text-gray-500 col-span-2 text-sm px-2">
-                            Layanan online belum tersedia.
-                        </p>
+                        <div className="col-span-2 py-8 bg-white rounded-2xl border border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400">
+                            <p className="text-xs font-medium">
+                                Layanan online segera hadir
+                            </p>
+                        </div>
                     )}
                 </div>
             </div>
 
-            <div>
-                <SectionHeader title="Tatap Muka" to="/booking?type=Offline" />
-                <div className="grid grid-cols-2 gap-4 mt-2 px-4">
+            {/* 4. Layanan Offline */}
+            <div className="mt-2">
+                <SectionHeader
+                    title="Tatap Muka (Offline)"
+                    to="/booking?type=Offline"
+                />
+                <div className="grid grid-cols-2 gap-3 px-4">
                     {offlineServices.length > 0 ? (
                         offlineServices
-                            .slice(0, 2) // Batasi hanya 2
+                            .slice(0, 2)
                             .map((service) => (
                                 <ServiceCard
                                     key={service.id}
@@ -391,31 +503,32 @@ export default function HomePage() {
                                 />
                             ))
                     ) : (
-                        <p className="text-gray-500 col-span-2 text-sm px-2">
-                            Layanan tatap muka belum tersedia.
-                        </p>
+                        <div className="col-span-2 py-8 bg-white rounded-2xl border border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400">
+                            <p className="text-xs font-medium">
+                                Layanan tatap muka segera hadir
+                            </p>
+                        </div>
                     )}
                 </div>
             </div>
 
-            {/* Counselor Section (Dinamis) */}
-            <div>
-                <SectionHeader title="Konselor" to="/booking/find-counselor" />
-                <div className="flex space-x-4 overflow-x-auto mt-2 pb-4 scrollbar-hide px-4">
+            {/* 5. Daftar Konselor */}
+            <div className="mt-4">
+                <SectionHeader title="Konselor Pilihan" to={null} />
+
+                <div className="flex space-x-4 overflow-x-auto px-4 pb-2 pt-1 scrollbar-hide snap-x snap-mandatory">
                     {counselors.length > 0 ? (
-                        counselors
-                            .slice(0, 3) // Batasi hanya 3 konselor
-                            .map((counselor) => (
-                                <CounselorCard
-                                    key={counselor.id}
-                                    counselor={counselor}
-                                />
-                            ))
+                        counselors.slice(0, 5).map((counselor) => (
+                            <div key={counselor.id} className="snap-center">
+                                <CounselorCard counselor={counselor} />
+                            </div>
+                        ))
                     ) : (
-                        <p className="text-gray-500 text-sm px-2">
-                            Konselor belum tersedia.
-                        </p>
+                        <div className="w-full text-center py-10 text-gray-400 text-xs bg-white rounded-2xl border border-dashed border-gray-200 mx-4">
+                            Belum ada konselor terdaftar.
+                        </div>
                     )}
+                    <div className="w-1 shrink-0"></div>
                 </div>
             </div>
         </main>

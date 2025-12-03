@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom"; // <-- Import useLocation
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import apiClient from "../../../api/axios";
 
@@ -17,14 +17,12 @@ const BackArrowIcon = () => (
         strokeLinejoin="round"
         className="text-gray-700 group-hover:text-gray-900"
     >
-        {" "}
-        <line x1="19" y1="12" x2="5" y2="12"></line>{" "}
-        <polyline points="12 19 5 12 12 5"></polyline>{" "}
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
     </svg>
 );
-// --- Akhir Komponen Ikon ---
 
-// --- Helper Komponen Form ---
+// --- Helper Komponen Form (Tema Cyan) ---
 const InputField = ({
     label,
     name,
@@ -48,11 +46,12 @@ const InputField = ({
             value={value || ""}
             onChange={onChange}
             placeholder={placeholder}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-all"
         />
         {error && <small className="text-red-500 mt-1">{error[0]}</small>}
     </div>
 );
+
 const TextAreaField = ({
     label,
     name,
@@ -75,22 +74,21 @@ const TextAreaField = ({
             placeholder={placeholder}
             value={value || ""}
             onChange={onChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none resize-none"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none resize-none transition-all"
         />
         {error && <small className="text-red-500 mt-1">{error[0]}</small>}
     </div>
 );
-// --- Akhir Helper Form ---
 
 export default function ChangeAddressPage() {
     const navigate = useNavigate();
-    const location = useLocation(); // <-- Ambil location
+    const location = useLocation();
     const { user, getUser } = useAuth();
 
-    // --- PERBAIKAN: Tentukan mode berdasarkan state ---
-    // Default ke 'full' jika tidak ada state (meskipun seharusnya ada)
-    const mode = location.state?.mode || "full"; // 'full' atau 'street_only'
-    // --- AKHIR PERBAIKAN ---
+    // Menentukan mode:
+    // 'full' -> Mode Lokasi (Provinsi, Kota, dll) - Sesuai EditPage Customer sebelumnya
+    // 'street_only' -> Mode Jalan
+    const mode = location.state?.mode || "full";
 
     const [formData, setFormData] = useState({
         province: "",
@@ -104,7 +102,7 @@ export default function ChangeAddressPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
 
-    // Isi form saat data 'user' dari AuthContext tersedia
+    // Isi form saat data 'user' tersedia
     useEffect(() => {
         if (user) {
             setFormData({
@@ -118,10 +116,9 @@ export default function ChangeAddressPage() {
     }, [user]);
 
     const handleBack = () => {
-        navigate(-1); // Kembali ke halaman /profile/edit
+        navigate(-1);
     };
 
-    // Handler universal untuk semua input
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
@@ -133,27 +130,30 @@ export default function ChangeAddressPage() {
         setErrors(null);
         setSuccessMessage("");
 
-        // Tentukan data apa yang akan dikirim berdasarkan mode
+        // Filter data berdasarkan mode agar tidak menimpa field lain dengan string kosong jika tidak dirender
         let dataToSubmit = {};
+
         if (mode === "street_only") {
+            // Hanya kirim alamat jalan
             dataToSubmit = { street_address: formData.street_address };
         } else {
-            // Mode 'full' mengirim semuanya
-            dataToSubmit = formData;
+            // Mode 'full' (Lokasi) -> Kirim data geografis
+            dataToSubmit = {
+                province: formData.province,
+                city: formData.city,
+                district: formData.district,
+                postal_code: formData.postal_code,
+            };
         }
 
         try {
-            // Panggil API update profil HANYA dengan data yang relevan
-            const response = await apiClient.post(
-                "/api/profile/update",
-                dataToSubmit
-            );
+            await apiClient.post("/api/profile/update", dataToSubmit);
 
             await getUser(); // Refresh data user global
             setSuccessMessage("Alamat berhasil diperbarui!");
 
             setTimeout(() => {
-                navigate("/profile/edit"); // Kembali ke menu edit
+                navigate("/profile/edit"); // Kembali ke halaman edit profile
             }, 1500);
         } catch (err) {
             if (err.response && err.response.status === 422) {
@@ -169,7 +169,8 @@ export default function ChangeAddressPage() {
 
     return (
         <div className="bg-white min-h-full font-sans">
-            <header className="bg-white p-4 flex items-center sticky top-0 z-10 border-b border-gray-200">
+            {/* Header */}
+            <header className="bg-white p-4 flex items-center sticky top-0 z-10 border-b border-gray-200 shadow-sm">
                 <button
                     onClick={handleBack}
                     className="p-2 -ml-2 mr-2 rounded-full hover:bg-gray-100 group transition-colors"
@@ -177,79 +178,88 @@ export default function ChangeAddressPage() {
                 >
                     <BackArrowIcon />
                 </button>
-                <h1 className="text-lg font-bold text-gray-800 text-center flex-grow">
-                    Ubah Alamat
+                <h1 className="text-lg font-bold text-gray-900 text-center flex-grow -translate-x-4">
+                    {mode === "street_only"
+                        ? "Ubah Alamat Jalan"
+                        : "Ubah Lokasi"}
                 </h1>
                 <div className="w-8"></div>
             </header>
 
-            <main className="p-4">
-                <form className="space-y-4" onSubmit={handleSubmit}>
+            <main className="p-5 pt-6">
+                <form className="space-y-5" onSubmit={handleSubmit}>
                     {successMessage && (
-                        <div className="p-3 text-center text-sm text-green-700 bg-green-100 rounded-lg">
+                        <div className="p-3 text-center text-sm text-green-700 bg-green-100 rounded-lg border border-green-200">
                             {successMessage}
                         </div>
                     )}
                     {errors?.general && (
-                        <div className="p-3 text-center text-sm text-red-700 bg-red-100 rounded-lg">
+                        <div className="p-3 text-center text-sm text-red-700 bg-red-100 rounded-lg border border-red-200">
                             {errors.general[0]}
                         </div>
                     )}
 
-                    {/* --- PERBAIKAN: Tampilkan bidang secara kondisional --- */}
+                    {/* TAMPILAN KONDISIONAL BERDASARKAN MODE */}
+
+                    {/* Mode LOKASI (Provinsi, Kota, Kecamatan, Kode Pos) */}
                     {mode === "full" && (
-                        <>
+                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                             <InputField
                                 label="Provinsi"
                                 name="province"
                                 value={formData.province}
                                 onChange={handleChange}
                                 error={errors?.province}
-                                placeholder="Masukkan provinsi"
+                                placeholder="Contoh: Jawa Barat"
                             />
                             <InputField
-                                label="Kota"
+                                label="Kota / Kabupaten"
                                 name="city"
                                 value={formData.city}
                                 onChange={handleChange}
                                 error={errors?.city}
-                                placeholder="Masukkan kota"
+                                placeholder="Contoh: Bandung"
                             />
-                            <InputField
-                                label="Kecamatan"
-                                name="district"
-                                value={formData.district}
-                                onChange={handleChange}
-                                error={errors?.district}
-                                placeholder="Masukkan kecamatan"
-                            />
-                            <InputField
-                                label="Kode Pos"
-                                name="postal_code"
-                                type="number"
-                                value={formData.postal_code}
-                                onChange={handleChange}
-                                error={errors?.postal_code}
-                                placeholder="Masukkan kode pos"
-                            />
-                        </>
+                            <div className="grid grid-cols-2 gap-4">
+                                <InputField
+                                    label="Kecamatan"
+                                    name="district"
+                                    value={formData.district}
+                                    onChange={handleChange}
+                                    error={errors?.district}
+                                    placeholder="Kecamatan"
+                                />
+                                <InputField
+                                    label="Kode Pos"
+                                    name="postal_code"
+                                    type="number"
+                                    value={formData.postal_code}
+                                    onChange={handleChange}
+                                    error={errors?.postal_code}
+                                    placeholder="40111"
+                                />
+                            </div>
+                        </div>
                     )}
 
-                    {/* Bidang 'street_address' selalu tampil untuk kedua mode */}
-                    <TextAreaField
-                        label="Nama Jalan, No Rumah"
-                        name="street_address"
-                        value={formData.street_address}
-                        onChange={handleChange}
-                        error={errors?.street_address}
-                        placeholder="Masukkan detail alamat jalan, nomor rumah, RT/RW..."
-                    />
-                    {/* --- AKHIR PERBAIKAN --- */}
+                    {/* Mode JALAN (Hanya Text Area) */}
+                    {mode === "street_only" && (
+                        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <TextAreaField
+                                label="Nama Jalan, Nomor Rumah"
+                                name="street_address"
+                                value={formData.street_address}
+                                onChange={handleChange}
+                                error={errors?.street_address}
+                                placeholder="Masukkan nama jalan, nomor rumah, RT/RW..."
+                            />
+                        </div>
+                    )}
 
                     <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="w-full mt-6 bg-cyan-500 text-white font-bold py-3 px-4 rounded-lg shadow hover:bg-cyan-600 transition-colors active:scale-95 disabled:bg-gray-400"
+                        className="w-full mt-6 bg-cyan-600 text-white font-bold py-3 px-4 rounded-xl shadow-md hover:bg-cyan-700 transition-all active:scale-95 disabled:bg-gray-400 disabled:scale-100"
                     >
                         {isSubmitting ? "Menyimpan..." : "Simpan Perubahan"}
                     </button>

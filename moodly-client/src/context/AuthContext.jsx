@@ -117,10 +117,9 @@ export const AuthProvider = ({ children }) => {
         <AuthContext.Provider
             value={{
                 user,
+                setUser, // <-- PENTING: Tambahkan setUser di sini agar bisa diakses global
                 loading,
-                // --- PERBAIKAN: Tambahkan 'getUser' di sini ---
                 getUser,
-                // --- AKHIR PERBAIKAN ---
                 login: loginCustomer,
                 loginCustomer,
                 loginCounselor,

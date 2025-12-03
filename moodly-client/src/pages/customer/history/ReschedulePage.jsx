@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom"; // Import Link
-import apiClient from "../../../api/axios"; // Sesuaikan path
+import { useNavigate, useParams, Link } from "react-router-dom";
+import apiClient from "../../../api/axios";
 
-// --- Helper Format Tanggal ---
+// --- Helper Format Tanggal (Tidak Berubah) ---
 function formatDate(dateString) {
     try {
         const datePart = dateString.split("T")[0];
@@ -11,11 +11,11 @@ function formatDate(dateString) {
             .toLocaleDateString("id-ID", options)
             .replace(/\//g, " - ");
     } catch (e) {
-        return dateString; // fallback
+        return dateString;
     }
 }
 
-// Icon Panah Kiri (SVG)
+// Icon Panah Kiri (Tidak Berubah)
 function ArrowLeftIcon(props) {
     return (
         <svg
@@ -35,23 +35,23 @@ function ArrowLeftIcon(props) {
     );
 }
 
+// --- Komponen Halaman (DIPERBARUI) ---
 export default function ReschedulePage() {
-    // Rename komponen
-    const { id } = useParams(); // Ambil ID booking dari URL
+    const { id: bookingId } = useParams(); // Ganti nama 'id' jadi 'bookingId'
     const navigate = useNavigate();
 
-    // State untuk data booking
     const [bookingData, setBookingData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // State untuk form
+    // --- State Form Diperbarui ---
     const [alasan, setAlasan] = useState("");
     const [tanggalBaru, setTanggalBaru] = useState("");
+    const [jamBaru, setJamBaru] = useState(""); // <-- TAMBAHKAN JAM BARU
     const [catatan, setCatatan] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    // --- Akhir State ---
 
-    // Alasan reschedule
     const reasons = [
         "Ada acara keluarga",
         "Jadwal bentrok",
@@ -59,16 +59,22 @@ export default function ReschedulePage() {
         "Lainnya",
     ];
 
-    // Fetch data booking saat komponen dimuat
+    // --- useEffect Diperbarui ---
     useEffect(() => {
         const fetchBookingData = async () => {
             try {
                 setLoading(true);
-                const response = await apiClient.get(`/api/history/${id}`);
-                setBookingData(response.data);
-                // Set tanggal input minimal ke hari ini
-                const today = new Date().toISOString().split("T")[0];
-                setTanggalBaru(today);
+                const response = await apiClient.get(
+                    `/api/history/${bookingId}`
+                );
+                const data = response.data;
+
+                setBookingData(data);
+
+                // Isi form dengan data jadwal yang LAMA sebagai default
+                setTanggalBaru(data.tanggal_konsultasi);
+                // Ambil "14:00" dari "14:00:00"
+                setJamBaru(data.jam_konsultasi.substring(0, 5));
             } catch (err) {
                 console.error("Gagal mengambil data booking:", err);
                 setError("Gagal memuat data booking.");
@@ -77,63 +83,70 @@ export default function ReschedulePage() {
             }
         };
         fetchBookingData();
-    }, [id]);
+    }, [bookingId]);
+    // --- Akhir useEffect ---
 
+    // --- handleSubmit Diperbarui ---
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!alasan || !tanggalBaru) {
-            alert("Silakan pilih alasan dan tanggal baru."); // Ganti dengan modal
+
+        // Perbarui validasi
+        if (!alasan || !tanggalBaru || !jamBaru) {
+            alert("Silakan pilih alasan, tanggal, dan jam baru.");
             return;
         }
         if (isSubmitting) return;
 
         setIsSubmitting(true);
-        setError(null); // Reset error
+        setError(null);
 
         try {
-            // Logika untuk mengirim data ganti jadwal ke API
+            // Kirim data dengan NAMA KEY YANG BENAR
             const response = await apiClient.patch(
-                `/api/history/${id}/reschedule`,
+                `/api/history/${bookingId}/reschedule`,
                 {
+                    tanggal_konsultasi: tanggalBaru,
+                    jam_konsultasi: `${jamBaru}:00`, // Kirim format H:i:s
+                    // Backend Anda saat ini mengabaikan 'alasan' & 'catatan'
+                    // tapi kita bisa kirim untuk masa depan
                     alasan: alasan,
-                    tanggalBaru: tanggalBaru,
                     catatan: catatan,
                 }
             );
 
-            alert(response.data.message || "Permintaan ganti jadwal terkirim!"); // Tampilkan pesan dari API
-            navigate("/history"); // Kembali ke halaman riwayat
+            alert(response.data.message || "Permintaan ganti jadwal terkirim!");
+            navigate("/history", { state: { refresh: true } }); // Arahkan ke riwayat
         } catch (err) {
             console.error("Gagal mengajukan ganti jadwal:", err);
             const apiError =
                 err.response?.data?.message ||
                 "Gagal mengirim permintaan. Coba lagi.";
-            setError(apiError); // Tampilkan error API ke user
+            setError(apiError);
         } finally {
             setIsSubmitting(false);
         }
     };
+    // --- Akhir handleSubmit ---
 
-    // Tampilkan loading atau error
     if (loading) {
         return <div className="p-4 text-center">Memuat data booking...</div>;
     }
-    // Error spesifik jika booking tidak ditemukan (meskipun seharusnya tidak terjadi jika navigasi benar)
-    if (!bookingData && !error) {
+    if (error && !isSubmitting) {
+        return <div className="p-4 text-center text-red-500">{error}</div>;
+    }
+    if (!bookingData) {
         return (
             <div className="p-4 text-center">Data booking tidak ditemukan.</div>
         );
     }
-    // Jangan tampilkan form jika ada error fetch awal
-    if (error && !isSubmitting) {
-        return <div className="p-4 text-center text-red-500">{error}</div>;
-    }
 
-    // Ekstrak data konselor setelah loading selesai
     const konselor = bookingData?.konselor || {};
-    const specialization = konselor.spesialisasi
-        ? konselor.spesialisasi[0]
-        : "Spesialisasi";
+    const specialization =
+        bookingData?.jenis_konseling?.jenis_konseling || "Konseling"; // Ambil dari jenis_konseling
+    const avatarFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+        konselor.name || "K"
+    )}&background=EBF4FF&color=3B82F6&bold=true&size=64`;
+    const today = new Date().toISOString().split("T")[0]; // Batas min tanggal
 
     return (
         <>
@@ -155,8 +168,12 @@ export default function ReschedulePage() {
                 {/* Info Psikolog (Dinamis) */}
                 <div className="p-4 m-4 bg-white rounded-lg shadow-md flex items-center space-x-3">
                     <img
-                        src={konselor.avatar} // Dinamis
+                        src={konselor.avatar || avatarFallback}
                         alt={konselor.name}
+                        onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = avatarFallback;
+                        }}
                         className="w-16 h-16 rounded-full object-cover border-2 border-sky-500"
                     />
                     <div>
@@ -168,14 +185,13 @@ export default function ReschedulePage() {
                         </p>
                         <p className="text-sm text-gray-500 mt-1">
                             {formatDate(bookingData.tanggal_konsultasi)} |{" "}
-                            {bookingData.jam_konsultasi}
+                            {bookingData.jam_konsultasi.substring(0, 5)}
                         </p>
                     </div>
                 </div>
 
                 {/* Form Ganti Jadwal */}
                 <form className="flex-1 p-4 pt-0" onSubmit={handleSubmit}>
-                    {/* Tampilkan error submit jika ada */}
                     {error && isSubmitting && (
                         <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">
                             {error}
@@ -189,7 +205,7 @@ export default function ReschedulePage() {
                             <select
                                 value={alasan}
                                 onChange={(e) => setAlasan(e.target.value)}
-                                required // Wajib diisi
+                                required
                                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none bg-white"
                                 disabled={isSubmitting}
                             >
@@ -204,20 +220,40 @@ export default function ReschedulePage() {
                             </select>
                         </div>
 
-                        <div>
-                            <label className="text-sm font-medium text-gray-700 mb-1 block">
-                                Tanggal Baru*
-                            </label>
-                            <input
-                                type="date"
-                                value={tanggalBaru}
-                                onChange={(e) => setTanggalBaru(e.target.value)}
-                                required // Wajib diisi
-                                min={new Date().toISOString().split("T")[0]} // Tanggal minimal hari ini
-                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none bg-white"
-                                disabled={isSubmitting}
-                            />
+                        {/* --- PERBARUI INPUT TANGGAL & TAMBAH JAM --- */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-sm font-medium text-gray-700 mb-1 block">
+                                    Tanggal Baru*
+                                </label>
+                                <input
+                                    type="date"
+                                    value={tanggalBaru}
+                                    onChange={(e) =>
+                                        setTanggalBaru(e.target.value)
+                                    }
+                                    required
+                                    min={today}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none bg-white"
+                                    disabled={isSubmitting}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-sm font-medium text-gray-700 mb-1 block">
+                                    Jam Baru*
+                                </label>
+                                <input
+                                    type="time"
+                                    value={jamBaru}
+                                    onChange={(e) => setJamBaru(e.target.value)}
+                                    required
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none bg-white"
+                                    disabled={isSubmitting}
+                                />
+                            </div>
                         </div>
+                        {/* --- AKHIR PERBARUAN --- */}
 
                         <div>
                             <label className="text-sm font-medium text-gray-700 mb-1 block">

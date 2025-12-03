@@ -1,470 +1,546 @@
-import React, { useState, useEffect } from "react";
-// --- PERBAIKAN: Tambahkan 'useNavigate' DAN 'useLocation' ---
+import React, { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import axiosClient from "../../../api/axios";
+import apiClient from "../../../api/axios";
+import { useAuth } from "../../../context/AuthContext";
+import Echo from "laravel-echo";
+import Pusher from "pusher-js";
+import {
+    Search,
+    Phone,
+    Video,
+    MessageCircle,
+    MapPin,
+    Calendar,
+    Clock,
+    User,
+    AlertCircle,
+} from "lucide-react";
 
-// --- Icon untuk Tombol Kembali ---
-const BackIcon = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-    >
-        <polyline points="15 18 9 12 15 6"></polyline>
-    </svg>
+window.Pusher = Pusher;
+
+// --- CONFIG ECHO (TETAP) ---
+const echo = new Echo({
+    broadcaster: "reverb",
+    key: import.meta.env.VITE_REVERB_APP_KEY || "reverb_key",
+    wsHost: import.meta.env.VITE_REVERB_HOST || "127.0.0.1",
+    wsPort: import.meta.env.VITE_REVERB_PORT || 8080,
+    wssPort: import.meta.env.VITE_REVERB_PORT || 8080,
+    forceTLS: (import.meta.env.VITE_REVERB_SCHEME || "http") === "https",
+    enabledTransports: ["ws", "wss"],
+    authorizer: (channel, options) => {
+        return {
+            authorize: (socketId, callback) => {
+                apiClient
+                    .post("/api/broadcasting/auth", {
+                        socket_id: socketId,
+                        channel_name: channel.name,
+                    })
+                    .then((response) => callback(null, response.data))
+                    .catch((error) => callback(error));
+            },
+        };
+    },
+});
+
+// --- UI COMPONENTS ---
+
+// 1. Header (TANPA TOMBOL KEMBALI - SESUAI REQUEST)
+const Header = () => (
+    <header className="sticky top-0 z-50 bg-cyan-600 text-white p-4 shadow-md flex items-center justify-center">
+        <h1 className="text-lg font-bold tracking-wide">
+            Riwayat Konseling Saya
+        </h1>
+    </header>
 );
 
-// --- Komponen Tab (Style Disesuaikan) ---
-const TabButton = ({ label, statusKey, activeTab, onClick }) => {
-    const isActive = activeTab === statusKey;
-    return (
-        <button
-            onClick={() => onClick(statusKey)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap ${
-                isActive
-                    ? "bg-blue-500 text-white shadow-md"
-                    : "bg-gray-100 text-gray-700"
-            }`}
-        >
-            {label}
-        </button>
-    );
-};
-
-// --- Komponen UI Bawaan ---
-const LoadingSpinner = () => <div className="p-4 text-center">Memuat...</div>;
-const Pagination = ({ pagination, onPageChange }) => (
-    <div className="flex justify-between px-4">
-        <button
-            onClick={() => onPageChange(pagination.current_page - 1)}
-            disabled={!pagination.prev_page_url}
-            className="px-4 py-2 bg-gray-300 text-sm rounded-lg disabled:opacity-50"
-        >
-            Sebelumnya
-        </button>
-        <span className="self-center text-sm text-gray-700">
-            Halaman {pagination.current_page}
-        </span>
-        <button
-            onClick={() => onPageChange(pagination.current_page + 1)}
-            disabled={!pagination.next_page_url}
-            className="px-4 py-2 bg-gray-300 text-sm rounded-lg disabled:opacity-50"
-        >
-            Berikutnya
-        </button>
+// 2. Search Bar (KEMBALI KE STANDARD YANG ANDA SUKA)
+const SearchBar = ({ searchQuery, setSearchQuery }) => (
+    <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-3 mb-4 mt-4">
+        <Search size={20} className="text-gray-400" />
+        <input
+            type="number"
+            placeholder="Cari ID Pesanan..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="flex-1 outline-none text-sm text-gray-700 placeholder-gray-400"
+        />
     </div>
 );
 
-// --- Helper Format Tanggal & Waktu (Sesuai Desain) ---
-const formatDate = (dateString) => {
-    if (!dateString) return "...";
-    try {
-        return new Date(dateString)
-            .toLocaleDateString("id-ID", {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-            })
-            .replace(/\//g, " - ");
-    } catch (e) {
-        return dateString;
-    }
-};
-
-const formatTimeRange = (startTime, durationMinutes) => {
-    if (!startTime || !durationMinutes) return startTime || "...";
-    try {
-        const start = startTime.substring(0, 5); // "16:00"
-
-        const minutes = parseInt(String(durationMinutes).split(" ")[0]);
-        if (isNaN(minutes)) return start;
-
-        const [startHour, startMin] = start.split(":").map(Number);
-        const endDate = new Date();
-        endDate.setHours(startHour, startMin + minutes, 0, 0);
-
-        const endHour = String(endDate.getHours()).padStart(2, "0");
-        const endMin = String(endDate.getMinutes()).padStart(2, "0");
-
-        return `${start} - ${endHour}:${endMin}`; // "16:00 - 18:00"
-    } catch (e) {
-        return startTime.substring(0, 5);
-    }
-};
-
-// --- Komponen Card ---
-const BookingCard = ({ booking, activeTab }) => {
-    const navigate = useNavigate();
-
-    const counselorName = booking.konselor?.name || "Konselor Dihapus";
-    const counselorPhoto =
-        booking.konselor?.avatar || // Gunakan 'avatar' (URL lengkap dari accessor)
-        `https://ui-avatars.com/api/?name=${counselorName.replace(
-            /\s/g,
-            "+"
-        )}&background=random`;
-
-    // Mendapatkan tag metode (Chat, Video Call, Tatap Muka)
-    const getMethodTag = () => {
-        let text, bgColor, textColor;
-        switch (booking.metode_konsultasi) {
-            case "Video Call":
-                text = "Video Call";
-                bgColor = "bg-green-100";
-                textColor = "text-green-700";
-                break;
-            case "Tatap Muka":
-                text = "Tatap Muka";
-                bgColor = "bg-purple-100";
-                textColor = "text-purple-700";
-                break;
-            case "Chat":
-            default:
-                text = "Chat";
-                bgColor = "bg-blue-100";
-                textColor = "text-blue-700";
-        }
-        return (
-            <span
-                className={`px-2 py-0.5 text-xs font-medium rounded-full ${bgColor} ${textColor}`}
-            >
-                {text}
-            </span>
-        );
-    };
-
-    // Handler untuk 'Mulai' (Punya Logika)
-    const handleStartSession = () => {
-        if (booking.metode_konsultasi === "Tatap Muka") {
-            // Offline -> Ke Halaman Detail Riwayat
-            navigate(`/history/${booking.id}`);
-        } else {
-            // Online (Chat, VC, Call) -> Ke Halaman Sesi
-            navigate(`/session/chat/${booking.id}`);
-        }
-    };
-
-    // --- LOGIKA TOMBOL KONDISIONAL ---
-    const renderCardActions = () => {
-        // --- Komponen Link ---
-        const PrimaryLink = ({ to, state, children }) => (
-            <Link
-                to={to}
-                state={state}
-                className="px-5 py-2 bg-blue-500 text-white text-xs font-bold rounded-lg shadow-sm hover:bg-blue-600"
-            >
-                {children}
-            </Link>
-        );
-        const SecondaryLink = ({ to, children }) => (
-            <Link
-                to={to}
-                className="px-5 py-2 bg-gray-100 text-gray-700 text-xs font-bold rounded-lg hover:bg-gray-200"
-            >
-                {children}
-            </Link>
-        );
-        // --- Komponen Button ---
-        const PrimaryButton = ({ onClick, children }) => (
-            <button
-                onClick={onClick}
-                className="px-5 py-2 bg-blue-500 text-white text-xs font-bold rounded-lg shadow-sm hover:bg-blue-600"
-            >
-                {children}
-            </button>
-        );
-
-        switch (activeTab) {
-            case "upcoming":
-                return (
-                    <div className="flex gap-2">
-                        {/* Tombol Batalkan link ke CancelPage */}
-                        <SecondaryLink to={`/history/cancel/${booking.id}`}>
-                            Batalkan
-                        </SecondaryLink>
-                        {/* Tombol Mulai menggunakan handler */}
-                        <PrimaryButton onClick={handleStartSession}>
-                            {booking.metode_konsultasi === "Tatap Muka"
-                                ? "Detail"
-                                : "Mulai"}
-                        </PrimaryButton>
-                    </div>
-                );
-            case "canceled":
-                return (
-                    <div className="flex justify-between items-center w-full">
-                        <span className="text-sm font-medium text-red-600">
-                            Telah Dibatalkan
-                        </span>
-                        {/* Link ke CancelDetailPage */}
-                        <PrimaryLink
-                            to={`/history/cancel-detail/${booking.id}`}
-                        >
-                            Detail
-                        </PrimaryLink>
-                    </div>
-                );
-            case "unpaid":
-                return (
-                    <div className="flex gap-2">
-                        <SecondaryLink to={`/history/${booking.id}`}>
-                            Lihat Detail
-                        </SecondaryLink>
-                        {/* Link ke QRIS */}
-                        <PrimaryLink
-                            to={`/booking/payment/qris/${booking.id}`}
-                            state={{ booking: booking }}
-                        >
-                            Bayar Sekarang
-                        </PrimaryLink>
-                    </div>
-                );
-            case "completed":
-                return (
-                    <div className="flex gap-2">
-                        {/* Link ke session/chat */}
-                        <SecondaryLink to={`/session/chat/${booking.id}`}>
-                            Riwayat Chat
-                        </SecondaryLink>
-                        {/* Link ke history/rating */}
-                        <PrimaryLink to={`/history/rating/${booking.id}`}>
-                            Beri Nilai
-                        </PrimaryLink>
-                    </div>
-                );
-            default:
-                return null;
-        }
-    };
-
+// 3. Tab Navigation (KEMBALI KE STANDARD PILL CYAN)
+const TabNavigation = ({ activeTab, onTabClick }) => {
+    const tabs = [
+        { label: "Akan Datang", key: "upcoming" },
+        { label: "Unpaid", key: "unpaid" },
+        { label: "Batal", key: "canceled" },
+        { label: "Selesai", key: "completed" },
+    ];
     return (
-        <div className="bg-white rounded-lg shadow-md p-4 mx-4">
-            {/* Tag Kuning (Hanya untuk Belum Dibayar) */}
-            {activeTab === "unpaid" && (
-                <div className="border-b border-gray-100 pb-3 mb-3">
-                    <span className="px-2 py-1 text-xs font-medium text-yellow-800 bg-yellow-100 rounded">
-                        Menunggu Pembayaran
-                    </span>
-                    {/* TODO: Implementasi Timer dinamis di sini */}
-                    <div className="flex gap-1.5 mt-2">
-                        <span className="px-2 py-1 bg-blue-600 text-white text-sm font-bold rounded-md">
-                            01
-                        </span>
-                        <span className="self-center font-bold text-blue-600">
-                            :
-                        </span>
-                        <span className="px-2 py-1 bg-blue-600 text-white text-sm font-bold rounded-md">
-                            39
-                        </span>
-                        <span className="self-center font-bold text-blue-600">
-                            :
-                        </span>
-                        <span className="px-2 py-1 bg-blue-600 text-white text-sm font-bold rounded-md">
-                            04
-                        </span>
-                    </div>
-                </div>
-            )}
-
-            {/* Info Spesialisasi */}
-            <p className="text-xs text-gray-500 mb-2">
-                Spesialisasi:{" "}
-                {booking.jenis_konseling?.jenis_konseling || "Konseling"}
-            </p>
-
-            {/* Info Utama Konselor & Waktu */}
-            <div className="flex justify-between items-start mb-3">
-                <div className="flex-1 pr-3">
-                    <h3 className="text-base font-bold text-gray-900 mb-1.5">
-                        {counselorName}
-                    </h3>
-                    <p className="flex items-center text-xs text-gray-600 mb-1">
-                        <span className="w-4 h-4 mr-1.5">🗓️</span>
-                        {formatDate(booking.tanggal_konsultasi)}
-                    </p>
-                    <p className="flex items-center text-xs text-gray-600">
-                        <span className="w-4 h-4 mr-1.5">⏰</span>
-                        {formatTimeRange(
-                            booking.jam_konsultasi,
-                            booking.durasi_konseling?.durasi_menit
-                        )}
-                    </p>
-                </div>
-                <img
-                    src={counselorPhoto}
-                    alt={counselorName}
-                    className="w-12 h-12 rounded-full object-cover bg-gray-200 flex-shrink-0"
-                />
-            </div>
-
-            {/* Tag Metode (Chat/Video/Tatap Muka) */}
-            <div className="mb-4">{getMethodTag()}</div>
-
-            {/* Aksi Tombol Bawah */}
-            <div className="flex justify-end">{renderCardActions()}</div>
+        <div className="flex bg-white p-1 rounded-full shadow-md mb-6 overflow-x-auto no-scrollbar">
+            {tabs.map((tab) => (
+                <button
+                    key={tab.key}
+                    onClick={() => onTabClick(tab.key)}
+                    className={`flex-1 min-w-[80px] py-2 px-2 rounded-full text-xs font-bold transition-all duration-300 whitespace-nowrap ${
+                        activeTab === tab.key
+                            ? "bg-cyan-500 text-white shadow"
+                            : "bg-white text-gray-500 hover:bg-gray-50"
+                    }`}
+                >
+                    {tab.label}
+                </button>
+            ))}
         </div>
     );
 };
 
-// --- Komponen Utama Halaman ---
-export default function HistoryIndex() {
-    const [bookings, setBookings] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [pagination, setPagination] = useState(null);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [activeTab, setActiveTab] = useState("upcoming");
-
-    // --- State baru untuk memicu refresh ---
-    const location = useLocation(); // <-- INI YANG MEMBUTUHKAN IMPORT
-
+// Hook Countdown (TETAP)
+const useCountdown = (targetDate, targetTime) => {
+    const targetDateTime = useMemo(() => {
+        if (!targetDate || !targetTime) return new Date();
+        return new Date(`${targetDate}T${targetTime}`);
+    }, [targetDate, targetTime]);
+    const [now, setNow] = useState(new Date());
+    const timeRemaining = useMemo(
+        () => targetDateTime - now,
+        [targetDateTime, now]
+    );
     useEffect(() => {
-        const fetchHistory = async (page) => {
-            setLoading(true);
-            setError(null);
-            try {
-                const response = await axiosClient.get(
-                    `/api/history?page=${page}&status=${activeTab}`
-                );
-                setBookings(
-                    page === 1
-                        ? response.data.data
-                        : (prev) => [...prev, ...response.data.data]
-                );
-                const { data, ...meta } = response.data;
-                setPagination(meta);
-            } catch (err) {
-                console.error("Error fetching history:", err);
-                setError("Gagal memuat riwayat booking.");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchHistory(currentPage);
-
-        // Cek state 'refresh' dari CancelPage
-        if (location.state?.refresh) {
-            // Hapus state agar tidak refresh terus menerus
-            window.history.replaceState({}, document.title);
-            // Fetch ulang data untuk tab saat ini
-            fetchHistory(1);
-        }
-    }, [currentPage, activeTab, location.state]); // Tambahkan location.state
-
-    const handlePageChange = (newPage) => {
-        if (newPage > 0 && pagination && newPage <= pagination.last_page) {
-            setCurrentPage(newPage);
-        }
+        if (timeRemaining <= 0) return;
+        const interval = setInterval(() => setNow(new Date()), 1000);
+        return () => clearInterval(interval);
+    }, [timeRemaining]);
+    if (timeRemaining <= 0)
+        return { isReady: true, days: 0, hours: 0, minutes: 0, seconds: 0 };
+    return {
+        isReady: false,
+        days: Math.floor(timeRemaining / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((timeRemaining / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((timeRemaining / 1000 / 60) % 60),
+        seconds: Math.floor((timeRemaining / 1000) % 60),
     };
+};
 
-    const handleTabChange = (newTab) => {
-        setActiveTab(newTab);
-        setCurrentPage(1); // Reset ke halaman 1
-        setBookings([]); // Kosongkan data lama
-    };
+// --- KOMPONEN COUNTDOWN DIGITAL (FUTURISTIC) ---
+const DigitalDigit = ({ value, label }) => (
+    <div className="flex flex-col items-center">
+        <div className="bg-gray-800 text-cyan-400 font-mono text-xl font-bold px-3 py-2 rounded-lg shadow-inner border border-gray-700">
+            {String(value).padStart(2, "0")}
+        </div>
+        <span className="text-[10px] text-gray-500 font-medium mt-1 uppercase tracking-wider">
+            {label}
+        </span>
+    </div>
+);
 
-    // --- Render Logic ---
-    let content;
-    if (loading && currentPage === 1) {
-        content = (
-            <div className="flex justify-center items-center h-64">
-                <LoadingSpinner />
-            </div>
-        );
-    } else if (error) {
-        content = (
-            <div className="text-center text-red-600 p-6 bg-red-50 rounded-lg shadow mx-4">
-                <p className="font-semibold">{error}</p>
-            </div>
-        );
-    } else if (bookings.length === 0) {
-        content = (
-            <div className="text-center text-gray-500 p-10 bg-gray-50 rounded-lg shadow-inner mx-4">
-                <p className="text-lg font-medium">
-                    Tidak ada data untuk kategori ini.
+const CountdownDisplay = ({ days, hours, minutes, seconds }) => {
+    return (
+        <div className="bg-white border border-gray-100 rounded-xl p-4 mb-4 shadow-sm">
+            <div className="flex items-center justify-center gap-1 mb-2">
+                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                <p className="text-xs font-bold text-gray-600 tracking-wide uppercase">
+                    Sesi Dimulai Dalam
                 </p>
             </div>
-        );
-    } else {
-        content = (
-            <div className="space-y-4">
-                {bookings.map((booking) => (
-                    <BookingCard
-                        key={booking.id}
-                        booking={booking}
-                        activeTab={activeTab}
-                    />
-                ))}
+            <div className="flex justify-center items-center gap-2">
+                {days > 0 && (
+                    <>
+                        <DigitalDigit value={days} label="Hari" />
+                        <span className="text-gray-300 text-xl mb-4">:</span>
+                    </>
+                )}
+                <DigitalDigit value={hours} label="Jam" />
+                <span className="text-gray-300 text-xl mb-4">:</span>
+                <DigitalDigit value={minutes} label="Menit" />
+                <span className="text-gray-300 text-xl mb-4">:</span>
+                <DigitalDigit value={seconds} label="Detik" />
             </div>
-        );
+        </div>
+    );
+};
+
+// Helper Format
+const formatDate = (dateString) => {
+    if (!dateString) return "...";
+    return new Date(dateString).toLocaleDateString("id-ID", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+    });
+};
+const formatTimeRange = (startTime, durationMinutes) => {
+    if (!startTime) return "...";
+    try {
+        const start = startTime.substring(0, 5);
+        const mins = parseInt(durationMinutes || 0);
+        const [h, m] = start.split(":").map(Number);
+        const end = new Date();
+        end.setHours(h, m + mins);
+        return `${start} - ${String(end.getHours()).padStart(2, "0")}:${String(
+            end.getMinutes()
+        ).padStart(2, "0")}`;
+    } catch (e) {
+        return startTime;
     }
+};
+
+// --- CARD MODERN & CLEAN ---
+const BookingCard = ({ booking, activeTab }) => {
+    const navigate = useNavigate();
+    const { isReady, days, hours, minutes, seconds } = useCountdown(
+        booking.tanggal_konsultasi,
+        booking.jam_konsultasi
+    );
+    const counselorName = booking.konselor?.name || "Konselor";
+    const counselorPhoto =
+        booking.konselor?.avatar ||
+        `https://ui-avatars.com/api/?name=${counselorName.replace(/\s/g, "+")}`;
+    const isOnline = booking.metode_konsultasi !== "Tatap Muka";
+
+    // Icon Configuration
+    const getMethodConfig = () => {
+        switch (booking.metode_konsultasi) {
+            case "Video Call":
+                return {
+                    color: "text-purple-600",
+                    bg: "bg-purple-100",
+                    icon: Video,
+                };
+            case "Voice Call":
+                return {
+                    color: "text-teal-600",
+                    bg: "bg-teal-100",
+                    icon: Phone,
+                };
+            case "Tatap Muka":
+                return {
+                    color: "text-orange-600",
+                    bg: "bg-orange-100",
+                    icon: MapPin,
+                };
+            default:
+                return {
+                    color: "text-blue-600",
+                    bg: "bg-blue-100",
+                    icon: MessageCircle,
+                };
+        }
+    };
+    const method = getMethodConfig();
+    const MethodIcon = method.icon;
+
+    const handleStartSession = () => {
+        if (!isOnline || isReady) {
+            if (
+                booking.metode_konsultasi === "Video Call" ||
+                booking.metode_konsultasi === "Voice Call"
+            )
+                navigate(`/session/video/${booking.id}`);
+            else if (booking.metode_konsultasi === "Chat")
+                navigate(`/session/chat/${booking.id}`);
+            else navigate(`/history/${booking.id}`);
+        }
+    };
 
     return (
-        <div className="bg-white-100 flex-grow min-h-screen">
-            {/* --- HEADER BARU (SESUAI DESAIN) --- */}
-            <header className="p-4 sticky top-0 z-20 bg-blue-500 text-white flex items-center shadow-lg">
-                <Link to="/home" className="p-1 -ml-1">
-                    <BackIcon />
-                </Link>
-                <h1 className="text-lg font-bold text-white text-center flex-grow">
-                    Riwayat
-                </h1>
-                <div className="w-6"></div>{" "}
-            </header>
+        <div className="bg-white rounded-2xl p-5 mb-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] border border-gray-100 relative overflow-hidden transition-all hover:shadow-lg">
+            {/* Aksen Warna di Kiri Card */}
+            <div
+                className={`absolute left-0 top-0 bottom-0 w-1.5 ${method.bg
+                    .replace("bg-", "bg-gradient-to-b from-")
+                    .replace("100", "500")
+                    .replace("50", "500")} to-gray-200`}
+            ></div>
 
-            {/* --- Tombol Tab (Sticky di bawah header) --- */}
-            <div className="sticky top-[60px] z-10 bg-white px-4 py-3 shadow-sm overflow-x-auto">
-                <div className="flex space-x-2">
-                    <TabButton
-                        label="Akan Datang"
-                        statusKey="upcoming"
-                        activeTab={activeTab}
-                        onClick={handleTabChange}
-                    />
-                    <TabButton
-                        label="Dibatalkan"
-                        statusKey="canceled"
-                        activeTab={activeTab}
-                        onClick={handleTabChange}
-                    />
-                    <TabButton
-                        label="Belum Dibayar"
-                        statusKey="unpaid"
-                        activeTab={activeTab}
-                        onClick={handleTabChange}
-                    />
-                    <TabButton
-                        label="Selesai"
-                        statusKey="completed"
-                        activeTab={activeTab}
-                        onClick={handleTabChange}
-                    />
+            {/* Header Card: ID */}
+            <div className="flex justify-between items-start mb-4 pl-3">
+                <div className="flex flex-col">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                        Order ID
+                    </span>
+                    <span className="text-sm font-mono font-bold text-gray-800">
+                        #{booking.id}
+                    </span>
+                </div>
+                {/* Method Badge */}
+                <div
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg ${method.bg} ${method.color} text-[10px] font-bold uppercase tracking-wide`}
+                >
+                    <MethodIcon size={12} />
+                    {booking.metode_konsultasi}
                 </div>
             </div>
 
-            {/* Konten (Kartu) */}
-            <div className="py-6">
-                {content}
+            {/* Countdown Area */}
+            {activeTab === "upcoming" && !isReady && isOnline && (
+                <div className="pl-3">
+                    <CountdownDisplay
+                        days={days}
+                        hours={hours}
+                        minutes={minutes}
+                        seconds={seconds}
+                    />
+                </div>
+            )}
 
-                {/* Pagination */}
-                {!loading &&
-                    !error &&
-                    pagination &&
-                    pagination.last_page > 1 && (
-                        <div className="mt-8">
-                            <Pagination
-                                pagination={pagination}
-                                onPageChange={handlePageChange}
-                            />
+            {/* Peringatan Pembayaran Ditolak */}
+            {activeTab === "unpaid" &&
+                booking.status_pesanan === "Pembayaran Ditolak" && (
+                    <div className="ml-3 mb-4 bg-red-50 border border-red-100 p-3 rounded-lg flex gap-3">
+                        <AlertCircle
+                            size={18}
+                            className="text-red-500 shrink-0"
+                        />
+                        <div>
+                            <p className="text-xs font-bold text-red-600">
+                                Pembayaran Ditolak
+                            </p>
+                            <p className="text-xs text-red-500 mt-0.5">
+                                {booking.catatan_pembatalan ||
+                                    "Bukti tidak valid."}
+                            </p>
                         </div>
+                    </div>
+                )}
+
+            {/* Info Konselor & Jadwal */}
+            <div className="flex items-start gap-4 mb-4 pl-3">
+                <img
+                    src={counselorPhoto}
+                    alt={counselorName}
+                    className="w-12 h-12 rounded-xl object-cover shadow-sm bg-gray-100"
+                />
+                <div className="flex-1">
+                    <h3 className="text-base font-bold text-gray-900 leading-tight">
+                        {counselorName}
+                    </h3>
+                    <p className="text-xs text-cyan-600 font-medium mb-2">
+                        {booking.jenis_konseling?.jenis_konseling}
+                    </p>
+
+                    {/* Grid Jadwal Mini */}
+                    <div className="flex items-center gap-3 text-xs text-gray-500 bg-gray-50 p-2 rounded-lg border border-gray-100">
+                        <div className="flex items-center gap-1.5">
+                            <Calendar size={14} className="text-gray-400" />
+                            {formatDate(booking.tanggal_konsultasi)}
+                        </div>
+                        <div className="w-px h-3 bg-gray-300"></div>
+                        <div className="flex items-center gap-1.5">
+                            <Clock size={14} className="text-gray-400" />
+                            {formatTimeRange(
+                                booking.jam_konsultasi,
+                                booking.durasi_konseling?.durasi_menit
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="flex gap-2 pl-3 mt-2 border-t border-gray-50 pt-3">
+                {activeTab === "upcoming" && (
+                    <>
+                        <Link
+                            to={`/history/cancel/${booking.id}`}
+                            className="px-4 py-2.5 rounded-lg border border-gray-200 text-gray-500 text-xs font-bold hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-all"
+                        >
+                            Batal
+                        </Link>
+                        <button
+                            onClick={handleStartSession}
+                            disabled={!isReady && isOnline}
+                            className={`flex-1 py-2.5 rounded-lg text-xs font-bold text-center shadow-sm transition-all
+                                ${
+                                    !isReady && isOnline
+                                        ? "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
+                                        : "bg-cyan-600 text-white hover:bg-cyan-700 hover:shadow-md"
+                                }
+                            `}
+                        >
+                            {!isOnline
+                                ? "Detail Tiket"
+                                : isReady
+                                ? "Mulai Sesi Sekarang"
+                                : "Belum Waktunya"}{" "}
+                            {/* Teks berubah sesuai request */}
+                        </button>
+                    </>
+                )}
+
+                {activeTab === "unpaid" &&
+                    booking.status_pesanan !== "Pembayaran Ditolak" && (
+                        <>
+                            <Link
+                                to={`/history/${booking.id}`}
+                                className="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-bold"
+                            >
+                                Detail
+                            </Link>
+                            <Link
+                                to={`/booking/upload-proof/${booking.id}`}
+                                state={{ booking }}
+                                className="flex-1 py-2.5 bg-cyan-600 text-white rounded-lg text-xs font-bold text-center shadow-sm"
+                            >
+                                Bayar Sekarang
+                            </Link>
+                        </>
                     )}
+
+                {activeTab === "completed" && (
+                    <Link
+                        to={`/history/rating/${booking.id}`}
+                        className="w-full py-2.5 bg-cyan-600 text-white rounded-lg text-xs font-bold text-center shadow-sm"
+                    >
+                        Beri Ulasan
+                    </Link>
+                )}
+
+                {activeTab === "canceled" && (
+                    <Link
+                        to={`/history/cancel-detail/${booking.id}`}
+                        className="w-full py-2.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-bold text-center"
+                    >
+                        Lihat Detail Pembatalan
+                    </Link>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// --- MAIN PAGE ---
+export default function HistoryIndex() {
+    const [bookings, setBookings] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [pagination, setPagination] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [activeTab, setActiveTab] = useState("upcoming");
+    const { user: authUser } = useAuth();
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            fetchHistory(currentPage, searchQuery);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [currentPage, activeTab, searchQuery]);
+
+    const fetchHistory = async (page, search) => {
+        setLoading(true);
+        try {
+            const response = await apiClient.get(
+                `/api/history?page=${page}&status=${activeTab}&search=${search}`
+            );
+            setBookings(
+                page === 1
+                    ? response.data.data
+                    : (prev) => [...prev, ...response.data.data]
+            );
+            const { data, ...meta } = response.data;
+            setPagination(meta);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Real-time listener tetap
+    useEffect(() => {
+        if (!authUser) return;
+        const channelName = `customer.${authUser.id}`;
+        const handlePaymentUpdate = (event) => {
+            const updated = event.booking;
+            setBookings((prev) => {
+                const idx = prev.findIndex((b) => b.id === updated.id);
+                let shouldInTab = false;
+                if (
+                    activeTab === "upcoming" &&
+                    ["Dijadwalkan", "DISETUJUI"].includes(
+                        updated.status_pesanan
+                    )
+                )
+                    shouldInTab = true;
+                if (
+                    activeTab === "unpaid" &&
+                    [
+                        "Menunggu Pembayaran",
+                        "Menunggu Verifikasi",
+                        "Pembayaran Ditolak",
+                    ].includes(updated.status_pesanan)
+                )
+                    shouldInTab = true;
+
+                if (idx > -1) {
+                    if (shouldInTab) {
+                        const newArr = [...prev];
+                        newArr[idx] = updated;
+                        return newArr;
+                    } else {
+                        return prev.filter((b) => b.id !== updated.id);
+                    }
+                } else if (shouldInTab) {
+                    return [updated, ...prev];
+                }
+                return prev;
+            });
+        };
+        echo.private(channelName).listen(
+            ".PaymentVerified",
+            handlePaymentUpdate
+        );
+        return () => echo.leave(channelName);
+    }, [authUser, activeTab]);
+
+    return (
+        <div className="bg-gray-50 min-h-screen pb-20">
+            <Header /> {/* Header Sticky tanpa tombol kembali */}
+            <div className="px-4">
+                <SearchBar
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                />
+                <TabNavigation
+                    activeTab={activeTab}
+                    onTabClick={(tab) => {
+                        setActiveTab(tab);
+                        setCurrentPage(1);
+                        setSearchQuery("");
+                    }}
+                />
+
+                <div className="min-h-[50vh]">
+                    {loading && currentPage === 1 ? (
+                        <div className="text-center py-10 text-gray-500">
+                            Memuat...
+                        </div>
+                    ) : bookings.length === 0 ? (
+                        <div className="text-center py-10 bg-white rounded-xl shadow-sm border border-gray-100">
+                            <p className="text-gray-400">
+                                Tidak ada riwayat ditemukan.
+                            </p>
+                        </div>
+                    ) : (
+                        bookings.map((booking) => (
+                            <BookingCard
+                                key={booking.id}
+                                booking={booking}
+                                activeTab={activeTab}
+                            />
+                        ))
+                    )}
+                </div>
+
+                {!loading && pagination && pagination.next_page_url && (
+                    <div className="text-center mt-6">
+                        <button
+                            onClick={() => setCurrentPage((c) => c + 1)}
+                            className="px-6 py-2 bg-white border border-gray-200 text-gray-600 rounded-full text-xs font-bold shadow-sm hover:bg-gray-50"
+                        >
+                            Muat Lebih Banyak
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

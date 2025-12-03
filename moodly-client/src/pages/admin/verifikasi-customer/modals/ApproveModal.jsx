@@ -1,27 +1,104 @@
-import React from "react";
-// Mirip ApproveModal konselor, ganti teks
-const ApproveModal = ({ isOpen, onClose, onConfirm, customerName }) => {
+import React, { useState } from "react";
+import { createPortal } from "react-dom";
+import { CheckCircle, X, Loader2, AlertTriangle } from "lucide-react";
+
+export default function ApproveModal({
+    isOpen,
+    onClose,
+    onConfirm,
+    customerName,
+}) {
     if (!isOpen) return null;
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            {" "}
-            <div className="bg-white rounded-lg p-8 w-full max-w-md text-center">
-                {" "}
-                {/* Icon */}{" "}
-                <h2 className="text-xl font-bold mb-4">Setujui Verifikasi?</h2>{" "}
-                <p className="text-gray-600 mb-6">
-                    {" "}
-                    Yakin menyetujui customer{" "}
-                    <span className="font-semibold">"{customerName}"</span>?
-                    Status akan diubah menjadi 'Terverifikasi'.{" "}
-                </p>{" "}
-                <div className="flex justify-center gap-4">
-                    {" "}
-                    <button onClick={onClose}>Batal</button>{" "}
-                    <button onClick={onConfirm}>Setujui</button>{" "}
-                </div>{" "}
-            </div>{" "}
-        </div>
+
+    const [loading, setLoading] = useState(false);
+
+    const handleConfirm = async () => {
+        setLoading(true);
+        try {
+            // Memanggil fungsi handleApprove dari parent
+            await onConfirm();
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-200 p-4">
+            {/* Overlay Close */}
+            <div
+                className="absolute inset-0"
+                onClick={!loading ? onClose : undefined}
+            ></div>
+
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden transform transition-all scale-100">
+                {/* Close Button */}
+                <button
+                    onClick={onClose}
+                    disabled={loading}
+                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
+                >
+                    <X size={20} />
+                </button>
+
+                <div className="p-8 text-center">
+                    {/* Big Icon */}
+                    <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-green-50 mb-6 animate-in zoom-in duration-300 border-4 border-green-100">
+                        <CheckCircle className="h-10 w-10 text-green-600" />
+                    </div>
+
+                    {/* Title & Description */}
+                    <h3 className="text-2xl font-extrabold text-gray-900 mb-2">
+                        Setujui Verifikasi?
+                    </h3>
+
+                    <p className="text-gray-500 mb-6 leading-relaxed">
+                        Apakah Anda yakin ingin menyetujui data customer <br />
+                        <span className="font-bold text-gray-800 bg-gray-100 px-2 py-0.5 rounded mx-1">
+                            {customerName}
+                        </span>
+                        ?
+                    </p>
+
+                    {/* Info Box */}
+                    <div className="bg-green-50 border border-green-100 rounded-xl p-4 mb-8 text-left flex gap-3">
+                        <AlertTriangle className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
+                        <p className="text-sm text-green-800">
+                            <span className="font-bold">Info:</span> Status
+                            customer akan berubah menjadi{" "}
+                            <span className="font-bold">Terverifikasi</span> dan
+                            dapat mulai melakukan booking.
+                        </p>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-3">
+                        <button
+                            onClick={onClose}
+                            disabled={loading}
+                            className="flex-1 px-5 py-3 bg-white border border-gray-300 text-gray-700 font-bold rounded-xl hover:bg-gray-50 transition-colors outline-none disabled:opacity-50"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            onClick={handleConfirm}
+                            disabled={loading}
+                            className="flex-1 px-5 py-3 bg-green-600 text-white font-bold rounded-xl shadow-lg shadow-green-200 hover:bg-green-700 transition-all outline-none disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                            {loading ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <span>Memproses...</span>
+                                </>
+                            ) : (
+                                "Ya, Setujui"
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>,
+        document.body
     );
-};
-export default ApproveModal;
+}

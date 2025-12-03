@@ -17,9 +17,8 @@ const BackArrowIcon = () => (
         strokeLinejoin="round"
         className="text-gray-800 group-hover:text-black"
     >
-        {" "}
-        <line x1="19" y1="12" x2="5" y2="12"></line>{" "}
-        <polyline points="12 19 5 12 12 5"></polyline>{" "}
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
     </svg>
 );
 const CameraIcon = () => (
@@ -34,9 +33,8 @@ const CameraIcon = () => (
         strokeLinecap="round"
         strokeLinejoin="round"
     >
-        {" "}
-        <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />{" "}
-        <circle cx="12" cy="13" r="3" />{" "}
+        <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+        <circle cx="12" cy="13" r="3" />
     </svg>
 );
 const ChevronRightIcon = () => (
@@ -52,8 +50,7 @@ const ChevronRightIcon = () => (
         strokeLinejoin="round"
         className="text-gray-400"
     >
-        {" "}
-        <polyline points="9 18 15 12 9 6"></polyline>{" "}
+        <polyline points="9 18 15 12 9 6"></polyline>
     </svg>
 );
 const CheckIcon = () => (
@@ -69,8 +66,7 @@ const CheckIcon = () => (
         strokeLinejoin="round"
         className="text-green-500"
     >
-        {" "}
-        <polyline points="20 6 9 17 4 12"></polyline>{" "}
+        <polyline points="20 6 9 17 4 12"></polyline>
     </svg>
 );
 const XIcon = () => (
@@ -86,14 +82,28 @@ const XIcon = () => (
         strokeLinejoin="round"
         className="text-red-500"
     >
-        {" "}
-        <line x1="18" y1="6" x2="6" y2="18"></line>{" "}
-        <line x1="6" y1="6" x2="18" y2="18"></line>{" "}
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
     </svg>
 );
-// --- Akhir Komponen Ikon ---
+const EditIcon = () => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+    >
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+    </svg>
+);
 
-// --- Komponen Input yang Bisa Diedit (untuk NAMA) ---
+// --- Komponen Input Text (Inline Edit) ---
 const EditableInputItem = ({ label, initialValue, onSave }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [value, setValue] = useState(initialValue);
@@ -121,22 +131,33 @@ const EditableInputItem = ({ label, initialValue, onSave }) => {
 
     return (
         <div className="mb-4">
-            <label className="text-sm text-gray-700 font-semibold block mb-2">
-                {label}
-            </label>
+            <div className="flex justify-between items-center mb-2">
+                <label className="text-sm text-gray-700 font-bold">
+                    {label}
+                </label>
+                {!isEditing && (
+                    <button
+                        onClick={() => setIsEditing(true)}
+                        className="text-cyan-600 text-xs font-medium hover:text-cyan-700 flex items-center gap-1"
+                    >
+                        <EditIcon /> Ubah
+                    </button>
+                )}
+            </div>
             {isEditing ? (
                 <div className="flex items-center gap-2">
                     <input
                         type="text"
                         value={value}
                         onChange={(e) => setValue(e.target.value)}
-                        className="flex-grow text-sm text-gray-800 bg-white border border-cyan-500 rounded-lg px-3 py-3 focus:outline-none"
+                        className="flex-grow text-sm text-gray-800 bg-white border border-cyan-500 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-cyan-200"
                         disabled={loading}
+                        autoFocus
                     />
                     <button
                         onClick={handleSave}
                         disabled={loading}
-                        className="p-2 hover:bg-gray-200 rounded-full"
+                        className="p-2 bg-green-50 hover:bg-green-100 rounded-lg border border-green-200 transition-colors"
                     >
                         {loading ? (
                             <div className="w-5 h-5 border-2 border-gray-300 border-t-cyan-500 rounded-full animate-spin"></div>
@@ -145,101 +166,207 @@ const EditableInputItem = ({ label, initialValue, onSave }) => {
                         )}
                     </button>
                     <button
-                        onClick={() => setIsEditing(false)}
+                        onClick={() => {
+                            setIsEditing(false);
+                            setValue(initialValue);
+                        }}
                         disabled={loading}
-                        className="p-2 hover:bg-gray-200 rounded-full"
+                        className="p-2 bg-red-50 hover:bg-red-100 rounded-lg border border-red-200 transition-colors"
                     >
                         <XIcon />
                     </button>
                 </div>
             ) : (
-                <div
-                    onClick={() => setIsEditing(true)}
-                    className="w-full flex items-center justify-between text-left bg-gray-100 rounded-lg p-3.5 pr-3 transition-colors hover:bg-gray-200 cursor-pointer"
-                >
-                    <p className="text-sm text-gray-800 truncate">
-                        {value || "-"}
-                    </p>
-                    <ChevronRightIcon />
+                <div className="w-full text-left bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 font-medium">
+                    {value || "-"}
                 </div>
             )}
         </div>
     );
 };
-// --- AKHIR KOMPONEN NAMA ---
 
-// --- Komponen Tombol Menu (untuk Telepon, Alamat) ---
-const MenuItem = ({
-    label,
-    value,
-    onClick,
-    valueLines = 1,
-    editable = true,
-}) => (
+// --- Komponen Edit Spesialisasi (Multi-Select) ---
+const EditableSpecialization = ({ initialSpecs, onSave }) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [selectedSpecs, setSelectedSpecs] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    const options = [
+        "Depresi",
+        "Kecemasan",
+        "Stress",
+        "Trauma",
+        "Hubungan",
+        "Karir",
+        "Keluarga",
+        "Pengembangan Diri",
+        "Gangguan Tidur",
+        "Adiksi",
+        "LGBTQ+",
+        "Duka & Kehilangan",
+    ];
+
+    useEffect(() => {
+        const current = Array.isArray(initialSpecs)
+            ? initialSpecs
+            : typeof initialSpecs === "string"
+            ? initialSpecs.split(", ").filter(Boolean)
+            : [];
+        setSelectedSpecs(current);
+    }, [initialSpecs]);
+
+    const toggleSpec = (spec) => {
+        setSelectedSpecs((prev) =>
+            prev.includes(spec)
+                ? prev.filter((s) => s !== spec)
+                : [...prev, spec]
+        );
+    };
+
+    const handleSave = async () => {
+        setLoading(true);
+        try {
+            await onSave(selectedSpecs);
+            setIsEditing(false);
+        } catch (error) {
+            console.error("Gagal menyimpan spesialisasi:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="mb-4">
+            <div className="flex justify-between items-center mb-2">
+                <label className="text-sm text-gray-700 font-bold">
+                    Spesialisasi
+                </label>
+                {!isEditing && (
+                    <button
+                        onClick={() => setIsEditing(true)}
+                        className="text-cyan-600 text-xs font-medium hover:text-cyan-700 flex items-center gap-1"
+                    >
+                        <EditIcon /> Ubah
+                    </button>
+                )}
+            </div>
+
+            {isEditing ? (
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                        {options.map((option) => (
+                            <label
+                                key={option}
+                                className={`flex items-center space-x-2 p-2 rounded-lg border cursor-pointer transition-all ${
+                                    selectedSpecs.includes(option)
+                                        ? "bg-cyan-50 border-cyan-200"
+                                        : "bg-white border-gray-200 hover:bg-gray-100"
+                                }`}
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={selectedSpecs.includes(option)}
+                                    onChange={() => toggleSpec(option)}
+                                    className="h-4 w-4 text-cyan-600 rounded border-gray-300 focus:ring-cyan-500"
+                                />
+                                <span className="text-xs font-medium text-gray-700">
+                                    {option}
+                                </span>
+                            </label>
+                        ))}
+                    </div>
+                    <div className="flex justify-end gap-2">
+                        <button
+                            onClick={() => setIsEditing(false)}
+                            className="px-3 py-1.5 text-xs font-bold text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                            disabled={loading}
+                        >
+                            Batal
+                        </button>
+                        <button
+                            onClick={handleSave}
+                            className="px-3 py-1.5 text-xs font-bold text-white bg-cyan-600 rounded-lg hover:bg-cyan-700 disabled:opacity-50"
+                            disabled={loading}
+                        >
+                            {loading ? "Menyimpan..." : "Simpan"}
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <div className="w-full bg-white border border-gray-200 rounded-lg p-3 min-h-[46px] flex flex-wrap gap-2">
+                    {selectedSpecs.length > 0 ? (
+                        selectedSpecs.map((spec, idx) => (
+                            <span
+                                key={idx}
+                                className="px-2 py-1 bg-cyan-50 text-cyan-700 text-xs font-bold rounded-md border border-cyan-100"
+                            >
+                                {spec}
+                            </span>
+                        ))
+                    ) : (
+                        <span className="text-gray-400 text-sm italic">
+                            Belum ada spesialisasi dipilih
+                        </span>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
+// --- Komponen Item Menu (Link Only) ---
+const MenuItem = ({ label, value, onClick, valueLines = 1 }) => (
     <div className="mb-4">
-        <label className="text-sm text-gray-700 font-semibold block mb-2">
+        <label className="text-sm text-gray-700 font-bold block mb-2">
             {label}
         </label>
         <button
-            onClick={editable ? onClick : undefined}
-            className={`w-full flex items-center justify-between text-left bg-gray-100 rounded-lg p-3.5 pr-3 transition-colors ${
-                editable ? "cursor-pointer hover:bg-gray-200" : "opacity-70"
-            }`}
+            onClick={onClick}
+            className="w-full flex items-center justify-between text-left bg-white border border-gray-200 rounded-lg p-3 pr-3 transition-colors hover:bg-gray-50 group"
         >
             {valueLines > 1 ? (
-                <p className="text-sm text-gray-800 whitespace-pre-line">
+                <p className="text-sm text-gray-800 whitespace-pre-line font-medium leading-relaxed">
                     {value || "-"}
                 </p>
             ) : (
-                <p className="text-sm text-gray-800 truncate">{value || "-"}</p>
+                <p className="text-sm text-gray-800 truncate font-medium">
+                    {value || "-"}
+                </p>
             )}
-            {editable && <ChevronRightIcon />}
+            <ChevronRightIcon />
         </button>
     </div>
 );
 
-// --- [BARU] Komponen Checkbox Metode ---
-const MethodCheckbox = ({ label, name, checked, onChange, disabled }) => (
-    <label className="flex items-center space-x-2">
-        <input
-            type="checkbox"
-            name={name}
-            checked={checked}
-            onChange={onChange}
-            disabled={disabled}
-            className="h-5 w-5 text-cyan-600 rounded focus:ring-cyan-500 border-gray-300"
-        />
-        <span className="text-sm text-gray-700">{label}</span>
-    </label>
+// --- Komponen Read Only Item ---
+const ReadOnlyItem = ({ label, value }) => (
+    <div className="mb-4">
+        <label className="text-sm text-gray-700 font-bold block mb-2">
+            {label}
+        </label>
+        <div className="w-full bg-gray-100 border border-gray-200 rounded-lg p-3 text-sm text-gray-500 cursor-not-allowed">
+            {value || "-"}
+        </div>
+    </div>
 );
 
 export default function CounselorEditProfilePage() {
-    // <-- Nama diubah
     const navigate = useNavigate();
     const { user, getUser } = useAuth();
     const fileInputRef = useRef(null);
 
     const [isUploading, setIsUploading] = useState(false);
     const [avatarError, setAvatarError] = useState(null);
-    const [isSavingMethods, setIsSavingMethods] = useState(false);
 
-    // --- State untuk Metode Konseling ---
-    const [metode, setMetode] = useState({
-        Chat: false,
-        "Video Call": false,
-        "Voice Call": false,
-        "Tatap Muka": false,
-    });
-
-    // Format data dinamis dari user context
+    // Format Data
     const profileData = {
         name: user?.name || "Nama Konselor",
         email: user?.email || "email@konselor.com",
         phone: user?.phone || "Nomor belum diatur",
-        location: `${user?.city || "Kota"}, ${user?.province || "Provinsi"}\n${
-            user?.district || "Kecamatan"
-        }, ${user?.postal_code || "Kode Pos"}`,
-        address: user?.street_address || "Alamat jalan belum diatur",
+        location: user?.city
+            ? `${user.city}, ${user.province}`
+            : "Lokasi belum diatur",
+        address: user?.street_address || "Alamat belum diatur",
         dob: user?.tanggal_lahir
             ? new Date(user.tanggal_lahir).toLocaleDateString("id-ID", {
                   day: "numeric",
@@ -250,7 +377,7 @@ export default function CounselorEditProfilePage() {
         gender: user?.gender || "Belum diatur",
         izinPraktik: user?.surat_izin_praktik || "Belum diatur",
         universitas: user?.universitas || "Belum diatur",
-        spesialisasi: (user?.spesialisasi || []).join(", ") || "Belum diatur",
+        spesialisasi: user?.spesialisasi || [],
         avatar:
             user?.avatar_url ||
             `https://ui-avatars.com/api/?name=${encodeURIComponent(
@@ -258,33 +385,30 @@ export default function CounselorEditProfilePage() {
             )}&background=E0F2FE&color=0EA5E9&bold=true`,
     };
 
-    // --- Isi state 'metode' saat user dimuat ---
-    useEffect(() => {
-        if (user?.metode_layanan) {
-            const initialMethods = { ...metode };
-            user.metode_layanan.forEach((methodName) => {
-                if (methodName in initialMethods) {
-                    initialMethods[methodName] = true;
-                }
-            });
-            setMetode(initialMethods);
-        }
-    }, [user]);
-
     const handleBack = () => {
         navigate(-1);
     };
 
+    // --- Handlers Update ---
     const handleSaveName = async (newName) => {
-        try {
-            await apiClient.post("/api/counselor/profile/update", {
-                name: newName,
-            });
-            await getUser();
-        } catch (error) {
-            console.error("Gagal update nama:", error);
-            throw error;
-        }
+        await apiClient.post("/api/counselor/profile/update", {
+            name: newName,
+        });
+        await getUser();
+    };
+
+    const handleSaveUniversitas = async (newUniv) => {
+        await apiClient.post("/api/counselor/profile/update", {
+            universitas: newUniv,
+        });
+        await getUser();
+    };
+
+    const handleSaveSpesialisasi = async (newSpecs) => {
+        await apiClient.post("/api/counselor/profile/update", {
+            spesialisasi: newSpecs,
+        });
+        await getUser();
     };
 
     const handleEditAvatar = () => {
@@ -309,50 +433,17 @@ export default function CounselorEditProfilePage() {
             await getUser();
         } catch (err) {
             console.error("Gagal upload avatar:", err);
-            const message =
-                err.response?.data?.errors?.avatar?.[0] ||
-                "Gagal mengupload gambar.";
-            setAvatarError(message);
+            setAvatarError("Gagal mengupload gambar.");
         } finally {
             setIsUploading(false);
             e.target.value = null;
         }
     };
 
-    // --- [BARU] Handler untuk Checkbox Metode ---
-    const handleMediaChange = (e) => {
-        const { name, checked } = e.target;
-        setMetode((prev) => ({ ...prev, [name]: checked }));
-    };
-
-    const handleSaveMethods = async () => {
-        setIsSavingMethods(true);
-
-        // Ubah { Chat: true, "Video Call": false } menjadi ["Chat"]
-        const selectedMethods = Object.keys(metode).filter(
-            (key) => metode[key]
-        );
-
-        try {
-            // Panggil API update profil
-            await apiClient.post("/api/counselor/profile/update", {
-                metode_layanan: selectedMethods,
-            });
-            await getUser(); // Refresh data
-            alert("Metode konseling berhasil diperbarui!"); // Ganti dg toast
-        } catch (error) {
-            console.error("Gagal update metode:", error);
-            alert("Gagal menyimpan metode.");
-        } finally {
-            setIsSavingMethods(false);
-        }
-    };
-    // --- AKHIR HANDLER BARU ---
-
     return (
         <div className="bg-white min-h-full font-sans">
             {/* Header Halaman */}
-            <header className="bg-white p-4 py-5 flex items-center sticky top-0 z-10 border-b border-gray-200">
+            <header className="bg-white p-4 py-5 flex items-center sticky top-0 z-10 border-b border-gray-200 shadow-sm">
                 <button
                     onClick={handleBack}
                     className="p-2 -ml-2 mr-2 rounded-full hover:bg-gray-100 group transition-colors"
@@ -363,11 +454,11 @@ export default function CounselorEditProfilePage() {
                 <h1 className="text-lg font-bold text-gray-900 text-center flex-grow -translate-x-4">
                     Edit Profile
                 </h1>
-                <div className="w-8"></div> {/* Spacer */}
+                <div className="w-8"></div>
             </header>
 
             {/* Konten Utama */}
-            <main className="p-5 pt-8 space-y-4">
+            <main className="p-5 pt-8 space-y-8 pb-20">
                 <input
                     type="file"
                     ref={fileInputRef}
@@ -376,144 +467,133 @@ export default function CounselorEditProfilePage() {
                     style={{ display: "none" }}
                 />
 
-                {/* Info Profil Atas */}
-                <div className="flex flex-col items-center text-center mb-8">
-                    <div className="relative mb-3">
+                {/* 1. Foto Profil */}
+                <div className="flex flex-col items-center text-center">
+                    <div className="relative mb-3 group">
                         <img
                             src={profileData.avatar}
                             alt="Profile Avatar"
-                            className={`w-28 h-28 rounded-full object-cover border-4 border-white shadow-md ${
+                            className={`w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg ${
                                 isUploading ? "opacity-50" : ""
                             }`}
                             onError={(e) => {
                                 e.target.onerror = null;
                                 e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                    user?.name || "K1"
+                                    user?.name || "K"
                                 )}&background=E0F2FE&color=0EA5E9&bold=true`;
                             }}
                         />
                         <button
                             onClick={handleEditAvatar}
                             disabled={isUploading}
-                            className="absolute bottom-1 right-1 bg-cyan-500 p-2 rounded-full border-2 border-white shadow-md hover:bg-cyan-600 transition-colors"
+                            className="absolute bottom-1 right-1 bg-cyan-500 p-2.5 rounded-full border-4 border-white shadow-md hover:bg-cyan-600 transition-transform active:scale-90"
                         >
                             {isUploading ? (
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                             ) : (
                                 <CameraIcon />
                             )}
                         </button>
                     </div>
                     {avatarError && (
-                        <p className="text-xs text-red-500">{avatarError}</p>
+                        <p className="text-xs text-red-500 mt-2 font-medium">
+                            {avatarError}
+                        </p>
                     )}
+                    <p className="text-sm text-gray-400 font-medium mt-1">
+                        Ketuk ikon kamera untuk ubah foto
+                    </p>
                 </div>
 
-                {/* Form Items (Menu Hibrid) */}
-
-                <h3 className="text-base font-bold text-gray-800 border-b pb-2">
-                    Info Pribadi
-                </h3>
-
-                <EditableInputItem
-                    label="Nama"
-                    initialValue={profileData.name}
-                    onSave={handleSaveName}
-                />
-                <MenuItem
-                    label="Nomor Telepon"
-                    value={profileData.phone}
-                    onClick={() => navigate("/counselor/profile/change-phone")}
-                />
-                <MenuItem
-                    label="Tanggal Lahir"
-                    value={profileData.dob}
-                    editable={false}
-                />
-                <MenuItem
-                    label="Jenis Kelamin"
-                    value={profileData.gender}
-                    editable={false}
-                />
-
-                <h3 className="text-base font-bold text-gray-800 border-b pb-2 pt-4">
-                    Info Alamat
-                </h3>
-
-                <MenuItem
-                    label="Provinsi, Kota, Kecamatan, Kode Pos"
-                    value={profileData.location}
-                    valueLines={3}
-                    onClick={() =>
-                        navigate("/counselor/profile/change-location")
-                    }
-                />
-                <MenuItem
-                    label="Nama Jalan, No Rumah"
-                    value={profileData.address}
-                    valueLines={2}
-                    onClick={() =>
-                        navigate("/counselor/profile/change-location")
-                    }
-                />
-
-                <h3 className="text-base font-bold text-gray-800 border-b pb-2 pt-4">
-                    Info Profesional
-                </h3>
-
-                <MenuItem
-                    label="Info Profesional (SIP, Universitas, Spesialisasi)"
-                    value={`${profileData.universitas} • ${profileData.izinPraktik}`}
-                    valueLines={2}
-                    onClick={() =>
-                        navigate("/counselor/profile/change-schedule")
-                    }
-                />
-
-                {/* --- [BARU] METODE KONSELING --- */}
-                <div>
-                    <label className="block text-sm font-semibold text-gray-800 mb-2">
-                        Metode Konseling Tersedia
-                    </label>
-                    <div className="bg-gray-100 rounded-lg p-4 space-y-3">
-                        <MethodCheckbox
-                            label="Chat"
-                            name="Chat"
-                            checked={metode.Chat}
-                            onChange={handleMediaChange}
-                            disabled={isSavingMethods}
+                {/* 2. Data Diri */}
+                <section>
+                    <h2 className="text-lg font-bold text-gray-900 border-b-2 border-cyan-100 pb-2 mb-5">
+                        Data Diri
+                    </h2>
+                    <EditableInputItem
+                        label="Nama Lengkap"
+                        initialValue={profileData.name}
+                        onSave={handleSaveName}
+                    />
+                    <MenuItem
+                        label="Email"
+                        value={profileData.email}
+                        onClick={() =>
+                            navigate("/counselor/profile/change-email")
+                        }
+                    />
+                    <MenuItem
+                        label="Nomor Telepon"
+                        value={profileData.phone}
+                        onClick={() =>
+                            navigate("/counselor/profile/change-phone")
+                        }
+                    />
+                    <div className="grid grid-cols-2 gap-4">
+                        <ReadOnlyItem
+                            label="Jenis Kelamin"
+                            value={profileData.gender}
                         />
-                        <MethodCheckbox
-                            label="Video Call"
-                            name="Video Call"
-                            checked={metode["Video Call"]}
-                            onChange={handleMediaChange}
-                            disabled={isSavingMethods}
+                        <ReadOnlyItem
+                            label="Tanggal Lahir"
+                            value={profileData.dob}
                         />
-                        <MethodCheckbox
-                            label="Voice Call"
-                            name="Voice Call"
-                            checked={metode["Voice Call"]}
-                            onChange={handleMediaChange}
-                            disabled={isSavingMethods}
-                        />
-                        <MethodCheckbox
-                            label="Tatap Muka"
-                            name="Tatap Muka"
-                            checked={metode["Tatap Muka"]}
-                            onChange={handleMediaChange}
-                            disabled={isSavingMethods}
-                        />
-                        <button
-                            onClick={handleSaveMethods}
-                            disabled={isSavingMethods}
-                            className="w-full mt-3 bg-cyan-500 text-white text-sm font-bold py-2 px-4 rounded-lg shadow hover:bg-cyan-600 transition-colors active:scale-95 disabled:bg-gray-400"
-                        >
-                            {isSavingMethods ? "Menyimpan..." : "Simpan Metode"}
-                        </button>
                     </div>
-                </div>
-                {/* --- AKHIR BARU --- */}
+                </section>
+
+                {/* 3. Alamat */}
+                <section>
+                    <h2 className="text-lg font-bold text-gray-900 border-b-2 border-cyan-100 pb-2 mb-5">
+                        Alamat Domisili
+                    </h2>
+                    {/* PERBAIKAN LINK: Mengarah ke change-address */}
+                    <MenuItem
+                        label="Lokasi (Provinsi, Kota, Kecamatan, Kode Pos)"
+                        value={profileData.location}
+                        valueLines={3}
+                        onClick={() =>
+                            navigate("/counselor/profile/change-address", {
+                                state: { mode: "location" },
+                            })
+                        }
+                    />
+                    <MenuItem
+                        label="Nama Jalan, Nomor Rumah"
+                        value={profileData.address}
+                        valueLines={2}
+                        onClick={() =>
+                            navigate("/counselor/profile/change-address", {
+                                state: { mode: "street" },
+                            })
+                        }
+                    />
+                </section>
+
+                {/* 4. Data Profesional */}
+                <section>
+                    <h2 className="text-lg font-bold text-gray-900 border-b-2 border-cyan-100 pb-2 mb-5">
+                        Data Profesional
+                    </h2>
+
+                    {/* Edit Universitas - Inline */}
+                    <EditableInputItem
+                        label="Universitas Asal"
+                        initialValue={profileData.universitas}
+                        onSave={handleSaveUniversitas}
+                    />
+
+                    {/* SIP - Read Only */}
+                    <ReadOnlyItem
+                        label="Nomor SIPP / STR"
+                        value={profileData.izinPraktik}
+                    />
+
+                    {/* Edit Spesialisasi - Multi Checkbox */}
+                    <EditableSpecialization
+                        initialSpecs={profileData.spesialisasi}
+                        onSave={handleSaveSpesialisasi}
+                    />
+                </section>
             </main>
         </div>
     );

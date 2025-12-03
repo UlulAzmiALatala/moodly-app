@@ -1,40 +1,53 @@
 import React from "react";
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
-// --- MENGGUNAKAN PATH RELATIF '../' (DIKEMBALIKAN) ---
 import { useAuth } from "../context/AuthContext.jsx";
 import Commet from "../components/Commet.jsx";
 
-// --- Layouts ---
+// =========================================
+// 1. LAYOUTS
+// =========================================
 import MobileLayout from "../layouts/MobileLayout.jsx";
 import AuthLayout from "../layouts/AuthLayout.jsx";
 import AdminLayout from "../layouts/AdminLayout.jsx";
 import AuthAdminLayout from "../layouts/AuthAdminLayout.jsx";
 import PageLayout from "../layouts/PageLayout.jsx";
 
-// --- Halaman Auth (Mobile) ---
+// =========================================
+// 2. AUTHENTICATION PAGES
+// =========================================
+// --- Customer Auth ---
 import CustomerLoginPage from "../pages/auth/customer/LoginPage.jsx";
 import CustomerRegisterPage from "../pages/auth/customer/RegisterPage.jsx";
 import CustomerAddressPage from "../pages/auth/customer/AddressPage.jsx";
 import CustomerCreatePasswordPage from "../pages/auth/customer/CreatePasswordPage.jsx";
 import OnboardingPage from "../pages/auth/OnboardingPage.jsx";
+
+// --- Counselor Auth ---
 import CounselorLoginPage from "../pages/auth/counselor/LoginPage.jsx";
 import CounselorRegisterPage from "../pages/auth/counselor/RegisterPage.jsx";
 import CounselorAddressPage from "../pages/auth/counselor/AddressPage.jsx";
 import CounselorCreatePasswordPage from "../pages/auth/counselor/CreatePasswordPage.jsx";
 
-// --- Admin Auth (/pages/admin/auth/admin/) ---
+// --- Admin Auth ---
 import AdminLoginPage from "../pages/auth/admin/LoginPage.jsx";
 import NewPasswordPage from "../pages/auth/admin/NewPasswordPage.jsx";
 import AdminForgotPasswordPage from "../pages/auth/admin/ForgotPasswordPage.jsx";
 
-// --- Auth Umum (Customer) ---
+// --- General Auth ---
 import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage.jsx";
 import ResetPasswordPage from "../pages/auth/ResetPasswordPage.jsx";
 import VerifyCodePage from "../pages/auth/VerifyCodePage.jsx";
 
-// --- Halaman Customer (Mobile) ---
+// =========================================
+// 3. CUSTOMER PAGES
+// =========================================
 import HomePage from "../pages/customer/HomePage.jsx";
 import NotificationPage from "../pages/customer/NotificationPage.jsx";
+import NotificationSchedule from "../pages/customer/NotificationSchedule.jsx";
+import NotificationRefund from "../pages/customer/NotificationRefund.jsx"; // Halaman Status Refund (Notifikasi)
+import PrivacyPolicyPage from "../pages/customer/PrivacyPolicyPage.jsx";
+
+// --- Booking & Payment ---
 import BookingPage from "../pages/customer/booking/Index.jsx";
 import FindCounselorPage from "../pages/customer/booking/FindCounselorPage.jsx";
 import InPersonPage from "../pages/customer/booking/InPersonPage.jsx";
@@ -44,63 +57,50 @@ import PaymentOnlinePage from "../pages/customer/booking/payment/PaymentOnlinePa
 import QrisPaymentPage from "../pages/customer/booking/payment/QrisPaymentPage.jsx";
 import PaymentOfflinePage from "../pages/customer/booking/payment/PaymentOfflinePage.jsx";
 import UploadPaymentProofPage from "../pages/customer/booking/payment/UploadPaymentProofPage.jsx";
+
+// --- History ---
 import HistoryPage from "../pages/customer/history/Index.jsx";
 import HistoryDetailPage from "../pages/customer/history/DetailPage.jsx";
 import RatingPage from "../pages/customer/history/RatingPage.jsx";
-import CancelPage from "../pages/customer/history/CancelPage.jsx";
-import CancelDetailPage from "../pages/customer/history/CancelDetailPage.jsx";
 import ReschedulePage from "../pages/customer/history/ReschedulePage.jsx";
+import LoadingPage from "../pages/customer/history/LoadingPage.jsx";
+import ReceiptPage from "../pages/customer/history/ReceiptPage.jsx";
+
+// --- History Cancellation Flow (FOLDER BARU) ---
+import CancelPage from "../pages/customer/history/cancellation/CancelPage.jsx";
+import RefundAgreement from "../pages/customer/history/cancellation/RefundAgreement.jsx";
+import RefundPage from "../pages/customer/history/cancellation/RefundPage.jsx"; // Halaman Form Refund
+import CancelDetailPage from "../pages/customer/history/cancellation/CancelDetailPage.jsx";
+
+// --- Profile ---
 import ProfilePage from "../pages/customer/profile/Index.jsx";
 import EditProfilePage from "../pages/customer/profile/EditPage.jsx";
 import ChangePasswordPage from "../pages/customer/profile/ChangePasswordPage.jsx";
 import ChangeEmailPage from "../pages/customer/profile/ChangeEmailPage.jsx";
 import ChangePhoneNumberPage from "../pages/customer/profile/ChangePhoneNumberPage.jsx";
 import ChangeAddressPage from "../pages/customer/profile/ChangeAddressPage.jsx";
+
+// --- Help & Session ---
 import HelpPage from "../pages/customer/help/Index.jsx";
 import FaqPage from "../pages/customer/help/FaqPage.jsx";
 import ChatAdminPage from "../pages/customer/help/ChatAdminPage.jsx";
 import ChatPage from "../pages/customer/session/ChatPage.jsx";
-import PrivacyPolicyPage from "../pages/customer/PrivacyPolicyPage.jsx";
+import VideoCallPage from "../pages/customer/session/VideoCallPage.jsx";
 
-// --- Halaman Admin & Super Admin (Website) ---
-import JenisKonselingPage from "../pages/super-admin/konseling/jenis/Index.jsx";
-import DurasiKonselingPage from "../pages/super-admin/konseling/durasi/Index.jsx";
-import TempatKonselingPage from "../pages/super-admin/konseling/tempat/Index.jsx";
-import AdminManagementPage from "../pages/super-admin/admin/Index.jsx";
-import AdminDetailPage from "../pages/super-admin/admin/Show.jsx";
-import KonselorManagementPage from "../pages/super-admin/konselor/Index.jsx";
-import KonselorDetailPage from "../pages/super-admin/konselor/Show.jsx";
-import CustomerManagementPage from "../pages/super-admin/customer/Index.jsx";
-import CustomerDetailPage from "../pages/super-admin/customer/Show.jsx";
-import BookingManagementPage from "../pages/super-admin/pesanan/Index.jsx";
-import BookingDetailPage from "../pages/super-admin/pesanan/Show.jsx";
-import PaymentMethodsPage from "../pages/super-admin/payment-methods/Index.jsx";
-import AdminDashboardPage from "../pages/admin/dashboard/Index.jsx";
-import JadwalKonsultasiPage from "../pages/admin/jadwal-konsultasi/Index.jsx";
-import JadwalDetailPage from "../pages/admin/jadwal-konsultasi/Show.jsx";
-import VerifikasiKonselorPage from "../pages/admin/verifikasi-konselor/Index.jsx";
-import VerifikasiDetailPage from "../pages/admin/verifikasi-konselor/Show.jsx";
-import VerifikasiCustomerPage from "../pages/admin/verifikasi-customer/Index.jsx";
-import VerifikasiCustomerDetailPage from "../pages/admin/verifikasi-customer/Show.jsx";
-import SuperAdminDashboardPage from "../pages/super-admin/dashboard/Index.jsx";
-
-// --- Halaman Konselor (Impor DIBERSIHKAN & Disesuaikan) ---
+// =========================================
+// 4. COUNSELOR PAGES
+// =========================================
 import CounselorHomePage from "../pages/counselor/HomePage.jsx";
 import CounselorNotificationPage from "../pages/counselor/NotificationPage.jsx";
-// Help
-import CounselorHelpPage from "../pages/counselor/help/Index.jsx";
-import CounselorFaqPage from "../pages/counselor/help/FaqPage.jsx";
-import CounselorChatAdminPage from "../pages/counselor/help/ChatAdminPage.jsx";
-// Schedule
-import CounselorSchedulePage from "../pages/counselor/schedule/Index.jsx"; // <-- Nama file diubah jadi Index.jsx
-import CounselorScheduleDetailPage from "../pages/counselor/schedule/DetailPage.jsx"; // <-- File "Pintar" kita
-// History
+
+// --- Schedule & History ---
+import CounselorSchedulePage from "../pages/counselor/schedule/Index.jsx";
+import CounselorScheduleDetailPage from "../pages/counselor/schedule/DetailPage.jsx";
 import CounselorHistoryPage from "../pages/counselor/history/HistoryPage.jsx";
 import CounselorHistoryEditPage from "../pages/counselor/history/Edit.jsx";
 import CounselorReschedulePage from "../pages/counselor/history/ReSchedulePage.jsx";
-// Konseling/Chat
-import CounselorChatPage from "../pages/counselor/konseling/chat/ChatPageCounselor.jsx";
-// Profile
+
+// --- Profile ---
 import CounselorProfilePage from "../pages/counselor/profile/Index.jsx";
 import CounselorProfileEditPage from "../pages/counselor/profile/EditPage.jsx";
 import CounselorChangeEmailPage from "../pages/counselor/profile/ChangeEmailPage.jsx";
@@ -108,76 +108,96 @@ import CounselorChangePasswordPage from "../pages/counselor/profile/ChangePasswo
 import CounselorChangePhonePage from "../pages/counselor/profile/ChangePhoneNumberPage.jsx";
 import CounselorChangeBankAccountPage from "../pages/counselor/profile/ChangeBankAccount.jsx";
 import CounselorChangeLocationPage from "../pages/counselor/profile/ChangeLocation.jsx";
+import CounselorChangeAddressPage from "../pages/counselor/profile/ChangeAddressPage.jsx";
 import CounselorChangeSchedulePage from "../pages/counselor/profile/ChangeSchedulePage.jsx";
-// --- AKHIR IMPOR KONSELOR ---
+
+// --- Help & Session ---
+import CounselorHelpPage from "../pages/counselor/help/Index.jsx";
+import CounselorFaqPage from "../pages/counselor/help/FaqPage.jsx";
+import CounselorChatAdminPage from "../pages/counselor/help/ChatAdminPage.jsx";
+import CounselorChatPage from "../pages/counselor/konseling/chat/ChatPageCounselor.jsx";
+
+// =========================================
+// 5. ADMIN & SUPER ADMIN PAGES
+// =========================================
+import AdminDashboardPage from "../pages/admin/dashboard/Index.jsx";
+import SuperAdminDashboardPage from "../pages/super-admin/dashboard/Index.jsx";
+
+// --- Master Data ---
+import JenisKonselingPage from "../pages/super-admin/konseling/jenis/Index.jsx";
+import DurasiKonselingPage from "../pages/super-admin/konseling/durasi/Index.jsx";
+import TempatKonselingPage from "../pages/super-admin/konseling/tempat/Index.jsx";
+import PaymentMethodsPage from "../pages/super-admin/payment-methods/Index.jsx";
+
+// --- Management ---
+import AdminManagementPage from "../pages/super-admin/admin/Index.jsx";
+import AdminDetailPage from "../pages/super-admin/admin/Show.jsx";
+import KonselorManagementPage from "../pages/super-admin/konselor/Index.jsx";
+import KonselorDetailPage from "../pages/super-admin/konselor/Show.jsx";
+import CustomerManagementPage from "../pages/super-admin/customer/Index.jsx";
+import CustomerDetailPage from "../pages/super-admin/customer/Show.jsx";
+
+// --- Operations ---
+import BookingManagementPage from "../pages/super-admin/pesanan/Index.jsx";
+import BookingDetailPage from "../pages/super-admin/pesanan/Show.jsx";
+import JadwalKonsultasiPage from "../pages/admin/jadwal-konsultasi/Index.jsx";
+import JadwalDetailPage from "../pages/admin/jadwal-konsultasi/Show.jsx";
+import VerifikasiKonselorPage from "../pages/admin/verifikasi-konselor/Index.jsx";
+import VerifikasiDetailPage from "../pages/admin/verifikasi-konselor/Show.jsx";
+import VerifikasiCustomerPage from "../pages/admin/verifikasi-customer/Index.jsx";
+import VerifikasiCustomerDetailPage from "../pages/admin/verifikasi-customer/Show.jsx";
+import RefundManagementPage from "../pages/super-admin/refund/Index.jsx";
+import SuperAdminHelpChatPage from "../pages/super-admin/help/Index.jsx";
+import FinancePage from "../pages/super-admin/keuangan/Index.jsx";
 
 // === GUARDS ===
-// (Logika Guard ini SUDAH BENAR)
 const GuestGuard = () => {
     const { user } = useAuth();
     if (user) {
-        // Cek role yang LEBIH TINGGI (super-admin) DULU
-        if (user.role?.includes("super-admin")) {
+        if (user.role?.includes("super-admin"))
             return <Navigate to="/super-admin/dashboard" />;
-        }
-        // Baru cek role di bawahnya (admin)
-        if (user.role?.includes("admin")) {
+        if (user.role?.includes("admin"))
             return <Navigate to="/admin/dashboard" />;
-        }
-
-        if (
-            user.role?.includes("konselor") ||
-            user.role?.includes("counselor")
-        ) {
+        if (user.role?.includes("konselor") || user.role?.includes("counselor"))
             return <Navigate to="/counselor/home" />;
-        }
         return <Navigate to="/home" />;
     }
     return <Outlet />;
 };
+
 const ProtectedGuard = () => {
     const { user } = useAuth();
     if (!user) return <Navigate to="/login" />;
-
-    // Cek role yang LEBIH TINGGI (super-admin) DULU
     if (user.role?.includes("super-admin"))
         return <Navigate to="/super-admin/dashboard" />;
-    // Baru cek role di bawahnya (admin)
     if (user.role?.includes("admin")) return <Navigate to="/admin/dashboard" />;
-
     if (user.role?.includes("konselor") || user.role?.includes("counselor"))
         return <Navigate to="/counselor/home" />;
     return <Outlet />;
 };
+
 const CounselorProtectedGuard = () => {
     const { user } = useAuth();
     if (!user) return <Navigate to="/counselor/login" />;
-
-    // Cek role yang LEBIH TINGGI (super-admin) DULU
     if (user.role?.includes("super-admin"))
         return <Navigate to="/super-admin/dashboard" />;
-    // Baru cek role di bawahnya (admin)
     if (user.role?.includes("admin")) return <Navigate to="/admin/dashboard" />;
-
     if (!user.role?.includes("konselor") && !user.role?.includes("counselor"))
         return <Navigate to="/home" />;
     return <Outlet />;
 };
+
 const AdminGuestGuard = () => {
     const { user } = useAuth();
-
     if (user) {
-        // Cek role yang LEBIH TINGGI (super-admin) DULU
-        if (user.role?.includes("super-admin")) {
+        if (user.role?.includes("super-admin"))
             return <Navigate to="/super-admin/dashboard" />;
-        }
-        // Baru cek role di bawahnya (admin)
-        if (user.role?.includes("admin")) {
+        if (user.role?.includes("admin"))
             return <Navigate to="/admin/dashboard" />;
-        }
     }
     return <Outlet />;
 };
+
 const AdminProtectedGuard = () => {
     const { user } = useAuth();
     return user &&
@@ -187,7 +207,6 @@ const AdminProtectedGuard = () => {
         <Navigate to="/admin/login" />
     );
 };
-// === END GUARDS ===
 
 // === ROUTER UTAMA ===
 const AppRouter = () => {
@@ -261,6 +280,20 @@ const AppRouter = () => {
                     <Route path="/beranda" element={<Navigate to="/home" />} />
                 </Route>
                 <Route element={<PageLayout />}>
+                    <Route
+                        path="/notifications"
+                        element={<NotificationPage />}
+                    />
+                    <Route
+                        path="/notification/schedule/:id"
+                        element={<NotificationSchedule />}
+                    />
+                    <Route
+                        path="/notification/refund/:id"
+                        element={<NotificationRefund />}
+                    />
+
+                    {/* Profile Management */}
                     <Route path="/profile/edit" element={<EditProfilePage />} />
                     <Route
                         path="/profile/change-password"
@@ -278,6 +311,8 @@ const AppRouter = () => {
                         path="/profile/edit/address"
                         element={<ChangeAddressPage />}
                     />
+
+                    {/* Booking Flow */}
                     <Route
                         path="/booking/find-counselor"
                         element={<FindCounselorPage />}
@@ -294,6 +329,8 @@ const AppRouter = () => {
                         path="/booking/counselor/:id"
                         element={<PsychologistDetailPage />}
                     />
+
+                    {/* Payment */}
                     <Route
                         path="/booking/payment-offline"
                         element={<PaymentOfflinePage />}
@@ -314,6 +351,16 @@ const AppRouter = () => {
                         path="/booking/upload-proof/:bookingId"
                         element={<UploadPaymentProofPage />}
                     />
+
+                    {/* History Details */}
+                    <Route
+                        path="/history/loading/:id"
+                        element={<LoadingPage />}
+                    />
+                    <Route
+                        path="/history/receipt/:id"
+                        element={<ReceiptPage />}
+                    />
                     <Route
                         path="/history/:id"
                         element={<HistoryDetailPage />}
@@ -323,17 +370,29 @@ const AppRouter = () => {
                         element={<ReschedulePage />}
                     />
                     <Route
+                        path="/history/rating/:id"
+                        element={<RatingPage />}
+                    />
+
+                    {/* --- CANCELLATION FLOW (UPDATED) --- */}
+                    <Route
                         path="/history/cancel/:id"
                         element={<CancelPage />}
+                    />
+                    <Route
+                        path="/history/cancel-agreement/:id"
+                        element={<RefundAgreement />}
+                    />
+                    <Route
+                        path="/history/refund/:id"
+                        element={<RefundPage />}
                     />
                     <Route
                         path="/history/cancel-detail/:id"
                         element={<CancelDetailPage />}
                     />
-                    <Route
-                        path="/history/rating/:id"
-                        element={<RatingPage />}
-                    />
+
+                    {/* Help & Session */}
                     <Route path="/help" element={<HelpPage />} />
                     <Route path="/help/faq" element={<FaqPage />} />
                     <Route
@@ -342,15 +401,18 @@ const AppRouter = () => {
                     />
                     <Route path="/session/chat/:id" element={<ChatPage />} />
                     <Route
+                        path="/session/video/:id"
+                        element={<VideoCallPage />}
+                    />
+                    <Route
                         path="/privacy-policy"
                         element={<PrivacyPolicyPage />}
                     />
                 </Route>
             </Route>
 
-            {/* === KONSELOR (PROTECTED) --- (Rute Disesuaikan) === */}
+            {/* === KONSELOR (PROTECTED) === */}
             <Route element={<CounselorProtectedGuard />}>
-                {/* Rute Utama (dengan MobileLayout) */}
                 <Route element={<MobileLayout />}>
                     <Route
                         path="/counselor/home"
@@ -378,15 +440,11 @@ const AppRouter = () => {
                     />
                 </Route>
 
-                {/* Rute Sekunder (dengan PageLayout) */}
                 <Route element={<PageLayout />}>
-                    {/* --- PERBAIKAN: Rute Schedule --- */}
                     <Route
                         path="/counselor/schedule/:id"
                         element={<CounselorScheduleDetailPage />}
                     />
-
-                    {/* History */}
                     <Route
                         path="/counselor/history/edit/:id"
                         element={<CounselorHistoryEditPage />}
@@ -395,13 +453,10 @@ const AppRouter = () => {
                         path="/counselor/history/reschedule/:id"
                         element={<CounselorReschedulePage />}
                     />
-
-                    {/* --- PERBAIKAN: Rute Chat & Konseling Digabung --- */}
                     <Route
                         path="/counselor/chat/:id"
                         element={<CounselorChatPage />}
                     />
-
                     {/* Help */}
                     <Route
                         path="/counselor/help"
@@ -415,8 +470,7 @@ const AppRouter = () => {
                         path="/counselor/help/chat-admin"
                         element={<CounselorChatAdminPage />}
                     />
-
-                    {/* Profile & Settings (Rute disesuaikan struktur baru) */}
+                    {/* Profile Management */}
                     <Route
                         path="/counselor/profile/edit"
                         element={<CounselorProfileEditPage />}
@@ -438,6 +492,11 @@ const AppRouter = () => {
                         element={<CounselorChangeLocationPage />}
                     />
                     <Route
+                        path="/counselor/profile/change-address"
+                        element={<CounselorChangeAddressPage />}
+                    />{" "}
+                    {/* RUTE BARU */}
+                    <Route
                         path="/counselor/profile/change-bank"
                         element={<CounselorChangeBankAccountPage />}
                     />
@@ -450,20 +509,19 @@ const AppRouter = () => {
 
             {/* === ADMIN & SUPER ADMIN === */}
             <Route element={<AdminGuestGuard />}>
-                {/* --- PERBAIKAN: Menggabungkan rute di bawah satu AuthAdminLayout --- */}
                 <Route element={<AuthAdminLayout />}>
                     <Route path="/admin/login" element={<AdminLoginPage />} />
                     <Route
                         path="/admin/ganti-password"
                         element={<NewPasswordPage />}
                     />
-                    {/* --- PERBAIKAN: Menggunakan variabel yang benar --- */}
                     <Route
                         path="/admin/kesulitan-login"
                         element={<AdminForgotPasswordPage />}
                     />
                 </Route>
             </Route>
+
             <Route element={<AdminProtectedGuard />}>
                 <Route element={<AdminLayout />}>
                     <Route
@@ -478,6 +536,8 @@ const AppRouter = () => {
                         path="/super-admin/dashboard"
                         element={<SuperAdminDashboardPage />}
                     />
+
+                    {/* Master Data */}
                     <Route
                         path="/admin/jenis-konseling"
                         element={<JenisKonselingPage />}
@@ -494,6 +554,8 @@ const AppRouter = () => {
                         path="/admin/payment-methods"
                         element={<PaymentMethodsPage />}
                     />
+
+                    {/* Management Lists */}
                     <Route
                         path="/admin/admin-management"
                         element={<AdminManagementPage />}
@@ -526,6 +588,8 @@ const AppRouter = () => {
                         path="/admin/booking-management/:id"
                         element={<BookingDetailPage />}
                     />
+
+                    {/* Operations */}
                     <Route
                         path="/admin/jadwal-konsultasi"
                         element={<JadwalKonsultasiPage />}
@@ -550,6 +614,20 @@ const AppRouter = () => {
                         path="/admin/verifikasi-customer/:id"
                         element={<VerifikasiCustomerDetailPage />}
                     />
+
+                    {/* Super Admin Exclusive */}
+                    <Route
+                        path="/super-admin/refund-management"
+                        element={<RefundManagementPage />}
+                    />
+                    <Route
+                        path="/super-admin/help-center"
+                        element={<SuperAdminHelpChatPage />}
+                    />
+                    <Route
+                        path="/super-admin/keuangan"
+                        element={<FinancePage />}
+                    />
                 </Route>
             </Route>
 
@@ -557,9 +635,15 @@ const AppRouter = () => {
             <Route
                 path="*"
                 element={
-                    <div>
-                        {" "}
-                        <h1>404 - Halaman Tidak Ditemukan</h1>{" "}
+                    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+                        <div className="text-center">
+                            <h1 className="text-4xl font-bold text-gray-800 mb-2">
+                                404
+                            </h1>
+                            <p className="text-gray-600">
+                                Halaman Tidak Ditemukan
+                            </p>
+                        </div>
                     </div>
                 }
             />

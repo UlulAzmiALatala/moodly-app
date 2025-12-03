@@ -21,22 +21,21 @@ class BookingChatController extends Controller
         try {
             Gate::authorize('viewChat', $booking);
 
-            // --- PERBAIKAN: Load 'avatar' agar 'avatar_url' berfungsi ---
+            // --- PERBAIKAN DI SINI: Tambahkan 'durasiKonseling' ---
             $booking->load([
                 'konselor:id,name,avatar',
-                'customer:id,name,avatar'
+                'customer:id,name,avatar',
+                'durasiKonseling:id,durasi_menit' // <-- INI YANG PALING PENTING
             ]);
             // --- AKHIR PERBAIKAN ---
 
             $messages = $booking->chatMessages()
-                // --- PERBAIKAN: Load 'avatar' agar 'avatar_url' berfungsi ---
                 ->with('sender:id,name,avatar')
-                // --- AKHIR PERBAIKAN ---
                 ->orderBy('created_at', 'asc')
                 ->get();
 
             return response()->json([
-                'booking' => $booking,
+                'booking' => $booking, // Sekarang $booking membawa data durasi
                 'messages' => $messages,
             ]);
         } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
@@ -67,20 +66,17 @@ class BookingChatController extends Controller
                 'is_read' => false,
             ]);
 
-            // --- PERBAIKAN: Load 'avatar' agar 'avatar_url' berfungsi ---
             $message->load('sender:id,name,avatar');
-            // --- AKHIR PERBAIKAN ---
 
-            // Siarkan event (tanpa toOthers() agar pengirim juga dapat)
             broadcast(new NewChatMessage($message));
 
             return response()->json($message, 201);
         } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
             Log::warning('Authorization failed for sending message:', ['booking_id' => $booking->id, 'user_id' => Auth::id()]);
-            // --- PERBAIKAN: Sesuaikan status dengan controller jadwal ---
-            $activeStatuses = ['Dijadwalkan', 'Aktif', 'Proses', 'Menunggu Konfirmasi'];
+
+            // Cek status sesi (logika ini sudah benar)
+            $activeStatuses = ['Dijadwalkan', 'Aktif', 'Proses', 'Menunggu Konfirmasi', 'Berlangsung'];
             if (!in_array($booking->status_pesanan, $activeStatuses)) {
-                // --- AKHIR PERBAIKAN ---
                 return response()->json(['message' => 'Sesi konseling ini sudah berakhir.'], 403);
             }
             return response()->json(['message' => 'Anda tidak diizinkan mengirim pesan.'], 403);

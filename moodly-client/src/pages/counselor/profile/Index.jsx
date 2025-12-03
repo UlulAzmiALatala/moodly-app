@@ -1,8 +1,8 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../../context/AuthContext.jsx"; // Path sudah benar (3x mundur)
+import { useAuth } from "../../../context/AuthContext.jsx";
 
-// --- Komponen Ikon (Tidak berubah) ---
+// --- Komponen Ikon ---
 const UserIcon = () => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -54,7 +54,9 @@ const LockIcon = () => (
         <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
     </svg>
 );
-const CloudCogIcon = () => (
+
+// --- PERBAIKAN: Ikon Bantuan Baru (Tanda Tanya) ---
+const HelpIcon = () => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
         width="20"
@@ -67,18 +69,12 @@ const CloudCogIcon = () => (
         strokeLinejoin="round"
         className="text-gray-500"
     >
-        <path d="M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9" />
-        <circle cx="12" cy="17" r="2.5" />
-        <path d="m12 14.5-1-1" />
-        <path d="m15 17.5 1 1" />
-        <path d="m12 19.5 1 1" />
-        <path d="m9 16.5-1-1" />
-        <path d="m16 17 1.5 0" />
-        <path d="m6.5 17-1.5 0" />
-        <path d="m14.2 19.2.8-1.7" />
-        <path d="m9.8 14.8-.8 1.7" />
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+        <line x1="12" y1="17" x2="12.01" y2="17"></line>
     </svg>
 );
+
 const CalendarIcon = () => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -198,7 +194,6 @@ const MenuItem = ({ icon, label, onClick, isLogout = false }) => (
 );
 
 export default function CounselorProfilePage() {
-    // <-- Nama komponen diubah
     const { user, logout } = useAuth();
     const navigate = useNavigate();
 
@@ -207,20 +202,18 @@ export default function CounselorProfilePage() {
             if (logout) {
                 await logout();
             }
-            // Guard akan menangani navigasi
         } catch (error) {
             console.error("Logout failed:", error);
         }
     };
 
-    // --- FUNGSI NAVIGASI DIPERBARUI SESUAI STRUKTUR BARU ---
+    // --- FUNGSI NAVIGASI ---
     const handleEditProfileClick = () => navigate("/counselor/profile/edit");
     const handleChangeEmailClick = () =>
         navigate("/counselor/profile/change-email");
     const handleChangePasswordClick = () =>
         navigate("/counselor/profile/change-password");
 
-    // Perbarui rute ini agar sesuai dengan router/index.jsx
     const handleScheduleClick = () =>
         navigate("/counselor/profile/change-schedule");
     const handlePracticeLocationClick = () =>
@@ -228,13 +221,12 @@ export default function CounselorProfilePage() {
     const handleBankClick = () => navigate("/counselor/profile/change-bank");
 
     const handleHelpClick = () => navigate("/counselor/help");
-    // --- AKHIR PERBAIKAN NAVIGASI ---
 
-    // Gunakan avatar_url (dari accessor) untuk URL lengkap
+    // Avatar URL
     const avatarUrl =
         user?.avatar_url ||
         `https://ui-avatars.com/api/?name=${encodeURIComponent(
-            user?.name || "K" // Fallback "K" untuk Konselor
+            user?.name || "K"
         )}&background=EBF4FF&color=3B82F6&bold=true`;
 
     return (
@@ -279,7 +271,6 @@ export default function CounselorProfilePage() {
                     onClick={handleChangePasswordClick}
                 />
 
-                {/* Rute-rute yang diperbarui */}
                 <MenuItem
                     icon={<CalendarIcon />}
                     label="Atur Jadwal Praktik"
@@ -296,11 +287,13 @@ export default function CounselorProfilePage() {
                     onClick={handleBankClick}
                 />
 
+                {/* Menggunakan HelpIcon yang baru */}
                 <MenuItem
-                    icon={<CloudCogIcon />}
+                    icon={<HelpIcon />}
                     label="Bantuan"
                     onClick={handleHelpClick}
                 />
+
                 <MenuItem
                     icon={<LogOutIcon />}
                     label="Log Out"

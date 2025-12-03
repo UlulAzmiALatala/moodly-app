@@ -23,7 +23,6 @@ class ProfileController extends Controller
         $user = Auth::user();
         /** @var \App\Models\User $user */
 
-        // --- PERBAIKAN: Tambahkan validasi untuk 'metode_layanan' ---
         $validated = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'phone' => ['sometimes', 'required', 'string', 'max:20', Rule::unique('users')->ignore($user->id)],
@@ -34,40 +33,42 @@ class ProfileController extends Controller
             'street_address' => ['sometimes', 'required', 'string'],
             'surat_izin_praktik' => ['sometimes', 'required', 'string', 'max:255'],
             'universitas' => ['sometimes', 'required', 'string', 'max:255'],
-            'spesialisasi' => ['sometimes', 'required', 'array', 'min:1'],
-            'spesialisasi.*' => ['integer', 'exists:jenis_konselings,id'],
+
+            // Validasi Spesialisasi (Array ID atau Array String tergantung implementasi frontend)
+            // Disini kita asumsikan array string nama spesialisasi sesuai frontend EditPage.jsx
+            'spesialisasi' => ['sometimes', 'required', 'array'],
+            'spesialisasi.*' => ['string'],
+
             'bank_name' => ['sometimes', 'required', 'string', 'max:255'],
             'account_number' => ['sometimes', 'required', 'string', 'max:255'],
             'account_holder_name' => ['sometimes', 'required', 'string', 'max:255'],
 
-            // --- TAMBAHAN BARU ---
+            // Validasi Metode Layanan
             'metode_layanan' => ['sometimes', 'required', 'array'],
-            'metode_layanan.*' => ['string', 'in:Chat,Video Call,Voice Call,Tatap Muka'], // Validasi isi array
+            'metode_layanan.*' => ['string', 'in:Chat,Video Call,Voice Call,Tatap Muka'],
         ]);
-        // --- AKHIR PERBAIKAN ---
 
         try {
             if (empty($validated)) {
                 return response()->json(['message' => 'Tidak ada data untuk diperbarui.'], 400);
             }
 
-            // --- PERBAIKAN: Handle 'spesialisasi' dan 'metode_layanan' secara terpisah ---
+            // Handle Kolom Array/JSON secara manual agar aman
             if (isset($validated['spesialisasi'])) {
                 $user->spesialisasi = $validated['spesialisasi'];
-                unset($validated['spesialisasi']); // Hapus dari update massal
+                unset($validated['spesialisasi']);
             }
             if (isset($validated['metode_layanan'])) {
                 $user->metode_layanan = $validated['metode_layanan'];
-                unset($validated['metode_layanan']); // Hapus dari update massal
+                unset($validated['metode_layanan']);
             }
-            // --- AKHIR PERBAIKAN ---
 
-            // Hanya update sisanya jika ada
+            // Update sisanya
             if (!empty($validated)) {
-                $user->update($validated);
-            } else {
-                $user->save(); // Simpan perubahan spesialisasi/metode
+                $user->fill($validated);
             }
+
+            $user->save(); // Simpan semua perubahan
 
             Log::info('Profil Konselor berhasil diperbarui:', ['user_id' => $user->id]);
             return response()->json($user->fresh());
@@ -84,7 +85,7 @@ class ProfileController extends Controller
     public function updateAvatar(Request $request)
     {
         $user = Auth::user();
-        /** @var \App\Models\User $user */ // <-- PETUNJUK UNTUK LINTER
+        /** @var \App\Models\User $user */
 
         $validated = $request->validate([
             'avatar' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
@@ -95,10 +96,12 @@ class ProfileController extends Controller
                 Storage::disk('public')->delete($user->avatar);
             }
             $path = $request->file('avatar')->store('avatars', 'public');
-            $user->update(['avatar' => $path]); // <-- Error 'update' akan hilang
+
+            $user->avatar = $path;
+            $user->save();
 
             Log::info('Avatar konselor diperbarui:', ['user_id' => $user->id]);
-            return response()->json($user->fresh()); // <-- Error 'fresh' akan hilang
+            return response()->json($user->fresh());
         } catch (\Exception $e) {
             Log::error('Gagal update avatar konselor:', ['user_id' => $user->id, 'error' => $e->getMessage()]);
             return response()->json(['message' => 'Gagal mengupload avatar.', 'error' => $e->getMessage()], 500);
@@ -112,7 +115,7 @@ class ProfileController extends Controller
     public function updatePassword(Request $request)
     {
         $user = Auth::user();
-        /** @var \App\Models\User $user */ // <-- PETUNJUK UNTUK LINTER
+        /** @var \App\Models\User $user */
 
         $validated = $request->validate([
             'current_password' => ['required', 'string'],
@@ -124,7 +127,8 @@ class ProfileController extends Controller
         }
 
         try {
-            $user->update(['password' => Hash::make($validated['password'])]); // <-- Error 'update' akan hilang
+            $user->password = Hash::make($validated['password']);
+            $user->save();
             return response()->json(['message' => 'Password berhasil diperbarui.']);
         } catch (\Exception $e) {
             Log::error('Gagal update password konselor:', ['user_id' => $user->id, 'error' => $e->getMessage()]);
@@ -139,7 +143,7 @@ class ProfileController extends Controller
     public function updateEmail(Request $request)
     {
         $user = Auth::user();
-        /** @var \App\Models\User $user */ // <-- PETUNJUK UNTUK LINTER
+        /** @var \App\Models\User $user */
 
         $validated = $request->validate([
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
@@ -151,11 +155,10 @@ class ProfileController extends Controller
         }
 
         try {
-            $user->update([ // <-- Error 'update' akan hilang
-                'email' => $validated['email'],
-                'email_verified_at' => null,
-            ]);
-            // $user->sendEmailVerificationNotification();
+            $user->email = $validated['email'];
+            $user->email_verified_at = null; // Reset verifikasi
+            $user->save();
+
             return response()->json(['message' => 'Email berhasil diperbarui. Silakan verifikasi email baru Anda.']);
         } catch (\Exception $e) {
             Log::error('Gagal update email konselor:', ['user_id' => $user->id, 'error' => $e->getMessage()]);
@@ -164,22 +167,47 @@ class ProfileController extends Controller
     }
 
     /**
-     * Mengambil semua tempat praktik dan yang sudah dipilih konselor.
+     * Mengambil daftar tempat praktik (Support Search & Pagination).
      * GET /api/counselor/profile/practice-locations
      */
     public function getPracticeLocations(Request $request)
     {
         $user = Auth::user();
-        /** @var \App\Models\User $user */ // <-- PETUNJUK UNTUK LINTER
+        /** @var \App\Models\User $user */
 
-        $allLocations = TempatKonseling::where('status', 'Aktif')->get();
+        try {
+            // 1. Mulai Query Tempat Konseling Aktif
+            $query = TempatKonseling::where('status', 'Aktif');
 
-        $myLocationIds = $user->practiceLocations()->pluck('tempat_konselings.id'); // <-- Error 'practiceLocations' akan hilang
+            // 2. Fitur Pencarian (Search)
+            if ($request->has('search') && $request->search != '') {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('nama_tempat', 'like', "%{$search}%")
+                        ->orWhere('alamat', 'like', "%{$search}%");
+                });
+            }
 
-        return response()->json([
-            'all_locations' => $allLocations,
-            'my_location_ids' => $myLocationIds,
-        ]);
+            // 3. Ambil Data (Paginated atau All)
+            // Jika frontend mengirim parameter 'page', kita gunakan pagination
+            if ($request->has('page')) {
+                $allLocations = $query->orderBy('nama_tempat')->paginate(10);
+            } else {
+                $allLocations = $query->orderBy('nama_tempat')->get();
+            }
+
+            // 4. Ambil ID lokasi yang sudah dipilih user
+            $myLocationIds = $user->practiceLocations()->pluck('tempat_konselings.id');
+
+            // Return data (jika paginated, structure JSON-nya beda dikit, frontend harus handle)
+            return response()->json([
+                'all_locations' => $allLocations,
+                'my_location_ids' => $myLocationIds,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching practice locations:', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Gagal memuat data lokasi.', 'error' => $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -189,7 +217,7 @@ class ProfileController extends Controller
     public function updatePracticeLocations(Request $request)
     {
         $user = Auth::user();
-        /** @var \App\Models\User $user */ // <-- PETUNJUK UNTUK LINTER
+        /** @var \App\Models\User $user */
 
         $validated = $request->validate([
             'location_ids' => ['required', 'array'],
@@ -197,7 +225,8 @@ class ProfileController extends Controller
         ]);
 
         try {
-            $user->practiceLocations()->sync($validated['location_ids']); // <-- Error 'practiceLocations' akan hilang
+            // Sync relationship Many-to-Many
+            $user->practiceLocations()->sync($validated['location_ids']);
 
             Log::info('Practice locations updated for user: ' . $user->id);
             return response()->json(['message' => 'Tempat praktik berhasil diperbarui.']);

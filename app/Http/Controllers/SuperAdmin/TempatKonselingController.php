@@ -6,16 +6,31 @@ use App\Http\Controllers\Controller;
 use App\Models\TempatKonseling;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Storage; // <-- Import Storage
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class TempatKonselingController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Menampilkan daftar tempat konseling dengan Search & Pagination.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return TempatKonseling::latest()->get();
+        $search = $request->query('search');
+
+        // Mulai query dari data terbaru
+        $query = TempatKonseling::latest();
+
+        // Logika Pencarian
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nama_tempat', 'like', "%{$search}%")
+                    ->orWhere('alamat', 'like', "%{$search}%");
+            });
+        }
+
+        // Gunakan paginate(10) agar sesuai dengan frontend
+        return $query->paginate(10);
     }
 
     /**
@@ -26,25 +41,26 @@ class TempatKonselingController extends Controller
         $validated = $request->validate([
             'nama_tempat' => 'required|string|max:255|unique:tempat_konselings,nama_tempat',
             'alamat' => 'required|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Validasi gambar
-            'rating' => 'nullable|numeric|min:0|max:5', // Validasi rating (0-5)
-            'review_count' => 'nullable|integer|min:0', // Validasi jumlah review (angka bulat >= 0)
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'rating' => 'nullable|numeric|min:0|max:5',
+            'review_count' => 'nullable|integer|min:0',
             'status' => ['required', Rule::in(['Aktif', 'Tidak Aktif'])],
         ]);
 
         $imagePath = null;
         if ($request->hasFile('image')) {
-            // Simpan gambar ke 'storage/app/public/tempat-konseling-images'
             $imagePath = $request->file('image')->store('tempat-konseling-images', 'public');
-            $validated['image'] = $imagePath; // Simpan path relatif ke database
         }
 
-        // Pastikan nilai default jika null
-        $validated['rating'] = $validated['rating'] ?? 0;
-        $validated['review_count'] = $validated['review_count'] ?? 0;
+        // Merge data gambar dan nilai default
+        $dataToCreate = array_merge($validated, [
+            'image' => $imagePath,
+            'rating' => $validated['rating'] ?? 0,
+            'review_count' => $validated['review_count'] ?? 0,
+        ]);
 
+        $tempat = TempatKonseling::create($dataToCreate);
 
-        $tempat = TempatKonseling::create($validated);
         return response()->json($tempat, 201);
     }
 
@@ -58,59 +74,73 @@ class TempatKonselingController extends Controller
 
     /**
      * Update the specified resource in storage.
-     * Note: Kita gunakan POST (bukan PUT/PATCH) karena form frontend akan mengirim FormData
      */
-    public function update(Request $request, TempatKonseling $tempatKonseling)
+    public function update(Request $request, $id)
     {
+        // Note: Kita pakai $id dan findOrFail karena kadang Route Model Binding
+        // bisa bermasalah jika parameter route tidak standar.
+        $tempatKonseling = TempatKonseling::findOrFail($id);
+
         $validated = $request->validate([
             'nama_tempat' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('tempat_konselings')->ignore($tempatKonseling->id)],
             'alamat' => 'sometimes|required|string',
-            // Image bersifat nullable saat update, artinya tidak wajib diubah
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            // Rating dan review count juga nullable, tapi jika diisi harus valid
             'rating' => 'nullable|numeric|min:0|max:5',
             'review_count' => 'nullable|integer|min:0',
             'status' => ['sometimes', 'required', Rule::in(['Aktif', 'Tidak Aktif'])],
         ]);
 
-        // Handle update gambar
-        if ($request->hasFile('image')) {
-            // 1. Hapus gambar lama jika ada
-            if ($tempatKonseling->image) {
-                Storage::disk('public')->delete($tempatKonseling->image);
+        try {
+            $dataToUpdate = collect($validated)->except(['image'])->toArray();
+
+            // Handle Update Gambar
+            if ($request->hasFile('image')) {
+                // Hapus gambar lama jika ada (gunakan accessor getRawOriginal jika accessor URL aktif)
+                $oldImage = $tempatKonseling->getRawOriginal('image') ?? $tempatKonseling->image;
+
+                if ($oldImage && Storage::disk('public')->exists($oldImage)) {
+                    Storage::disk('public')->delete($oldImage);
+                }
+
+                // Simpan gambar baru
+                $path = $request->file('image')->store('tempat-konseling-images', 'public');
+                $dataToUpdate['image'] = $path;
             }
-            // 2. Simpan gambar baru
-            $imagePath = $request->file('image')->store('tempat-konseling-images', 'public');
-            $validated['image'] = $imagePath;
-        } else {
-            // Jika tidak ada file baru di-upload, jangan ubah kolom 'image'
-            unset($validated['image']);
-        }
 
-        // Pastikan nilai default jika null saat update (jika field dikirim tapi kosong)
-        if (array_key_exists('rating', $validated)) {
-            $validated['rating'] = $validated['rating'] ?? 0;
-        }
-        if (array_key_exists('review_count', $validated)) {
-            $validated['review_count'] = $validated['review_count'] ?? 0;
-        }
+            // Pastikan nilai default jika dikirim null (opsional, tergantung frontend)
+            if (array_key_exists('rating', $validated) && is_null($validated['rating'])) {
+                $dataToUpdate['rating'] = 0;
+            }
+            if (array_key_exists('review_count', $validated) && is_null($validated['review_count'])) {
+                $dataToUpdate['review_count'] = 0;
+            }
 
-        $tempatKonseling->update($validated);
-        // Load ulang data untuk memastikan accessor image terpanggil
-        return response()->json($tempatKonseling->fresh());
+            $tempatKonseling->update($dataToUpdate);
+
+            // Refresh model untuk memastikan accessor image_url terupdate
+            return response()->json($tempatKonseling->fresh());
+        } catch (\Exception $e) {
+            Log::error("Gagal update tempat konseling {$id}: " . $e->getMessage());
+            return response()->json(['message' => 'Gagal menyimpan perubahan'], 500);
+        }
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(TempatKonseling $tempatKonseling)
+    public function destroy($id)
     {
-        // Hapus gambar terkait jika ada sebelum menghapus record
-        if ($tempatKonseling->image) {
-            Storage::disk('public')->delete($tempatKonseling->image);
+        $tempatKonseling = TempatKonseling::findOrFail($id);
+
+        // Hapus gambar terkait
+        $imagePath = $tempatKonseling->getRawOriginal('image') ?? $tempatKonseling->image;
+
+        if ($imagePath && Storage::disk('public')->exists($imagePath)) {
+            Storage::disk('public')->delete($imagePath);
         }
 
         $tempatKonseling->delete();
+
         return response()->json(null, 204);
     }
 }

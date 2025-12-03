@@ -1,190 +1,353 @@
-import React from "react";
-// import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate, useLocation, useParams, Link } from "react-router-dom";
+import apiClient from "../../../api/axios";
+import html2canvas from "html2canvas";
 
-// --- Mock useNavigate hook for demonstration ---
-// Di aplikasi React sungguhan, Anda akan mengimpor dari 'react-router-dom'
-const useNavigate = () => {
-  return (path) => {
-    if (path === -1) {
-      console.log("Navigate back");
-    } else {
-      console.log(`Maps to: ${path}`);
-    }
-    // Dalam aplikasi nyata, ini akan mengubah URL
-  };
-};
-// ----------------------------------------------
+// --- CSS Animasi Centang (DIPERBAIKI & LEBIH STABIL) ---
+const styles = `
+.checkmark-container {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1rem;
+}
+.checkmark-svg {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: block;
+  stroke-width: 2;
+  stroke: #fff;
+  stroke-miterlimit: 10;
+  box-shadow: inset 0px 0px 0px #4bb71b;
+  animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both;
+}
+.checkmark-circle {
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  stroke-width: 2;
+  stroke-miterlimit: 10;
+  stroke: #4bb71b;
+  fill: none;
+  animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+.checkmark-check {
+  transform-origin: 50% 50%;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+}
+@keyframes stroke {
+  100% { stroke-dashoffset: 0; }
+}
+@keyframes scale {
+  0%, 100% { transform: none; }
+  50% { transform: scale3d(1.1, 1.1, 1); }
+}
+@keyframes fill {
+  100% { box-shadow: inset 0px 0px 0px 50px #4bb71b; }
+}
+`;
 
+// --- Komponen Layout ---
 const MobileLayout = ({ children }) => (
-  <div className="flex justify-center min-h-screen bg-[#FFF9F8]">
-    <div className="w-full max-w-md min-h-screen bg-[#FFF9F8] flex flex-col">
-      {children}
+    <div className="flex justify-center min-h-screen bg-[#FFF9F8]">
+        <div className="w-full max-w-md min-h-screen bg-[#FFF9F8] flex flex-col">
+            {children}
+        </div>
     </div>
-  </div>
 );
 
+// --- Ikon ---
 const BackArrowIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="h-6 w-6"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2.5}
-  >
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-  </svg>
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-6 w-6"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2.5}
+    >
+        <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M15 19l-7-7 7-7"
+        />
+    </svg>
 );
 
-// --- IKON SHARE (EKSPOR) ---
-const ShareIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="h-6 w-6 text-black"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"
-    />
-  </svg>
+const DownloadIcon = () => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-6 w-6 text-white"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+    >
+        <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+        />
+    </svg>
 );
-// ------------------------------
+
+// --- Helper ---
+function formatReceiptTimestamp(dateString) {
+    if (!dateString) return "-";
+    try {
+        const options = {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        };
+        return new Date(dateString)
+            .toLocaleDateString("id-ID", options)
+            .replace(/\./g, ":");
+    } catch (e) {
+        return dateString;
+    }
+}
+
+const formatCurrency = (amount) => {
+    if (amount == null) return "Rp 0";
+    const numericAmount = Number(amount);
+    return new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(numericAmount);
+};
 
 export default function TransactionDetailPage() {
-  const navigate = useNavigate();
-  
-  // Menggunakan elemen div untuk menampilkan pesan, bukan alert()
-  const handleShare = () => {
-    const messageBox = document.getElementById('message-box');
-    if (messageBox) {
-      messageBox.classList.remove('hidden');
-      setTimeout(() => {
-        messageBox.classList.add('hidden');
-      }, 2000);
-    }
-  };
-  
-  // Fungsi untuk menutup pesan
-  const closeMessage = () => {
-    const messageBox = document.getElementById('message-box');
-    if (messageBox) {
-      messageBox.classList.add('hidden');
-    }
-  }
+    const navigate = useNavigate();
+    const { id: bookingId } = useParams();
+    const { state } = useLocation();
 
-  return (
-    <MobileLayout>
-      {/* Background biru bagian atas dan bawah */}
-      <div className="flex flex-col flex-1 bg-[#00B0FF] relative">
-        {/* Header (Diubah untuk centering dan teks lebih besar/bold) */}
-        <header className="w-full p-4 pt-8 flex items-center bg-[#00B0FF] relative">
-          {/* Tombol kembali (absolute agar tidak mengganggu centering) */}
-          <button onClick={() => navigate(-1)} className="text-white absolute left-4 top-1/2 -translate-y-1/2 mt-2">
-            <BackArrowIcon />
-          </button>
-          {/* Teks Header: centered, lebih besar, dan tebal */}
-          <h1 className="text-white font-extrabold text-xl w-full text-center">Detail Transaksi</h1>
-        </header>
+    const receiptRef = useRef(null);
 
-        {/* Card putih di tengah - Jarak atas ditingkatkan (mt-12) */}
-        <div className="bg-white rounded-3xl mx-4 p-6 mt-12 shadow-xl overflow-y-auto mb-8 flex-1">
-          {/* Status */}
-          <div className="flex flex-col items-center mb-6 mt-4">
-            {/* Centang Hijau (Success Icon) diperbesar: w-28 h-28 */}
-            <div className="w-28 h-28 rounded-full bg-green-500 flex items-center justify-center mb-3"> 
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-14 w-14 text-white" /* Ikon di dalamnya juga diperbesar */
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2.5}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
+    const [booking, setBooking] = useState(state?.booking || null);
+    const [loading, setLoading] = useState(!state?.booking);
+    const [error, setError] = useState(null);
+    const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        if (!booking && bookingId) {
+            setLoading(true);
+            apiClient
+                .get(`/api/history/${bookingId}`)
+                .then((response) => setBooking(response.data))
+                .catch((err) => {
+                    console.error("Gagal fetch booking:", err);
+                    setError("Gagal memuat detail transaksi.");
+                })
+                .finally(() => setLoading(false));
+        }
+    }, [booking, bookingId]);
+
+    const handleSaveReceipt = async () => {
+        if (!receiptRef.current) return;
+
+        setIsSaving(true);
+        try {
+            // Tambahkan delay sedikit agar animasi selesai sebelum capture
+            await new Promise((resolve) => setTimeout(resolve, 500));
+
+            const canvas = await html2canvas(receiptRef.current, {
+                scale: 3, // Resolusi tinggi biar tajam
+                backgroundColor: "#ffffff",
+                useCORS: true,
+                logging: false,
+            });
+
+            const image = canvas.toDataURL("image/png");
+            const link = document.createElement("a");
+            link.href = image;
+            link.download = `Moodly-Receipt-${bookingId}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (err) {
+            console.error("Gagal menyimpan gambar:", err);
+            alert("Gagal menyimpan nota.");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    if (loading)
+        return (
+            <MobileLayout>
+                <div className="flex items-center justify-center flex-1">
+                    Memuat data nota...
+                </div>
+            </MobileLayout>
+        );
+    if (error || !booking)
+        return (
+            <MobileLayout>
+                <div className="flex flex-col items-center justify-center flex-1 p-4 text-center">
+                    <p className="text-red-500">
+                        {error || "Data transaksi tidak ditemukan."}
+                    </p>
+                    <Link
+                        to="/history"
+                        className="mt-4 text-blue-600 font-semibold"
+                    >
+                        Kembali ke Riwayat
+                    </Link>
+                </div>
+            </MobileLayout>
+        );
+
+    const adminFee = 5000;
+    const subtotal = booking.total_harga - adminFee;
+    const transactionDate = formatReceiptTimestamp(booking.updated_at);
+    const transactionId = `PAY-${String(booking.id).padStart(6, "0")}`;
+
+    return (
+        <MobileLayout>
+            <style>{styles}</style>
+            {/* Background Konsisten: #00D1FF */}
+            <div className="flex flex-col flex-1 bg-[#00D1FF] relative">
+                {/* Header */}
+                <header className="w-full p-4 pt-8 flex items-center bg-[#00D1FF] relative z-10">
+                    <button
+                        onClick={() => navigate("/history")}
+                        className="text-white absolute left-4 top-1/2 -translate-y-1/2 mt-2 p-2 hover:bg-white/20 rounded-full transition"
+                    >
+                        <BackArrowIcon />
+                    </button>
+                </header>
+
+                {/* AREA NOTA (White Card) */}
+                <div
+                    ref={receiptRef}
+                    className="bg-white rounded-3xl mx-4 p-6 mt-4 shadow-xl mb-24 flex flex-col relative z-0 pb-10"
+                >
+                    {/* Animasi Centang Sukses (Diperbaiki) */}
+                    <div className="checkmark-container">
+                        <svg
+                            className="checkmark-svg"
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 52 52"
+                        >
+                            <circle
+                                className="checkmark-circle"
+                                cx="26"
+                                cy="26"
+                                r="25"
+                                fill="none"
+                            />
+                            <path
+                                className="checkmark-check"
+                                fill="none"
+                                d="M14.1 27.2l7.1 7.2 16.7-16.8"
+                            />
+                        </svg>
+                    </div>
+
+                    <h2 className="text-lg font-bold text-gray-900 text-center mb-2">
+                        Pembayaran Berhasil
+                    </h2>
+                    <p className="text-center text-gray-500 text-sm mb-6">
+                        {transactionDate}
+                    </p>
+
+                    {/* ID Transaksi Box */}
+                    <div className="bg-gray-50 rounded-xl p-4 flex justify-between items-center mb-6">
+                        <span className="text-gray-500 text-sm">
+                            ID Transaksi
+                        </span>
+                        <span className="font-bold text-gray-800">
+                            {transactionId}
+                        </span>
+                    </div>
+
+                    <div className="text-center mb-6">
+                        <span className="text-gray-500 text-sm block mb-1">
+                            Total Bayar
+                        </span>
+                        <span className="text-3xl font-bold text-[#00D1FF]">
+                            {formatCurrency(booking.total_harga)}
+                        </span>
+                    </div>
+
+                    <hr className="border-gray-200 my-4 border-dashed" />
+
+                    {/* Detail Pembayar */}
+                    <div className="mb-4">
+                        <h3 className="font-bold text-gray-900 text-sm mb-3">
+                            Detail Pembayar
+                        </h3>
+                        <div className="flex justify-between text-sm mb-2">
+                            <span className="text-gray-500">Nama</span>
+                            <span className="font-medium text-gray-800">
+                                {booking.customer.name}
+                            </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                            <span className="text-gray-500">Metode</span>
+                            <span className="font-medium text-gray-800">
+                                Transfer Bank/QRIS
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="mb-8">
+                        <h3 className="font-bold text-gray-900 text-sm mb-3">
+                            Rincian Biaya
+                        </h3>
+                        <div className="flex justify-between text-sm mb-2">
+                            <span className="text-gray-500">
+                                Subtotal Pesanan
+                            </span>
+                            <span className="font-medium text-gray-800">
+                                {formatCurrency(subtotal)}
+                            </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                            <span className="text-gray-500">Biaya Admin</span>
+                            <span className="font-medium text-gray-800">
+                                {formatCurrency(adminFee)}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="text-center text-[10px] text-gray-300 font-medium uppercase tracking-widest mt-auto">
+                        Moodly Transaction Receipt
+                    </div>
+                </div>
+
+                {/* FOOTER TOMBOL */}
+                <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-4 bg-white border-t border-gray-100 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-50">
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => navigate("/history")}
+                            className="flex-1 bg-gray-100 text-gray-700 font-bold py-3 px-4 rounded-xl hover:bg-gray-200 transition active:scale-95"
+                        >
+                            Tutup
+                        </button>
+
+                        <button
+                            onClick={handleSaveReceipt}
+                            disabled={isSaving}
+                            className="flex-[2] bg-[#00D1FF] text-white font-bold py-3 px-4 rounded-xl hover:bg-[#00b8e0] transition shadow-lg shadow-cyan-100 active:scale-95 flex items-center justify-center gap-2 disabled:bg-gray-300"
+                        >
+                            {isSaving ? (
+                                <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            ) : (
+                                <>
+                                    <DownloadIcon /> Simpan Galeri
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
             </div>
-            <h2 className="text-lg font-semibold text-gray-900">Sukses</h2>
-          </div>
-
-          {/* Info transaksi */}
-          <div className="text-sm text-gray-600 mb-4">
-            <p className="mb-1">28 April 2025, 13:00</p>
-            <div className="flex justify-between">
-              <span>ID Transaksi</span>
-              <span className="font-medium text-gray-800">11223344556677</span>
-            </div>
-          </div>
-
-          {/* Garis pemisah */}
-          <hr className="border-gray-300 my-4" />
-
-          {/* Total Bayar */}
-          <div className="flex justify-between items-center mb-4 text-sm">
-            <span className="font-semibold text-gray-900">Total Bayar</span>
-            <span className="font-semibold text-gray-900">Rp.105.000</span>
-          </div>
-
-          {/* Garis pemisah */}
-          <hr className="border-gray-300 my-4" />
-
-          {/* Detail Penerima */}
-          <div className="mb-5 text-sm">
-            <h3 className="font-semibold text-gray-900 mb-2">Detail Penerima</h3>
-            <div className="flex justify-between text-gray-700">
-              <span>Nama</span>
-              <span className="font-medium">Indira</span>
-            </div>
-            <div className="flex justify-between text-gray-700">
-              <span>No. rek</span>
-              <span className="font-medium">4837247823743</span>
-            </div>
-          </div>
-
-          {/* Garis pemisah */}
-          <hr className="border-gray-300 my-4" />
-
-          {/* Detail Transaksi */}
-          <div className="mb-8 text-sm">
-            <h3 className="font-semibold text-gray-900 mb-2">Detail Transaksi</h3>
-            <div className="flex justify-between text-gray-700">
-              <span>Subtotal Pesanan</span>
-              <span className="font-medium">Rp.100.000</span>
-            </div>
-            <div className="flex justify-between text-gray-700">
-              <span>Biaya Admin</span>
-              <span className="font-medium">Rp.5.000</span>
-            </div>
-            {/* Baris Total (dengan border-t) dihapus dari sini */}
-          </div>
-
-          {/* Tombol */}
-          <div className="flex items-center justify-center gap-3 pb-6">
-            <button
-              className="flex-1 bg-[#3E68FF] text-white font-semibold py-3 rounded-xl hover:bg-[#3455cc] transition"
-              onClick={() => navigate(-1)}
-            >
-              Selesai
-            </button>
-            <button
-              onClick={handleShare}
-              className="p-3 rounded-xl bg-white hover:bg-gray-100 transition shadow-md"
-            >
-              <ShareIcon />
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      {/* Kotak pesan kustom pengganti alert() */}
-      <div id="message-box" className="hidden fixed bottom-10 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-xl shadow-lg transition-all z-50">
-        <span id="message-text">Fitur bagikan belum diimplementasikan.</span>
-        <button onClick={closeMessage} className="ml-2 text-gray-300 hover:text-white">&times;</button>
-      </div>
-    </MobileLayout>
-  );
+        </MobileLayout>
+    );
 }

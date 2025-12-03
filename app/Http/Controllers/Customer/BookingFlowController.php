@@ -16,6 +16,10 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use Carbon\CarbonInterval;
+use App\Events\PaymentProofUploaded;
+
+// [MODIFIKASI] Import Notifikasi Baru
+use App\Notifications\NewBookingReceived;
 
 class BookingFlowController extends Controller
 {
@@ -25,7 +29,6 @@ class BookingFlowController extends Controller
      */
     public function getTempatKonseling()
     {
-        // ... (Fungsi ini tidak berubah) ...
         try {
             $tempatList = TempatKonseling::where('status', 'Aktif')
                 ->select('id', 'nama_tempat', 'alamat', 'image', 'rating', 'review_count')
@@ -47,7 +50,6 @@ class BookingFlowController extends Controller
      */
     public function getTempatDetail(TempatKonseling $tempatKonseling)
     {
-        // ... (Fungsi ini tidak berubah) ...
         try {
             Log::info('Tempat Detail fetched:', $tempatKonseling->toArray());
             return response()->json($tempatKonseling);
@@ -66,7 +68,6 @@ class BookingFlowController extends Controller
      */
     public function getCounselors(Request $request)
     {
-        // ... (Fungsi ini tidak berubah) ...
         try {
             $query = User::where('role', 'konselor')
                 ->where('status', 'Terverifikasi')
@@ -100,7 +101,6 @@ class BookingFlowController extends Controller
      */
     public function showCounselor(User $konselor)
     {
-        // ... (Fungsi ini tidak berubah) ...
         try {
             if ($konselor->role !== 'konselor' || $konselor->status !== 'Terverifikasi') {
                 return response()->json(['message' => 'Konselor tidak ditemukan atau tidak aktif.'], 404);
@@ -129,9 +129,6 @@ class BookingFlowController extends Controller
         }
     }
 
-    // --- ================================================ ---
-    // --- ============ PERBAIKAN UTAMA DI SINI ============ ---
-    // --- ================================================ ---
     /**
      * Mengambil opsi durasi dan jadwal dinamis untuk konselor tertentu.
      * GET /api/booking/counselors/{konselor}/schedule-options
@@ -159,12 +156,10 @@ class BookingFlowController extends Controller
             // 2. Ambil Ketersediaan Konselor (BERDASARKAN TANGGAL)
             $today = Carbon::today();
             $availabilities = CounselorAvailability::where('counselor_id', $konselor->id)
-                // --- PERBAIKAN: Ganti 'day_of_week' menjadi 'tanggal_konsultasi' ---
                 ->where('tanggal_konsultasi', '>=', $today)
                 ->orderBy('tanggal_konsultasi', 'asc')
                 ->orderBy('start_time', 'asc')
                 ->get();
-            // --- AKHIR PERBAIKAN ---
 
             // 3. Ambil Booking Mendatang (untuk filter slot)
             $upcomingBookings = Booking::where('konselor_id', $konselor->id)
@@ -190,16 +185,11 @@ class BookingFlowController extends Controller
 
             // 4. Generate Tanggal (BERDASARKAN KETERSEDIAAN)
             $availableDates = [];
-
-            // --- PERBAIKAN: Loop berdasarkan ketersediaan (bukan 7 hari) ---
             $uniqueDates = $availabilities->unique('tanggal_konsultasi');
 
             foreach ($uniqueDates as $availabilityDate) {
                 $date = Carbon::parse($availabilityDate->tanggal_konsultasi);
-
-                // Ambil semua ketersediaan di hari ini (bisa jadi ada > 1, misal 09-12 dan 14-17)
                 $dayAvailabilities = $availabilities->where('tanggal_konsultasi', $date->toDateString());
-
                 $slots = [];
 
                 foreach ($dayAvailabilities as $availability) {
@@ -207,7 +197,6 @@ class BookingFlowController extends Controller
                     $endTime = Carbon::parse($availability->end_time);
                     $currentTime = $startTime->copy();
 
-                    // Generate slot berdasarkan interval
                     while ($currentTime < $endTime) {
                         $slotStart = $currentTime->format('H:i'); // "HH:MM"
                         $slotKey = $date->toDateString() . '_' . $slotStart;
@@ -223,7 +212,6 @@ class BookingFlowController extends Controller
                     }
                 }
 
-                // Jika ada slot tersedia di hari ini, tambahkan ke array
                 if (!empty($slots)) {
                     $groupedSlots = [
                         'Pagi' => [],
@@ -253,7 +241,6 @@ class BookingFlowController extends Controller
                     }
                 }
             }
-            // --- AKHIR PERBAIKAN ---
 
             return response()->json([
                 'durations' => $durations,
@@ -271,8 +258,6 @@ class BookingFlowController extends Controller
             ], 500);
         }
     }
-    // --- AKHIR PERBAIKAN METHOD JADWAL DINAMIS ---
-
 
     /**
      * Menyimpan booking baru.
@@ -305,7 +290,7 @@ class BookingFlowController extends Controller
                 return response()->json(['message' => 'Durasi konseling tidak valid.'], 404);
             }
 
-            // --- Validasi Ketersediaan (BERDASARKAN TANGGAL) ---
+            // --- Validasi Ketersediaan ---
             $slotStartTime = Carbon::parse($validated['time']);
             $slotEndTime = $slotStartTime->copy()->addMinutes($durasi->durasi_menit);
 
@@ -316,13 +301,11 @@ class BookingFlowController extends Controller
                 'endTime' => $slotEndTime->format('H:i:s')
             ]);
 
-            // --- PERBAIKAN: Query validasi berdasarkan TANGGAL ---
             $availability = CounselorAvailability::where('counselor_id', $validated['counselorId'])
-                ->where('tanggal_konsultasi', $validated['date']) // Cek TANGGAL
+                ->where('tanggal_konsultasi', $validated['date'])
                 ->where('start_time', '<=', $slotStartTime->format('H:i:s'))
                 ->where('end_time', '>=', $slotEndTime->format('H:i:s'))
                 ->first();
-            // --- AKHIR PERBAIKAN ---
 
             if (!$availability) {
                 Log::warning('Availability check failed:', [
@@ -331,24 +314,21 @@ class BookingFlowController extends Controller
                     'start_time_req' => $slotStartTime->format('H:i:s'),
                     'end_time_req' => $slotEndTime->format('H:i:s')
                 ]);
-                return response()->json(['message' => 'Jadwal tidak tersedia atau durasi tidak cukup.'], 409); // 409 Conflict
+                return response()->json(['message' => 'Jadwal tidak tersedia atau durasi tidak cukup.'], 409);
             }
 
             Log::info('Availability check passed.');
 
-            // Cek tumpang tindih dengan booking lain
-            // (Logika ini sudah benar karena menggunakan 'tanggal_konsultasi')
+            // Cek tumpang tindih
             $existingBooking = Booking::where('konselor_id', $validated['counselorId'])
                 ->where('tanggal_konsultasi', $validated['date'])
                 ->whereIn('status_pesanan', ['Dijadwalkan', 'Aktif', 'Menunggu Pembayaran', 'Proses', 'Menunggu Konfirmasi'])
                 ->with('durasiKonseling:id,durasi_menit')
                 ->where(function ($query) use ($slotStartTime, $slotEndTime) {
                     $query->where(function ($q) use ($slotStartTime, $slotEndTime) {
-                        // 1. Waktu mulai baru, ada di tengah booking lama?
                         $q->where('jam_konsultasi', '<', $slotStartTime->format('H:i:s'))
                             ->whereRaw('ADDTIME(jam_konsultasi, SEC_TO_TIME(durasi_konselings.durasi_menit * 60)) > ?', [$slotStartTime->format('H:i:s')]);
                     })->orWhere(function ($q) use ($slotStartTime, $slotEndTime) {
-                        // 2. Waktu mulai lama, ada di tengah booking baru?
                         $q->where('jam_konsultasi', '>=', $slotStartTime->format('H:i:s'))
                             ->where('jam_konsultasi', '<', $slotEndTime->format('H:i:s'));
                     });
@@ -358,12 +338,11 @@ class BookingFlowController extends Controller
 
             if ($existingBooking) {
                 Log::warning('Booking conflict detected:', $validated);
-                return response()->json(['message' => 'Slot waktu ini sudah dipesan. Silakan pilih jam lain.'], 409); // 409 Conflict
+                return response()->json(['message' => 'Slot waktu ini sudah dipesan. Silakan pilih jam lain.'], 409);
             }
             Log::info('Booking conflict check passed.');
-            // --- Akhir Validasi Ketersediaan ---
 
-
+            // --- Proses Simpan Booking ---
             $hargaKonsultasi = $durasi->harga;
             $biayaLayanan = 5000;
             $totalHarga = $hargaKonsultasi + $biayaLayanan;
@@ -382,6 +361,19 @@ class BookingFlowController extends Controller
             ]);
 
             $booking->load('customer:id,name', 'konselor:id,name', 'jenisKonseling', 'durasiKonseling', 'tempatKonseling');
+
+            // --- [MODIFIKASI] Kirim Notifikasi ke Konselor ---
+            // Kita bungkus try-catch agar error notifikasi tidak membatalkan booking
+            try {
+                if ($booking->konselor) {
+                    $booking->konselor->notify(new NewBookingReceived($booking));
+                    Log::info('Notifikasi pesanan baru dikirim ke konselor ID: ' . $booking->konselor_id);
+                }
+            } catch (\Exception $notifError) {
+                Log::error('Gagal kirim notifikasi booking baru: ' . $notifError->getMessage());
+            }
+            // ------------------------------------------------
+
             Log::info('Booking created successfully:', ['booking_id' => $booking->id]);
 
             return response()->json([
@@ -408,7 +400,6 @@ class BookingFlowController extends Controller
      */
     public function getPaymentMethods()
     {
-        // ... (Fungsi ini tidak berubah) ...
         try {
             $methods = PaymentMethod::where('status', 'Aktif')
                 ->whereNotNull('image')
@@ -426,7 +417,6 @@ class BookingFlowController extends Controller
 
     public function getPaymentMethodImage(PaymentMethod $paymentMethod)
     {
-        // ... (Fungsi ini tidak berubah) ...
         try {
             if (!$paymentMethod->image || !Storage::disk('public')->exists($paymentMethod->image)) {
                 return response()->json(['message' => 'Gambar tidak ditemukan.'], 404);
@@ -448,7 +438,6 @@ class BookingFlowController extends Controller
      */
     public function uploadPaymentProof(Request $request, Booking $booking)
     {
-        // ... (Fungsi ini tidak berubah) ...
         if ($booking->customer_id !== Auth::id()) {
             return response()->json(['message' => 'Tidak diizinkan'], 403);
         }
@@ -476,6 +465,10 @@ class BookingFlowController extends Controller
             $booking->payment_proof_notes = $request->input('keterangan');
             $booking->status_pesanan = 'Menunggu Verifikasi';
             $booking->save();
+
+            $booking->load('customer:id,name');
+            broadcast(new PaymentProofUploaded($booking));
+
             Log::info('Payment proof uploaded successfully:', ['booking_id' => $booking->id, 'path' => $path]);
             return response()->json([
                 'message' => 'Bukti pembayaran berhasil diupload.',

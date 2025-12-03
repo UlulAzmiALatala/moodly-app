@@ -6,8 +6,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Casts\Attribute;
-use Illuminate\Support\Facades\Storage;
 
 class Booking extends Model
 {
@@ -21,85 +21,107 @@ class Booking extends Model
         'tempat_konseling_id',
         'tanggal_konsultasi',
         'jam_konsultasi',
-        'metode_konsultasi', // Anda mungkin punya 'metode_layanan' di sini?
+        'metode_konsultasi',
+        'status_pesanan',
+        'total_harga',
+        'admin_fee',
+        'alasan_pembatalan',
+        'catatan_pembatalan',
+        'payment_proof_image',
+        'payment_proof_notes',
+        'gmeet_link',
+        'refund_amount',
+        'rating',
+        'ulasan_customer',
+        'proposed_date',
+        'proposed_time',
+    ];
+
+    protected $appends = [
+        'payment_proof_image_url'
+    ];
+
+    protected $visible = [
+        'id',
+        'customer_id',
+        'konselor_id',
+        'jenis_konseling_id',
+        'durasi_konseling_id',
+        'tempat_konseling_id',
+        'tanggal_konsultasi',
+        'jam_konsultasi',
+        'metode_konsultasi',
         'status_pesanan',
         'total_harga',
         'alasan_pembatalan',
         'catatan_pembatalan',
         'payment_proof_image',
         'payment_proof_notes',
-        'gmeet_link', // <-- Saya tambahkan dari rencana Gmeet kita
+        'admin_fee',
+        'refund_amount',
+        'gmeet_link',
+        'rating',
+        'ulasan_customer',
+        'proposed_date',
+        'proposed_time',
+        'created_at',
+        'updated_at',
+
+        // Relasi
+        'customer',
+        'konselor',
+        'jenisKonseling',
+        'durasiKonseling',
+        'tempatKonseling',
+        'chatMessages',
+        'refund',
+
+        // Accessor
+        'payment_proof_image_url',
     ];
 
-    /**
-     * The accessors to append to the model's array form.
-     *
-     * @var array
-     */
-    protected $appends = [
-        'payment_proof_image_url'
-    ];
-
-
-    /**
-     * Get the customer that owns the booking.
-     */
     public function customer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'customer_id');
     }
 
-    /**
-     * Get the konselor associated with the booking.
-     */
     public function konselor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'konselor_id');
     }
 
-    /**
-     * Get the jenis konseling associated with the booking.
-     */
     public function jenisKonseling(): BelongsTo
     {
         return $this->belongsTo(JenisKonseling::class);
     }
 
-    /**
-     * Get all of the chat messages for the booking.
-     */
     public function chatMessages(): HasMany
     {
         return $this->hasMany(ChatMessage::class);
     }
 
-    /**
-     * Get the durasi konseling associated with the booking.
-     */
     public function durasiKonseling(): BelongsTo
     {
         return $this->belongsTo(DurasiKonseling::class);
     }
 
-    /**
-     * Get the tempat konseling associated with the booking.
-     */
     public function tempatKonseling(): BelongsTo
     {
         return $this->belongsTo(TempatKonseling::class);
     }
 
-    /**
-     * Dapatkan URL lengkap untuk gambar bukti pembayaran.
-     *
-     * @return \Illuminate\Database\Eloquent\Casts\Attribute
-     */
+    public function refund(): HasOne
+    {
+        return $this->hasOne(Refund::class);
+    }
+
+    // HAPUS relasi paymentMethod() karena kolom ID tidak ada di database
+
     protected function paymentProofImageUrl(): Attribute
     {
         return Attribute::make(
-            // Panggil Rute API Proxy
             get: fn() => $this->payment_proof_image
-                ? url('/api/super-admin/booking-management/' . $this->id . '/payment-proof-image')
+                ? url('storage/' . $this->payment_proof_image)
                 : null,
         );
     }

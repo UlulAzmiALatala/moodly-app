@@ -1,35 +1,52 @@
-import React from "react";
-// PERBAIKAN: Gunakan NavLink untuk status aktif, bukan Link
+import React, { useState, useEffect } from "react";
 import { NavLink, useLocation, Outlet } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-
-// [BARU] Import ikon-ikon untuk Navbar Konselor
+import { useAuth } from "../context/AuthContext"; // Fixed path: ../../context instead of ../context
+import Echo from "laravel-echo";
+import Pusher from "pusher-js";
+import apiClient from "../api/axios"; // Fixed path: ../../api instead of ../api
 import {
     Home as CounselorHomeIcon,
     ClipboardList as CounselorHistoryIcon,
     User as CounselorProfileIcon,
     MessageSquare as CounselorScheduleIcon,
+    Bell,
 } from "lucide-react";
 
-// --- Ikon-ikon (dari kode Anda untuk Customer) ---
+import VerificationGuard from "../components/common/VerificationGuard"; // Fixed path: ../../components instead of ../components
 
-const BellIcon = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-gray-600"
-    >
-        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-    </svg>
-);
+window.Pusher = Pusher;
+
+// Environment variable fallback helper to avoid import.meta issues in some builds
+const getEnv = (key, defaultValue) => {
+    try {
+        return import.meta.env[key] || defaultValue;
+    } catch (e) {
+        return defaultValue;
+    }
+};
+
+const echo = new Echo({
+    broadcaster: "reverb",
+    key: getEnv("VITE_REVERB_APP_KEY", "reverb_key"),
+    wsHost: getEnv("VITE_REVERB_HOST", "127.0.0.1"),
+    wsPort: getEnv("VITE_REVERB_PORT", 8080),
+    wssPort: getEnv("VITE_REVERB_PORT", 8080),
+    forceTLS: getEnv("VITE_REVERB_SCHEME", "http") === "https",
+    enabledTransports: ["ws", "wss"],
+    authorizer: (channel, options) => {
+        return {
+            authorize: (socketId, callback) => {
+                apiClient
+                    .post("/api/broadcasting/auth", {
+                        socket_id: socketId,
+                        channel_name: channel.name,
+                    })
+                    .then((response) => callback(null, response.data))
+                    .catch((error) => callback(error));
+            },
+        };
+    },
+});
 
 const ChevronDownIcon = () => (
     <svg
@@ -136,9 +153,8 @@ const CustomerProfileIcon = ({ active }) => (
     </svg>
 );
 
-// --- [BARU] Komponen Navbar Konselor ---
 const CounselorNavBar = () => (
-    <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white shadow-lg border-t border-gray-200 z-50">
+    <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white shadow-lg border-t border-gray-200 z-40">
         <div className="flex justify-around items-center h-16">
             <NavLink
                 to="/counselor/home"
@@ -188,9 +204,7 @@ const CounselorNavBar = () => (
     </nav>
 );
 
-// --- Komponen Navigasi Bawah (Customer) ---
 const CustomerBottomNavItem = ({ to, icon, label, active }) => (
-    // PERBAIKAN: Gunakan NavLink di sini
     <NavLink
         to={to}
         className="flex flex-col items-center justify-center gap-1 flex-1 py-1"
@@ -206,9 +220,8 @@ const CustomerBottomNavItem = ({ to, icon, label, active }) => (
     </NavLink>
 );
 
-// --- Komponen Navbar Customer (dari kode Anda) ---
 const CustomerNavBar = ({ currentPath }) => (
-    <footer className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-200 shadow-[0_-1px_4px_rgba(0,0,0,0.05)] z-10">
+    <footer className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-200 shadow-[0_-1px_4px_rgba(0,0,0,0.05)] z-40">
         <div className="flex justify-around items-center h-16">
             <CustomerBottomNavItem
                 to="/home"
@@ -229,7 +242,9 @@ const CustomerNavBar = ({ currentPath }) => (
             <CustomerBottomNavItem
                 to="/history"
                 icon={
-                    <CustomerHistoryIcon active={currentPath.startsWith("/history")} />
+                    <CustomerHistoryIcon
+                        active={currentPath.startsWith("/history")}
+                    />
                 }
                 label="History"
                 active={currentPath.startsWith("/history")}
@@ -237,7 +252,9 @@ const CustomerNavBar = ({ currentPath }) => (
             <CustomerBottomNavItem
                 to="/profile"
                 icon={
-                    <CustomerProfileIcon active={currentPath.startsWith("/profile")} />
+                    <CustomerProfileIcon
+                        active={currentPath.startsWith("/profile")}
+                    />
                 }
                 label="Profile"
                 active={currentPath.startsWith("/profile")}
@@ -246,71 +263,147 @@ const CustomerNavBar = ({ currentPath }) => (
     </footer>
 );
 
-// --- Komponen Header Customer (dari kode Anda) ---
-const CustomerHeader = ({ user }) => (
-    <header className="p-4 flex items-center justify-between sticky top-0 z-20 bg-white shadow-sm">
+// Header dihapus di sini karena sudah ada di HomePage
+const CustomerHeader = ({ user, unreadCount }) => (
+    <header className="p-4 flex items-center justify-between sticky top-0 z-30 bg-white shadow-sm border-b border-gray-100">
         <div className="flex items-center gap-3">
             <img
                 src={
-                    user?.avatar ||
+                    user?.avatar_url ||
                     `https://ui-avatars.com/api/?name=${
                         user?.name || "User"
                     }&background=EBF4FF&color=3B82F6&bold=true`
                 }
                 alt="User Avatar"
-                className="w-11 h-11 rounded-full"
+                className="w-11 h-11 rounded-full object-cover border-2 border-gray-100 shadow-sm"
             />
             <div>
-                <p className="text-base text-gray-800 font-bold">
-                    Hi, {user?.name || "Pengguna"}
+                <h1 className="text-base text-gray-800 font-bold leading-tight">
+                    {user?.name || "Pengguna"}
+                </h1>
+                <p className="text-xs text-gray-500 mt-0.5">
+                    {user?.city || "Indonesia"}
                 </p>
-                <div className="flex items-center cursor-pointer">
-                    <p className="text-xs text-gray-500">
-                        {user?.city || "Yogyakarta"},{" "}
-                        {user?.province
-                            ? user.province.split(" ").pop()
-                            : "Indonesia"}
-                    </p>
-                    <ChevronDownIcon />
-                </div>
             </div>
         </div>
-        {/* PERBAIKAN: Gunakan NavLink/Link agar tidak me-refresh halaman */}
-        <NavLink to="/notifications">
-            <BellIcon />
+
+        <NavLink
+            to="/notifications"
+            className="w-10 h-10 flex items-center justify-center bg-gray-50 rounded-2xl text-gray-600 hover:bg-cyan-50 hover:text-cyan-600 transition-all active:scale-95 relative border border-gray-100"
+        >
+            <Bell className="w-5 h-5" strokeWidth={2.5} />
+            {unreadCount > 0 && (
+                <span className="absolute top-2.5 right-3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
+            )}
         </NavLink>
     </header>
 );
 
-// --- Komponen Layout Utama (YANG DIPERBAIKI) ---
 export default function MobileLayout() {
-    const { user } = useAuth();
+    const { user, setUser, getUser } = useAuth();
     const location = useLocation();
     const currentPath = location.pathname;
+    const isCounselor =
+        user &&
+        (user.role?.includes("konselor") || user.role?.includes("counselor"));
 
-    // [PERBAIKAN] Cek role user
-    // --- PERUBAHAN DI SINI ---
-    const isCounselor = user && user.role?.includes("konselor"); // <-- Diubah dari "counselor"
+    // FALSE agar header layout TIDAK muncul di halaman Home.
+    // Halaman Home sekarang menggunakan header-nya sendiri (CustomerHeader di HomePage.jsx).
+    const showCustomerHeader = false;
 
-    // [PERBAIKAN] Tentukan apakah header customer harus ditampilkan
-    // (Hanya jika BUKAN konselor DAN ada di /home)
-    const showCustomerHeader = !isCounselor && currentPath === "/home";
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    // Mekanisme Auto-Check (Polling)
+    useEffect(() => {
+        let intervalId;
+
+        if (
+            user &&
+            (user.status === "Verifikasi" ||
+                user.status === "Menunggu Verifikasi")
+        ) {
+            console.log(
+                "⏳ Status masih Verifikasi. Mengaktifkan auto-check..."
+            );
+            intervalId = setInterval(() => {
+                getUser();
+            }, 3000);
+        }
+
+        return () => {
+            if (intervalId) clearInterval(intervalId);
+        };
+    }, [user?.status, getUser]);
+
+    // Fetch Unread Count
+    useEffect(() => {
+        if (user && !isCounselor && location.pathname !== "/notifications") {
+            apiClient
+                .get("/api/notifications/status")
+                .then((res) => setUnreadCount(res.data.unreadCount))
+                .catch((err) =>
+                    console.error("Gagal fetch status notif:", err)
+                );
+        } else if (location.pathname === "/notifications") {
+            setUnreadCount(0);
+        }
+    }, [user, isCounselor, location.pathname]);
+
+    // Listener Real-time
+    useEffect(() => {
+        if (!user) return;
+
+        const channelName = isCounselor
+            ? `counselor.${user.id}`
+            : `customer.${user.id}`;
+        const userChannelName = `user.${user.id}`;
+
+        console.log(`MobileLayout: Mendengarkan channel '${channelName}'...`);
+
+        // Listener Notifikasi
+        echo.private(channelName).notification((notification) => {
+            setUnreadCount((prevCount) => prevCount + 1);
+        });
+
+        // Listener Status User (WebSocket)
+        echo.private(userChannelName).listen(".UserStatusUpdated", (e) => {
+            console.log("⚡ STATUS UPDATE DITERIMA VIA SOCKET:", e.user.status);
+            if (setUser) {
+                setUser((prevUser) => ({
+                    ...prevUser,
+                    status: e.user.status,
+                    alasan_ditolak: e.user.alasan_ditolak,
+                }));
+            }
+        });
+
+        return () => {
+            echo.leave(channelName);
+            echo.leave(userChannelName);
+        };
+    }, [user?.id, isCounselor, setUser]);
 
     return (
         <div className="bg-gray-100 min-h-screen font-sans">
-            <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
-                
-                {/* Header Customer (Tampil Kondisional) */}
-                {/* Header Konselor sudah ada di halamannya sendiri (HomePage.jsx) */}
-                {showCustomerHeader && <CustomerHeader user={user} />}
+            {/* Guard Overlay */}
+            {user && (
+                <VerificationGuard
+                    status={user.status}
+                    userRole={user.role}
+                    reason={user.alasan_ditolak}
+                />
+            )}
 
-                {/* Konten Halaman */}
+            <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col relative">
+                {showCustomerHeader && (
+                    <CustomerHeader user={user} unreadCount={unreadCount} />
+                )}
+
                 <main className="flex-grow pb-20">
                     <Outlet />
                 </main>
             </div>
 
-            {/* [PERBAIKAN] Navigasi Bawah Tampil Kondisional */}
             {isCounselor ? (
                 <CounselorNavBar />
             ) : (

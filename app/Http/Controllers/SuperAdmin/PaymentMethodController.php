@@ -6,16 +6,31 @@ use App\Http\Controllers\Controller;
 use App\Models\PaymentMethod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
 
 class PaymentMethodController extends Controller
 {
     /**
-     * Menampilkan semua metode pembayaran.
+     * Menampilkan semua metode pembayaran dengan Search & Pagination.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return PaymentMethod::latest()->get();
+        // 1. Mulai Query
+        $query = PaymentMethod::query();
+
+        // 2. Logika Pencarian (Search)
+        if ($request->has('search') && $request->search != '') {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('account_details', 'like', "%{$search}%");
+            });
+        }
+
+        // 3. Sorting & Pagination
+        // 'paginate(10)' otomatis menangkap parameter '?page=' dari URL frontend
+        $paymentMethods = $query->latest()->paginate(10);
+
+        return response()->json($paymentMethods);
     }
 
     /**
@@ -47,16 +62,15 @@ class PaymentMethodController extends Controller
     }
 
     /**
-     * Menampilkan detail satu metode (tidak terlalu dipakai, tapi ada).
+     * Menampilkan detail satu metode.
      */
     public function show(PaymentMethod $paymentMethod)
     {
-        return $paymentMethod;
+        return response()->json($paymentMethod);
     }
 
     /**
-     * Mengupdate metode pembayaran (termasuk ganti gambar).
-     * Kita harus pakai POST + _method=PUT untuk FormData
+     * Mengupdate metode pembayaran.
      */
     public function update(Request $request, PaymentMethod $paymentMethod)
     {
@@ -85,14 +99,14 @@ class PaymentMethodController extends Controller
             'status' => $validated['status'],
         ]);
 
-        // Muat ulang data untuk mendapatkan image_url terbaru
+        // Refresh model untuk memastikan data terbaru (terutama image accessor jika ada)
         $paymentMethod->refresh();
 
         return response()->json($paymentMethod);
     }
 
     /**
-     * Menghapus metode pembayaran (dan gambarnya).
+     * Menghapus metode pembayaran.
      */
     public function destroy(PaymentMethod $paymentMethod)
     {

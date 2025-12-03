@@ -3,6 +3,8 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+// --- 1. TAMBAHKAN IMPORT INI ---
+use Illuminate\Console\Scheduling\Schedule;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -21,22 +23,24 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
 
-    // --- PERBAIKAN FINAL DI BLOK INI ---
+    // --- 2. TAMBAHKAN BLOK BARU INI ---
+    ->withSchedule(function (Schedule $schedule) {
+        // Jalankan perintah kita setiap menit
+        $schedule->command('app:complete-expired-sessions')->everyMinute();
+    })
+    // --- AKHIR BLOK BARU ---
+
+    // Blok broadcasting Anda yang sudah ada
     ->withBroadcasting(
         __DIR__ . '/../routes/channels.php',
         [
             'prefix' => 'api',
-            // Kita gunakan middleware 'web' karena itu sudah
-            // mencakup semua yang kita perlukan (EncryptCookies, StartSession)
-            // ATAU kita definisikan manual agar cocok dengan routes/api.php
             'middleware' => [
                 \Illuminate\Cookie\Middleware\EncryptCookies::class,
                 \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
                 \Illuminate\Session\Middleware\StartSession::class,
-                'auth:sanctum', // Pastikan auth:sanctum ada di akhir
+                'auth:sanctum',
             ]
         ]
     )
-    // --- AKHIR PERBAIKAN ---
-
     ->create();

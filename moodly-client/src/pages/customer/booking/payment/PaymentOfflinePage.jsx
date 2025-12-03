@@ -1,399 +1,364 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-// --- PERBAIKAN: Path import dikoreksi (tanpa .js) ---
 import apiClient from "../../../../api/axios";
-// --- AKHIR PERBAIKAN ---
+import {
+    ArrowLeft,
+    Clock,
+    Calendar,
+    MapPin,
+    AlertTriangle,
+    Loader2,
+    GraduationCap, // Ikon Universitas
+    Award, // Ikon Spesialisasi
+    User,
+} from "lucide-react";
 
-// --- Komponen Ikon ---
-const BackArrowIcon = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor" // Warna diatur dari parent
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-white group-hover:text-gray-100"
-    >
-        <line x1="19" y1="12" x2="5" y2="12"></line>
-        <polyline points="12 19 5 12 12 5"></polyline>
-    </svg>
-);
-const ClockIcon = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-4 w-4 text-gray-500"
-        viewBox="0 0 20 20"
-        fill="currentColor"
-    >
-        <path
-            fillRule="evenodd"
-            d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.414-1.415L11 9.586V6z"
-            clipRule="evenodd"
-        />
-    </svg>
-);
-const CalendarIcon = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-4 w-4 text-gray-500"
-        viewBox="0 0 20 20"
-        fill="currentColor"
-    >
-        <path
-            fillRule="evenodd"
-            d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
-            clipRule="evenodd"
-        />
-    </svg>
-);
-const LocationMarkerIcon = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-4 w-4 text-gray-500"
-        viewBox="0 0 20 20"
-        fill="currentColor"
-    >
-        <path
-            fillRule="evenodd"
-            d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-            clipRule="evenodd"
-        />
-    </svg>
-);
-const InformationCircleIcon = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-4 w-4 text-blue-500"
-        viewBox="0 0 20 20"
-        fill="currentColor"
-    >
-        <path
-            fillRule="evenodd"
-            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-            clipRule="evenodd"
-        />
-    </svg>
-);
-// --- Akhir Komponen Ikon ---
+// --- HOOK TIMER MUNDUR (2 JAM) ---
+const usePaymentTimer = (createdAt) => {
+    const [timeLeft, setTimeLeft] = useState({
+        hours: 0,
+        minutes: 0,
+        seconds: 0,
+        isExpired: false,
+    });
+
+    useEffect(() => {
+        if (!createdAt) return;
+
+        // Hitung waktu deadline (Created At + 2 Jam)
+        const createdDate = new Date(createdAt);
+        const deadline = new Date(createdDate.getTime() + 2 * 60 * 60 * 1000);
+
+        const interval = setInterval(() => {
+            const now = new Date();
+            const difference = deadline - now;
+
+            if (difference <= 0) {
+                clearInterval(interval);
+                setTimeLeft({
+                    hours: 0,
+                    minutes: 0,
+                    seconds: 0,
+                    isExpired: true,
+                });
+            } else {
+                const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
+                const minutes = Math.floor((difference / 1000 / 60) % 60);
+                const seconds = Math.floor((difference / 1000) % 60);
+                setTimeLeft({ hours, minutes, seconds, isExpired: false });
+            }
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [createdAt]);
+
+    return timeLeft;
+};
 
 export default function PaymentOfflinePage() {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // --- PERBAIKAN 1: Ambil data dari state yang benar ---
-    // (Dikirim dari PsychologistDetailPage)
+    // Ambil data dari state navigasi sebelumnya
     const { booking, displayData } = location.state || {};
-    // --- AKHIR PERBAIKAN 1 ---
 
     const [agreed, setAgreed] = useState(false);
-    const [loading, setLoading] = useState(false); // Tetap gunakan untuk loading navigasi
-    const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(false);
 
-    // --- PERBAIKAN 2: Jika tidak ada data, redirect ---
+    // Panggil Hook Timer
+    const { hours, minutes, seconds, isExpired } = usePaymentTimer(
+        booking?.created_at
+    );
+
+    // Redirect jika data tidak ada
     useEffect(() => {
-        // Cek 'booking' (data API) bukan 'bookingData' (struktur lama)
         if (!booking || !displayData) {
-            console.error("Tidak ada data booking, kembali ke beranda.");
-            navigate("/"); // Redirect ke home
+            console.warn("Data booking hilang, redirect ke home.");
+            navigate("/home");
         }
-    }, [booking, displayData, navigate]); // Dependensi diperbarui
-    // --- AKHIR PERBAIKAN 2 ---
+    }, [booking, displayData, navigate]);
 
     // Format Rupiah
     const formatCurrency = (amount) => {
-        if (typeof amount !== "number") return "Rp 0";
         return new Intl.NumberFormat("id-ID", {
             style: "currency",
             currency: "IDR",
             minimumFractionDigits: 0,
-        }).format(amount);
+            maximumFractionDigits: 0,
+        }).format(amount || 0);
     };
 
-    // --- PERBAIKAN 3: Isi data dari 'booking' (API) dan 'displayData' (Tampilan) ---
-    const bookingDetails = displayData
-        ? {
-              // Gunakan ID booking asli dari API
-              bookingCode: `MOODLY-${booking.id}`,
-              bookingDate: new Date(booking.created_at).toLocaleDateString(
-                  "id-ID",
-                  {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                  }
-              ),
-              psychologistName: displayData.counselorName,
-              psychologistImage: displayData.counselorImage,
-              university: displayData.counselorUniversity,
-              specialty: `Spesialisasi : ${displayData.counselorSpecialty}`,
-              scheduleType: displayData.method,
-              scheduleDate: displayData.scheduleDateDisplay,
-              scheduleTime: `${displayData.scheduleTime} WIB`,
-              locationName: displayData.tempatName || "Lokasi tidak ditentukan",
-              locationAddress:
-                  displayData.tempatAddress ||
-                  "Alamat akan diinformasikan setelah pembayaran.",
-              consultationFee: displayData.consultationFee,
-              serviceFee: displayData.serviceFee,
-          }
-        : {};
+    const handleBack = () => navigate(-1);
 
-    // Gunakan total harga dari 'booking' (API) sebagai sumber kebenaran
-    const totalPayment = booking?.total_harga || 0;
-    // --- AKHIR PERBAIKAN 3 ---
-
-    const handleBack = () => {
-        navigate(-1);
-    };
-
-    // --- PERBAIKAN 4: Handler HANYA untuk navigasi ---
     const handleContinue = async () => {
-        if (!agreed) {
-            setError("Anda harus menyetujui syarat dan ketentuan.");
+        if (!agreed) return;
+        if (isExpired) {
+            alert("Waktu pembayaran telah habis. Silakan buat pesanan baru.");
             return;
         }
 
-        setLoading(true); // Tampilkan loading
-        setError(null);
+        setLoading(true);
 
-        // HAPUS SEMUA LOGIKA apiClient.post
-        // Halaman ini tidak lagi bertanggung jawab membuat booking
-
-        try {
-            // Logika berhasil (karena booking sudah dibuat)
-            console.log("Konfirmasi Offline, navigasi ke QRIS...", booking);
-
-            // Langsung navigasi ke halaman QRIS
+        // Navigasi ke halaman QRIS
+        setTimeout(() => {
             navigate(`/booking/payment/qris/${booking.id}`, {
                 replace: true,
-                state: { booking: booking }, // Kirim data booking (termasuk total_harga)
+                state: { booking: booking },
             });
-            // Tidak perlu setLoading(false) karena kita navigasi
-        } catch (err) {
-            // Ini seharusnya tidak terjadi, tapi sebagai fallback
-            console.error("Error saat navigasi:", err);
-            setError("Gagal melanjutkan. Silakan coba lagi.");
             setLoading(false);
-        }
+        }, 500);
     };
-    // --- AKHIR PERBAIKAN 4 ---
 
-    // Tampilkan loading jika data belum siap (meskipun useEffect akan redirect)
-    if (!booking || !displayData) {
-        return (
-            <div className="bg-gray-50 min-h-full font-sans flex items-center justify-center">
-                Memuat data...
-            </div>
-        );
-    }
+    if (!booking || !displayData) return null;
 
     return (
-        <div className="bg-gray-50 min-h-full font-sans">
-            {/* Header Halaman */}
-            <header className="bg-cyan-400 p-4 pt-6 flex items-center sticky top-0 z-20 text-white rounded-b-2xl shadow-lg">
+        <div className="bg-gray-50 min-h-screen font-sans pb-32">
+            {/* Header */}
+            <header className="bg-cyan-500 p-4 pt-6 flex items-center sticky top-0 z-20 text-white rounded-b-3xl shadow-lg shadow-cyan-200/50">
                 <button
                     onClick={handleBack}
-                    className="p-2 -ml-2 mr-2 rounded-full hover:bg-cyan-500 group transition-colors"
-                    aria-label="Kembali"
+                    className="p-2 -ml-2 mr-2 rounded-full hover:bg-white/20 transition-colors"
                 >
-                    <BackArrowIcon />
+                    <ArrowLeft size={24} />
                 </button>
                 <h1 className="text-lg font-bold text-center flex-grow -translate-x-4">
-                    Konfirmasi Pesanan
+                    Konfirmasi Pembayaran
                 </h1>
-                <div className="w-8"></div> {/* Spacer */}
             </header>
 
-            {/* Konten Utama */}
-            <main className="relative p-4 pb-40">
-                {/* Timer Pembayaran */}
-                <div className="bg-white p-3 rounded-lg shadow mb-4 flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700">
-                        Selesaikan Pembayaran dalam
-                    </span>
-                    <span className="text-sm font-bold text-red-500 bg-red-100 px-2 py-0.5 rounded">
-                        23 : 59 : 54 {/* TODO: Implementasi Timer */}
-                    </span>
+            <main className="p-5 space-y-5">
+                {/* 1. Card Timer (Dinamis 2 Jam) */}
+                <div className="text-center mb-2">
+                    {isExpired ? (
+                        <span className="text-red-600 font-bold bg-red-100 px-4 py-2 rounded-full text-sm">
+                            Waktu Pembayaran Habis
+                        </span>
+                    ) : (
+                        <div className="flex flex-col items-center">
+                            <p className="text-xs text-gray-500 mb-1">
+                                Selesaikan Pembayaran dalam
+                            </p>
+                            <div className="flex items-center justify-center gap-1">
+                                <span className="bg-blue-600 text-white px-2 py-1 rounded font-bold min-w-[32px] text-center">
+                                    {String(hours).padStart(2, "0")}
+                                </span>
+                                <span className="font-bold text-gray-400">
+                                    :
+                                </span>
+                                <span className="bg-blue-600 text-white px-2 py-1 rounded font-bold min-w-[32px] text-center">
+                                    {String(minutes).padStart(2, "0")}
+                                </span>
+                                <span className="font-bold text-gray-400">
+                                    :
+                                </span>
+                                <span className="bg-blue-600 text-white px-2 py-1 rounded font-bold min-w-[32px] text-center">
+                                    {String(seconds).padStart(2, "0")}
+                                </span>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                {/* Tampilkan Error API jika ada */}
-                {error && (
-                    <div className="bg-red-100 border border-red-300 text-red-700 p-3 rounded-lg shadow mb-4 text-sm">
-                        <strong>Oops!</strong> {error}
+                {/* 2. Detail Pesanan */}
+                <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-5">
+                    {/* Kode Booking */}
+                    <div className="flex justify-between items-center pb-4 border-b border-gray-50">
+                        <div>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                                Kode Booking
+                            </p>
+                            <p className="text-sm font-bold text-gray-800 font-mono mt-0.5">
+                                #
+                                {booking.id
+                                    ? String(booking.id).padStart(6, "0")
+                                    : "-"}
+                            </p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                                Tanggal
+                            </p>
+                            <p className="text-xs font-medium text-gray-600 mt-0.5">
+                                {new Date(
+                                    booking.created_at
+                                ).toLocaleDateString("id-ID", {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                })}
+                            </p>
+                        </div>
                     </div>
-                )}
 
-                {/* Detail Booking */}
-                <div className="bg-white p-4 rounded-lg shadow space-y-4">
-                    {/* Info Kode Booking */}
-                    <div className="flex justify-between items-center pb-3 border-b border-gray-100">
-                        <span className="text-sm font-semibold text-gray-800">
-                            {bookingDetails.bookingCode}
-                        </span>
-                        <span className="text-xs text-gray-400">
-                            {bookingDetails.bookingDate}
-                        </span>
-                    </div>
-
-                    {/* Info Psikolog */}
-                    <div className="flex items-center gap-3">
+                    {/* Info Konselor (LENGKAP: Univ & Spesialisasi) */}
+                    <div className="flex items-start gap-4">
                         <img
                             src={
-                                bookingDetails.psychologistImage ||
-                                `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                    bookingDetails.psychologistName || "P"
-                                )}&background=EBF4FF&color=3B82F6&bold=true&size=64`
+                                displayData.counselorImage ||
+                                `https://ui-avatars.com/api/?name=${displayData.counselorName}&background=random`
                             }
-                            alt={bookingDetails.psychologistName}
-                            className="w-12 h-12 rounded-full object-cover"
-                            onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                    bookingDetails.psychologistName || "P"
-                                )}&background=EBF4FF&color=3B82F6&bold=true&size=64`;
-                            }}
+                            alt="Konselor"
+                            className="w-16 h-16 rounded-2xl object-cover border border-gray-100 shadow-sm"
                         />
-                        <div>
-                            <h3 className="font-semibold text-sm text-gray-800">
-                                {bookingDetails.psychologistName}
+                        <div className="flex-1 min-w-0 space-y-1">
+                            <h3 className="font-bold text-gray-900 text-base truncate">
+                                {displayData.counselorName}
                             </h3>
-                            <p className="text-xs text-gray-500">
-                                {bookingDetails.university || "-"}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                                {bookingDetails.specialty || "-"}
-                            </p>
+
+                            <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                                <GraduationCap
+                                    size={14}
+                                    className="text-blue-500 shrink-0"
+                                />
+                                <span className="truncate">
+                                    {displayData.counselorUniversity ||
+                                        "Universitas tidak diketahui"}
+                                </span>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                                <Award
+                                    size={14}
+                                    className="text-orange-500 shrink-0"
+                                />
+                                <span className="truncate">
+                                    Spesialisasi:{" "}
+                                    {displayData.counselorSpecialty || "Umum"}
+                                </span>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Info Jadwal */}
-                    <div className="space-y-1 pt-3 border-t border-gray-100">
-                        <h4 className="text-xs font-semibold text-gray-400 uppercase mb-1">
-                            Jadwal Konsultasi
-                        </h4>
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold bg-cyan-100 text-cyan-700 px-2 py-0.5 rounded">
-                                {bookingDetails.scheduleType}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <CalendarIcon />
-                            <p className="text-sm text-gray-700">
-                                {bookingDetails.scheduleDate}
-                            </p>{" "}
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <ClockIcon />
-                            <p className="text-sm text-gray-700">
-                                {bookingDetails.scheduleTime}
+                    {/* Jadwal & Lokasi */}
+                    <div className="bg-gray-50 p-4 rounded-xl space-y-3 border border-gray-100">
+                        <div className="flex items-center gap-3">
+                            <div className="p-1.5 bg-white rounded-lg shadow-sm text-gray-500">
+                                <Calendar size={16} />
+                            </div>
+                            <p className="text-sm text-gray-700 font-medium">
+                                {displayData.scheduleDateDisplay}
                             </p>
                         </div>
-                    </div>
+                        <div className="flex items-center gap-3">
+                            <div className="p-1.5 bg-white rounded-lg shadow-sm text-gray-500">
+                                <Clock size={16} />
+                            </div>
+                            <p className="text-sm text-gray-700 font-medium">
+                                {displayData.scheduleTime} WIB
+                            </p>
+                        </div>
 
-                    {/* Info Lokasi (Hanya untuk Offline) */}
-                    <div className="space-y-1 pt-3 border-t border-gray-100">
-                        <h4 className="text-xs font-semibold text-gray-400 uppercase mb-1">
-                            Lokasi
-                        </h4>
-                        <div className="flex items-start gap-2">
-                            <LocationMarkerIcon className="mt-0.5 flex-shrink-0" />
+                        {/* Lokasi (Khusus Offline) */}
+                        <div className="flex items-start gap-3 pt-2 border-t border-gray-200/60 mt-2">
+                            <div className="p-1.5 bg-white rounded-lg shadow-sm text-red-500 mt-0.5">
+                                <MapPin size={16} />
+                            </div>
                             <div>
-                                <p className="text-sm font-semibold text-gray-700">
-                                    {bookingDetails.locationName}
+                                <p className="text-sm text-gray-800 font-bold">
+                                    {displayData.tempatName ||
+                                        "Lokasi Tatap Muka"}
                                 </p>
-                                <p className="text-xs text-gray-500">
-                                    {bookingDetails.locationAddress}
+                                <p className="text-xs text-gray-500 leading-snug mt-0.5">
+                                    {displayData.tempatAddress ||
+                                        "Alamat lengkap akan diinformasikan setelah pembayaran."}
                                 </p>
                             </div>
                         </div>
                     </div>
 
                     {/* Rincian Biaya */}
-                    <div className="space-y-1 pt-3 border-t border-gray-100">
-                        <div className="flex justify-between items-center">
-                            <p className="text-sm text-gray-500">
-                                Biaya Konsultasi
-                            </p>
-                            <p className="text-sm text-gray-700">
-                                {formatCurrency(bookingDetails.consultationFee)}
-                            </p>
+                    <div className="space-y-2 pt-2">
+                        <div className="flex justify-between text-sm text-gray-500">
+                            <span>Biaya Konsultasi</span>
+                            <span>
+                                {formatCurrency(displayData.consultationFee)}
+                            </span>
                         </div>
-                        <div className="flex justify-between items-center">
-                            <p className="text-sm text-gray-500">
-                                Biaya Layanan
-                            </p>
-                            <p className="text-sm text-gray-700">
-                                {formatCurrency(bookingDetails.serviceFee)}
-                            </p>
+                        <div className="flex justify-between text-sm text-gray-500">
+                            <span>Biaya Layanan</span>
+                            <span>
+                                {formatCurrency(displayData.serviceFee)}
+                            </span>
                         </div>
-                        <div className="flex justify-between items-center pt-2 border-t border-gray-100 mt-2">
-                            <p className="text-sm font-bold text-gray-800">
-                                Total Pembayaran
-                            </p>
-                            <p className="text-sm font-bold text-cyan-600">
-                                {formatCurrency(totalPayment)}
-                            </p>
+                        <div className="flex justify-between items-center pt-3 border-t border-dashed border-gray-200 mt-3">
+                            <span className="font-bold text-gray-800">
+                                Total Bayar
+                            </span>
+                            <span className="text-xl font-extrabold text-cyan-600">
+                                {formatCurrency(booking.total_harga)}
+                            </span>
                         </div>
                     </div>
+                </div>
 
-                    {/* Persetujuan */}
-                    <div className="flex items-start space-x-2 pt-4">
+                {/* Persetujuan */}
+                <label className="flex items-start gap-3 p-4 bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors">
+                    <div className="relative flex items-center pt-0.5">
                         <input
                             type="checkbox"
-                            id="agreement"
                             checked={agreed}
                             onChange={(e) => setAgreed(e.target.checked)}
-                            className="mt-1 h-4 w-4 text-cyan-600 border-gray-300 rounded focus:ring-cyan-500"
+                            disabled={isExpired}
+                            className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border-2 border-gray-300 transition-all checked:border-cyan-500 checked:bg-cyan-500 disabled:opacity-50"
                         />
-                        <label
-                            htmlFor="agreement"
-                            className="text-xs text-gray-500"
-                        >
-                            Dengan ini kamu menyetujui syarat dan ketentuan{" "}
-                            <Link
-                                to="/peraturan-konseling" // TODO: Pastikan rute ini ada
-                                className="text-cyan-600 hover:underline font-medium"
+                        <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 peer-checked:opacity-100">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-3.5 w-3.5"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
                             >
-                                Peraturan Konseling
-                            </Link>
-                        </label>
+                                <path
+                                    fillRule="evenodd"
+                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                    clipRule="evenodd"
+                                />
+                            </svg>
+                        </div>
                     </div>
-
-                    {/* Bantuan */}
-                    <div className="flex justify-center pt-2">
+                    <span className="text-xs text-gray-500 leading-relaxed">
+                        Saya menyetujui{" "}
                         <Link
-                            to="/help" // TODO: Pastikan rute ini ada
-                            className="flex items-center gap-1 text-xs text-blue-500 hover:underline"
+                            to="#"
+                            className="text-cyan-600 font-bold hover:underline"
                         >
-                            <InformationCircleIcon /> Butuh Bantuan ?
-                        </Link>
-                    </div>
-                </div>
+                            Syarat & Ketentuan
+                        </Link>{" "}
+                        serta{" "}
+                        <Link
+                            to="#"
+                            className="text-cyan-600 font-bold hover:underline"
+                        >
+                            Kebijakan Privasi
+                        </Link>{" "}
+                        layanan Moodly.
+                    </span>
+                </label>
             </main>
 
-            {/* Footer Total & Tombol Lanjutkan */}
-            <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-4 bg-white border-t border-gray-200 shadow-[0_-2px_5px_rgba(0,0,0,0.05)] z-20 flex justify-between items-center">
-                <div>
-                    <p className="text-xs text-gray-500">Total Pembayaran</p>
-                    <p className="text-lg font-bold text-cyan-600">
-                        {formatCurrency(totalPayment)}
-                    </p>
+            {/* Bottom Action */}
+            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] max-w-md mx-auto z-20">
+                <div className="flex gap-3">
+                    <div className="flex-1">
+                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                            Total Tagihan
+                        </p>
+                        <p className="text-lg font-extrabold text-gray-800">
+                            {formatCurrency(booking.total_harga)}
+                        </p>
+                    </div>
+                    <button
+                        onClick={handleContinue}
+                        disabled={!agreed || loading || isExpired}
+                        className="flex-[1.5] bg-cyan-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-cyan-200 hover:bg-cyan-600 disabled:bg-gray-300 disabled:shadow-none disabled:cursor-not-allowed transition-all active:scale-95 flex items-center justify-center gap-2"
+                    >
+                        {loading ? (
+                            <Loader2 className="animate-spin w-5 h-5" />
+                        ) : (
+                            "Bayar Sekarang"
+                        )}
+                    </button>
                 </div>
-                <button
-                    onClick={handleContinue}
-                    disabled={!agreed || loading}
-                    className={`px-6 py-3 rounded-lg font-semibold text-white shadow transition-colors duration-200 ${
-                        !agreed || loading
-                            ? "bg-gray-300 cursor-not-allowed"
-                            : "bg-cyan-500 hover:bg-cyan-600 active:scale-95"
-                    }`}
-                >
-                    {loading ? "Memproses..." : "Lanjutkan"}
-                </button>
             </div>
         </div>
     );

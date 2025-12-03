@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from "react";
+// --- TAMBAHKAN IMPORT INI ---
+import { useAuth } from "../../../context/AuthContext.jsx";
 
-// MOCK (hapus jika pakai useAuth asli)
-const useAuth = () => ({
-    loginAdmin: async ({ email, password }) => {
-        if (password !== "admin") {
-            throw new Error("Password salah. (Coba 'admin')");
-        }
-        console.log("Login sukses!");
-    },
-});
+// --- FUNGSI MOCK useAuth DI BAWAH INI SUDAH DIHAPUS ---
+// const useAuth = () => ({
+//  loginAdmin: async ...
+// });
 
 export default function LoginPage() {
+    // Sekarang 'useAuth()' memanggil AuthContext asli kita
     const { loginAdmin } = useAuth();
     const [email, setEmail] = useState("");
     const [pwd, setPwd] = useState("");
@@ -35,9 +33,30 @@ export default function LoginPage() {
         }
 
         try {
+            // Ini sekarang akan memanggil fungsi loginAdmin di AuthContext,
+            // yang akan memanggil API Laravel
             await loginAdmin({ email, password: pwd });
+
+            // Jika sukses, AuthContext akan menangani navigasi
         } catch (error) {
-            setErrors({ message: error.message || "Login gagal." });
+            // Tangani error dari API
+            if (error.response && error.response.status === 422) {
+                setErrors({
+                    message:
+                        error.response.data.message ||
+                        "Email atau password salah.",
+                });
+            } else if (error.response && error.response.status === 403) {
+                // Ini error jika Customer/Konselor mencoba login di sini
+                setErrors({
+                    message:
+                        error.response.data.message ||
+                        "Anda tidak memiliki hak akses Admin.",
+                });
+            } else {
+                setErrors({ message: "Login gagal. Silakan coba lagi." });
+            }
+            console.error("Login error:", error);
         } finally {
             setIsSubmitting(false);
         }
@@ -46,39 +65,39 @@ export default function LoginPage() {
     return (
         <div className="w-full h-screen flex bg-white overflow-hidden">
             {/* ============================
-                BAGIAN KIRI - CARD PREMIUM
-               ============================ */}
+                BAGIAN KIRI - CARD PREMIUM
+               ============================ */}
             <div className="hidden md:flex h-full w-1/2 lg:w-[45%] xl:w-[40%] items-center justify-center">
                 <div
                     className="
-                        w-[85%] h-[88%]
-                        rounded-[28px]
-                        bg-[#0BAEFF]
-                        shadow-[0_18px_35px_rgba(0,0,0,0.18)]
-                        relative overflow-hidden
-                        flex flex-col items-center justify-center
-                        transition-all duration-300
-                    "
+                        w-[85%] h-[88%]
+                        rounded-[28px]
+                        bg-[#0BAEFF]
+                        shadow-[0_18px_35px_rgba(0,0,0,0.18)]
+                        relative overflow-hidden
+                        flex flex-col items-center justify-center
+                        transition-all duration-300
+                    "
                 >
                     {/* GLASS SHEEN HIGHLIGHT */}
                     <div
                         className="
-                            absolute top-0 left-0 w-full h-1/4
-                            bg-white/20
-                            blur-xl
-                        "
+                            absolute top-0 left-0 w-full h-1/4
+                            bg-white/20
+                            blur-xl
+                        "
                     />
 
                     {/* IMAGE */}
                     <img
-                        src="/public/images/3.png"
+                        src="/images/3.png" // Mengubah dari /public/images/3.png
                         alt="moodly"
                         className="
-                            w-[55%] h-auto object-contain
-                            drop-shadow-xl
-                            transition-all duration-500
-                            hover:scale-[1.04]
-                        "
+                            w-[55%] h-auto object-contain
+                            drop-shadow-xl
+          Ganti ini             transition-all duration-500
+                            hover:scale-[1.04]
+                        "
                     />
 
                     {/* MOODLY TEXT */}
@@ -89,8 +108,8 @@ export default function LoginPage() {
             </div>
 
             {/* ============================
-                BAGIAN KANAN - FORM LOGIN
-               ============================ */}
+                BAGIAN KANAN - FORM LOGIN
+               ============================ */}
             <div className="w-full md:w-1/2 h-full flex items-center justify-center px-10 md:px-20">
                 <div className="w-full max-w-lg">
                     <h2 className="text-4xl font-bold text-gray-800 mb-2 tracking-tight">
@@ -117,13 +136,13 @@ export default function LoginPage() {
                                 disabled={isSubmitting}
                                 placeholder="Masukkan Email"
                                 className="
-                                    w-full px-4 py-3 rounded-lg
-                                    border border-gray-300
-                                    shadow-inner
-                                    focus:ring-2 focus:ring-sky-400
-                                    focus:outline-none
-                                    transition-all duration-200
-                                "
+                                    w-full px-4 py-3 rounded-lg
+                                    border border-gray-300
+                                    shadow-inner
+                                    focus:ring-2 focus:ring-sky-400
+                                    focus:outline-none
+                                    transition-all duration-200
+                                "
                             />
                         </div>
 
@@ -139,13 +158,13 @@ export default function LoginPage() {
                                 disabled={isSubmitting}
                                 placeholder="Masukkan Password"
                                 className="
-                                    w-full px-4 py-3 rounded-lg
-                                    border border-gray-300
-                                    shadow-inner
-                                    focus:ring-2 focus:ring-sky-400
-                                    focus:outline-none
-                                    transition-all duration-200
-                                "
+                                    w-full px-4 py-3 rounded-lg
+        _Ganti ini                     border border-gray-300
+                                    shadow-inner
+                                    focus:ring-2 focus:ring-sky-400
+                                    focus:outline-none
+                                    transition-all duration-200
+                                "
                             />
                         </div>
 
@@ -175,13 +194,13 @@ export default function LoginPage() {
                             type="submit"
                             disabled={isSubmitting}
                             className="
-                                w-full py-3 rounded-full
-                                bg-gradient-to-r from-sky-500 to-sky-600
-                                text-white font-semibold
-                                transition-all duration-300
-                                hover:scale-[1.02] hover:shadow-lg
-                                disabled:bg-sky-300 disabled:scale-100
-                            "
+                                w-full py-3 rounded-full
+                                bg-gradient-to-r from-sky-500 to-sky-600
+Ganti ini                             text-white font-semibold
+                                transition-all duration-300
+Ganti ini                             hover:scale-[1.02] hover:shadow-lg
+                                disabled:bg-sky-300 disabled:scale-100
+                            "
                         >
                             {isSubmitting ? "Memproses..." : "Log In"}
                         </button>
