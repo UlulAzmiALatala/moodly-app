@@ -34,16 +34,14 @@ class ProfileController extends Controller
             'surat_izin_praktik' => ['sometimes', 'required', 'string', 'max:255'],
             'universitas' => ['sometimes', 'required', 'string', 'max:255'],
 
-            // Validasi Spesialisasi (Array ID atau Array String tergantung implementasi frontend)
-            // Disini kita asumsikan array string nama spesialisasi sesuai frontend EditPage.jsx
-            'spesialisasi' => ['sometimes', 'required', 'array'],
-            'spesialisasi.*' => ['string'],
+            // [PERBAIKAN] Validasi Spesialisasi harus menerima ID (Integer), bukan String
+            'spesialisasi' => ['sometimes', 'nullable', 'array'], // Boleh kosong
+            'spesialisasi.*' => ['integer', 'exists:jenis_konselings,id'], // Pastikan ID valid
 
             'bank_name' => ['sometimes', 'required', 'string', 'max:255'],
             'account_number' => ['sometimes', 'required', 'string', 'max:255'],
             'account_holder_name' => ['sometimes', 'required', 'string', 'max:255'],
 
-            // Validasi Metode Layanan
             'metode_layanan' => ['sometimes', 'required', 'array'],
             'metode_layanan.*' => ['string', 'in:Chat,Video Call,Voice Call,Tatap Muka'],
         ]);
@@ -53,24 +51,26 @@ class ProfileController extends Controller
                 return response()->json(['message' => 'Tidak ada data untuk diperbarui.'], 400);
             }
 
-            // Handle Kolom Array/JSON secara manual agar aman
-            if (isset($validated['spesialisasi'])) {
-                $user->spesialisasi = $validated['spesialisasi'];
+            // Handle Spesialisasi
+            if (array_key_exists('spesialisasi', $validated)) {
+                // Pastikan yang disimpan adalah array ID unik (hapus duplikat jika ada)
+                $user->spesialisasi = array_unique($validated['spesialisasi'] ?? []);
                 unset($validated['spesialisasi']);
             }
+
+            // Handle Metode Layanan
             if (isset($validated['metode_layanan'])) {
                 $user->metode_layanan = $validated['metode_layanan'];
                 unset($validated['metode_layanan']);
             }
 
             // Update sisanya
-            if (!empty($validated)) {
-                $user->fill($validated);
-            }
-
-            $user->save(); // Simpan semua perubahan
+            $user->fill($validated);
+            $user->save();
 
             Log::info('Profil Konselor berhasil diperbarui:', ['user_id' => $user->id]);
+
+            // Return user fresh dengan relasi/accessor yang mungkin dibutuhkan
             return response()->json($user->fresh());
         } catch (\Exception $e) {
             Log::error('Gagal update profil konselor:', ['user_id' => $user->id, 'error' => $e->getMessage()]);

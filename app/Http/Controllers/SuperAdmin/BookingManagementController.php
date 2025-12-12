@@ -85,11 +85,17 @@ class BookingManagementController extends Controller
             $booking->status_pesanan = 'Dijadwalkan';
             $booking->save();
 
-            // Notifikasi & Broadcast
-            $booking->customer->notify(new BookingStatusUpdated($booking->fresh()));
-            PaymentVerified::dispatch($booking->fresh());
+            // 1. Kirim Notifikasi Database (Lonceng)
+            try {
+                $booking->customer->notify(new BookingStatusUpdated($booking->fresh()));
+            } catch (\Exception $e) {
+                Log::error('Gagal kirim notif database: ' . $e->getMessage());
+            }
 
-            Log::info('Payment approved for booking:', ['booking_id' => $booking->id]);
+            // 2. [PENTING] Broadcast Event Realtime ke Reverb
+            broadcast(new PaymentVerified($booking->fresh()));
+
+            Log::info('Payment approved & broadcasted:', ['booking_id' => $booking->id]);
 
             return response()->json($booking->fresh()->load([
                 'customer',
@@ -131,11 +137,17 @@ class BookingManagementController extends Controller
             $booking->catatan_pembatalan = $request->input('reason');
             $booking->save();
 
-            // Notifikasi & Broadcast
-            $booking->customer->notify(new BookingStatusUpdated($booking->fresh()));
-            PaymentVerified::dispatch($booking->fresh());
+            // 1. Notifikasi Database
+            try {
+                $booking->customer->notify(new BookingStatusUpdated($booking->fresh()));
+            } catch (\Exception $e) {
+                Log::error('Gagal kirim notif database: ' . $e->getMessage());
+            }
 
-            Log::info('Payment rejected for booking:', ['booking_id' => $booking->id, 'reason' => $request->input('reason')]);
+            // 2. [PENTING] Broadcast Realtime
+            broadcast(new PaymentVerified($booking->fresh()));
+
+            Log::info('Payment rejected & broadcasted:', ['booking_id' => $booking->id]);
 
             return response()->json($booking->fresh()->load([
                 'customer',

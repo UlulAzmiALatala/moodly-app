@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage; // <-- TAMBAHKAN IMPORT STORAGE
+use Illuminate\Support\Facades\Storage; // Import Storage
 
 class ProfileController extends Controller
 {
@@ -19,8 +19,9 @@ class ProfileController extends Controller
      */
     public function update(Request $request)
     {
-        // ... (Fungsi update Anda tidak berubah)
+        /** @var \App\Models\User $user */
         $user = Auth::user();
+
         $validated = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'phone' => ['sometimes', 'required', 'string', 'max:20'],
@@ -39,12 +40,16 @@ class ProfileController extends Controller
                 Rule::unique('users')->ignore($user->id)
             ],
         ]);
+
         try {
             if (empty($validated)) {
                 return response()->json(['message' => 'Tidak ada data untuk diperbarui.'], 400);
             }
+
             $user->update($validated);
+
             Log::info('Profile updated successfully for user: ' . $user->id, $validated);
+
             return response()->json($user->fresh());
         } catch (\Exception $e) {
             Log::error('Profile update failed for user: ' . $user->id, ['error' => $e->getMessage()]);
@@ -58,20 +63,24 @@ class ProfileController extends Controller
      */
     public function updatePassword(Request $request)
     {
-        // ... (Fungsi updatePassword Anda tidak berubah)
+        /** @var \App\Models\User $user */
         $user = Auth::user();
+
         $validated = $request->validate([
             'current_password' => ['required', 'string'],
             'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
         ]);
+
         if (!Hash::check($validated['current_password'], $user->password)) {
             return response()->json([
                 'message' => 'Password lama yang Anda masukkan salah.',
                 'errors' => ['current_password' => ['Password lama yang Anda masukkan salah.']]
             ], 422);
         }
+
         try {
             $user->update(['password' => Hash::make($validated['password'])]);
+
             return response()->json(['message' => 'Password berhasil diperbarui.']);
         } catch (\Exception $e) {
             Log::error('Password update failed for user: ' . $user->id, ['error' => $e->getMessage()]);
@@ -85,8 +94,9 @@ class ProfileController extends Controller
      */
     public function updateEmail(Request $request)
     {
-        // ... (Fungsi updateEmail Anda tidak berubah)
+        /** @var \App\Models\User $user */
         $user = Auth::user();
+
         $validated = $request->validate([
             'email' => [
                 'required',
@@ -98,19 +108,23 @@ class ProfileController extends Controller
             ],
             'current_password' => ['required', 'string'],
         ]);
+
         if (!Hash::check($validated['current_password'], $user->password)) {
             return response()->json([
                 'message' => 'Password yang Anda masukkan salah.',
                 'errors' => ['current_password' => ['Password yang Anda masukkan salah.']]
             ], 422);
         }
+
         try {
             $user->update([
                 'email' => $validated['email'],
-                'email_verified_at' => null,
+                'email_verified_at' => null, // Reset verifikasi email
             ]);
-            // $user->sendEmailVerificationNotification();
-            return response()->json(['message' => 'Email berhasil diperbarui. Silakan verifikasi email baru Anda.']);
+
+            // $user->sendEmailVerificationNotification(); // Aktifkan jika ada fitur verifikasi email
+
+            return response()->json(['message' => 'Email berhasil diperbarui.']);
         } catch (\Exception $e) {
             Log::error('Email update failed for user: ' . $user->id, ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Gagal memperbarui email.', 'error' => $e->getMessage()], 500);
@@ -123,20 +137,24 @@ class ProfileController extends Controller
      */
     public function updatePhone(Request $request)
     {
-        // ... (Fungsi updatePhone Anda tidak berubah)
+        /** @var \App\Models\User $user */
         $user = Auth::user();
+
         $validated = $request->validate([
             'phone' => ['required', 'string', 'max:20', Rule::unique('users')->ignore($user->id)],
             'current_password' => ['required', 'string'],
         ]);
+
         if (!Hash::check($validated['current_password'], $user->password)) {
             return response()->json([
                 'message' => 'Password yang Anda masukkan salah.',
                 'errors' => ['current_password' => ['Password yang Anda masukkan salah.']]
             ], 422);
         }
+
         try {
             $user->update(['phone' => $validated['phone']]);
+
             return response()->json(['message' => 'Nomor telepon berhasil diperbarui.', 'user' => $user->fresh()]);
         } catch (\Exception $e) {
             Log::error('Phone update failed for user: ' . $user->id, ['error' => $e->getMessage()]);
@@ -144,42 +162,40 @@ class ProfileController extends Controller
         }
     }
 
-    // --- FUNGSI BARU UNTUK UBAH AVATAR ---
     /**
      * Update avatar customer.
      * POST /api/profile/update-avatar
      */
     public function updateAvatar(Request $request)
     {
+        /** @var \App\Models\User $user */
+
         $user = Auth::user();
 
-        // 1. Validasi file
+        // 1. Validasi file gambar
         $validated = $request->validate([
-            'avatar' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048'], // Maks 2MB
+            'avatar' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048'], // Maksimal 2MB
         ]);
 
         try {
-            // 2. Hapus avatar lama jika ada (dan bukan avatar default)
-            if ($user->avatar) {
+            // 2. Hapus avatar lama jika ada (dan bukan link eksternal)
+            if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
                 Storage::disk('public')->delete($user->avatar);
             }
 
-            // 3. Simpan avatar baru
-            // Ini akan menyimpan di 'storage/app/public/avatars'
-            // dan mengembalikan path seperti 'avatars/namafile.png'
+            // 3. Simpan avatar baru ke folder 'avatars' di storage public
             $path = $request->file('avatar')->store('avatars', 'public');
 
-            // 4. Update database
+            // 4. Update path di database
             $user->update(['avatar' => $path]);
 
             Log::info('Avatar updated for user: ' . $user->id);
 
-            // 5. Kembalikan data user baru (termasuk avatar_url baru)
+            // 5. Kembalikan data user terbaru
             return response()->json($user->fresh());
         } catch (\Exception $e) {
             Log::error('Avatar update failed for user: ' . $user->id, ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Gagal mengupload avatar.', 'error' => $e->getMessage()], 500);
         }
     }
-    // --- AKHIR FUNGSI BARU ---
 }

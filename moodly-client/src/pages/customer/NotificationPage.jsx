@@ -7,22 +7,22 @@ import {
     CheckCircle2,
     XCircle,
     Clock,
-    AlertTriangle,
     ChevronLeft,
-} from "lucide-react"; // Ikon Modern
+    Info,
+} from "lucide-react";
 import Echo from "laravel-echo";
 import Pusher from "pusher-js";
 
 window.Pusher = Pusher;
 
-// --- CONFIG ECHO (TETAP) ---
+// --- CONFIG ECHO (Sesuaikan dengan .env Anda) ---
 const echo = new Echo({
     broadcaster: "reverb",
-    key: import.meta.env.VITE_REVERB_APP_KEY || "reverb_key",
-    wsHost: import.meta.env.VITE_REVERB_HOST || "127.0.0.1",
-    wsPort: import.meta.env.VITE_REVERB_PORT || 8080,
-    wssPort: import.meta.env.VITE_REVERB_PORT || 8080,
-    forceTLS: (import.meta.env.VITE_REVERB_SCHEME || "http") === "https",
+    key: import.meta.env.VITE_REVERB_APP_KEY,
+    wsHost: import.meta.env.VITE_REVERB_HOST,
+    wsPort: import.meta.env.VITE_REVERB_PORT ?? 80,
+    wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
+    forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? "https") === "https",
     enabledTransports: ["ws", "wss"],
     authorizer: (channel, options) => {
         return {
@@ -39,52 +39,71 @@ const echo = new Echo({
     },
 });
 
-// Helper Waktu
+// Helper Waktu (Time Ago)
 const timeAgo = (dateString) => {
     if (!dateString) return "";
     const date = new Date(dateString);
     const now = new Date();
     const seconds = Math.floor((now - date) / 1000);
     let interval = seconds / 31536000;
-    if (interval > 1) return Math.floor(interval) + " tahun lalu";
+    if (interval > 1) return Math.floor(interval) + " thn lalu";
     interval = seconds / 2592000;
-    if (interval > 1) return Math.floor(interval) + " bulan lalu";
+    if (interval > 1) return Math.floor(interval) + " bln lalu";
     interval = seconds / 86400;
-    if (interval > 1) return Math.floor(interval) + " hari lalu";
+    if (interval > 1) return Math.floor(interval) + " hr lalu";
     interval = seconds / 3600;
     if (interval > 1) return Math.floor(interval) + " jam lalu";
     interval = seconds / 60;
-    if (interval > 1) return Math.floor(interval) + " menit lalu";
-    return Math.floor(seconds) + " detik lalu";
+    if (interval > 1) return Math.floor(interval) + " mnt lalu";
+    return "Baru saja";
 };
 
-// --- KOMPONEN ITEM (DESIGN MODERN) ---
+// --- KOMPONEN ITEM ---
 const NotificationItem = ({ notification }) => {
     const navigate = useNavigate();
     const { data, created_at, read_at } = notification;
     const isUnread = read_at === null;
 
+    // Handle Klik Notifikasi
     const handleClick = () => {
-        if (data.link) navigate(data.link);
+        // Jika ada link spesifik dari backend (misal: /history/receipt/123)
+        if (data.link) {
+            navigate(data.link);
+        } else {
+            // Default behavior jika tidak ada link (opsional)
+            console.log("Notifikasi ini tidak memiliki link tujuan.");
+        }
     };
 
-    // Ikon berdasarkan isi pesan
+    // Ikon Dinamis berdasarkan tipe notifikasi / pesan
     const getIcon = () => {
-        const msg = data.message.toLowerCase();
+        // Cek icon dari backend dulu (jika ada)
+        if (data.icon) {
+            if (data.icon === "CheckCircle")
+                return <CheckCircle2 size={24} className="text-green-500" />;
+            if (data.icon === "XCircle")
+                return <XCircle size={24} className="text-red-500" />;
+            if (data.icon === "Clock")
+                return <Clock size={24} className="text-orange-500" />;
+        }
+
+        // Fallback: Cek dari teks pesan
+        const msg = (data.message || "").toLowerCase();
         if (
             msg.includes("sukses") ||
-            msg.includes("dikonfirmasi") ||
-            msg.includes("dijadwalkan")
+            msg.includes("diterima") ||
+            msg.includes("disetujui")
         )
             return <CheckCircle2 size={24} className="text-green-500" />;
         if (
             msg.includes("ditolak") ||
             msg.includes("gagal") ||
-            msg.includes("dibatalkan")
+            msg.includes("batal")
         )
             return <XCircle size={24} className="text-red-500" />;
         if (msg.includes("menunggu") || msg.includes("reschedule"))
             return <Clock size={24} className="text-orange-500" />;
+
         return <Bell size={24} className="text-cyan-500" />;
     };
 
@@ -92,34 +111,43 @@ const NotificationItem = ({ notification }) => {
         <div
             onClick={handleClick}
             className={`flex gap-4 p-4 border-b border-gray-100 cursor-pointer transition-all hover:bg-gray-50 relative ${
-                isUnread ? "bg-cyan-50/50" : "bg-white"
+                isUnread ? "bg-cyan-50/40" : "bg-white"
             }`}
         >
             <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${
-                    isUnread ? "bg-white shadow-sm" : "bg-gray-100"
+                className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 border ${
+                    isUnread
+                        ? "bg-white border-cyan-100 shadow-sm"
+                        : "bg-gray-50 border-transparent"
                 }`}
             >
                 {getIcon()}
             </div>
 
-            <div className="flex-1">
-                <div className="flex justify-between items-start mb-1">
+            <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-start mb-1 gap-2">
                     <p
-                        className={`text-sm ${
+                        className={`text-sm leading-tight truncate ${
                             isUnread
                                 ? "font-bold text-gray-900"
                                 : "font-medium text-gray-700"
                         }`}
                     >
-                        {data.message}
+                        {data.title || "Notifikasi Baru"}
                     </p>
                     {isUnread && (
-                        <span className="w-2 h-2 bg-cyan-500 rounded-full mt-1.5 ml-2 shrink-0"></span>
+                        <span className="w-2 h-2 bg-red-500 rounded-full shrink-0 mt-1"></span>
                     )}
                 </div>
-                <p className="text-xs text-gray-400 font-medium">
-                    {timeAgo(created_at)}
+                <p
+                    className={`text-xs leading-relaxed line-clamp-2 ${
+                        isUnread ? "text-gray-700" : "text-gray-500"
+                    }`}
+                >
+                    {data.message}
+                </p>
+                <p className="text-[10px] text-gray-400 font-medium mt-1.5 flex items-center gap-1">
+                    <Clock size={10} /> {timeAgo(created_at)}
                 </p>
             </div>
         </div>
@@ -132,24 +160,20 @@ export default function NotifikasiPage() {
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // 1. Fetch Data
+    // 1. Fetch Data Awal
     useEffect(() => {
         if (!authUser) return;
         const fetchData = async () => {
             try {
                 setLoading(true);
                 const response = await apiClient.get("/api/notifications");
-
-                // --- PERBAIKAN PENTING DI SINI ---
-                // Controller Anda me-return Array langsung, bukan { data: [...] }
-                // Jadi kita pakai response.data langsung.
+                // Handle struktur response Laravel (biasanya array langsung atau object data)
                 const notifData = Array.isArray(response.data)
                     ? response.data
                     : response.data.data || [];
-
                 setNotifications(notifData);
 
-                // Tandai sudah dibaca
+                // Tandai sudah dibaca saat halaman dibuka (Opsional, atau saat diklik satu-satu)
                 await apiClient.post("/api/notifications/mark-read");
             } catch (err) {
                 console.error("Gagal load notif:", err);
@@ -160,52 +184,86 @@ export default function NotifikasiPage() {
         fetchData();
     }, [authUser]);
 
-    // 2. Real-time Listener
+    // 2. Real-time Listener (Pusher/Reverb)
     useEffect(() => {
         if (!authUser) return;
+
+        // Channel Private Customer
         const channelName = `customer.${authUser.id}`;
+        console.log(`🔌 Listening: ${channelName}`);
 
         const handleNewNotification = (notification) => {
-            console.log("Notif baru:", notification);
-            // Tambahkan ke atas list
-            setNotifications((prev) => [notification, ...prev]);
-            // Tandai read di backend (opsional, atau biarkan user klik dulu)
-            apiClient.post("/api/notifications/mark-read");
+            console.log("🔔 Notif Masuk:", notification);
+            // Tambahkan notifikasi baru ke paling atas list
+            setNotifications((prev) => [
+                {
+                    id: notification.id,
+                    data: notification, // Struktur data dari event broadcast biasanya langsung di sini
+                    created_at: new Date().toISOString(),
+                    read_at: null,
+                },
+                ...prev,
+            ]);
         };
 
+        // Mendengarkan event notifikasi bawaan Laravel
         echo.private(channelName).notification(handleNewNotification);
+
         return () => echo.leave(channelName);
     }, [authUser]);
 
     return (
-        <div className="bg-white min-h-screen pb-20">
-            {/* Header Sticky Cyan */}
-            <header className="sticky top-0 z-50 bg-cyan-600 text-white p-4 shadow-md flex items-center">
+        <div className="bg-white min-h-screen">
+            {/* Header Sticky Modern */}
+            <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200 px-4 py-3 flex items-center justify-between">
                 <Link
-                    to="/home"
-                    className="absolute left-4 p-1 hover:bg-cyan-700 rounded-full transition"
+                    to="/home" // Atau navigate(-1)
+                    className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition text-gray-700"
                 >
                     <ChevronLeft size={24} />
                 </Link>
-                <h1 className="text-lg font-bold tracking-wide w-full text-center">
+                <h1 className="text-base font-bold text-gray-800 flex-1 text-center pr-8">
                     Notifikasi
                 </h1>
             </header>
 
-            <main className="min-h-[80vh]">
+            {/* Content List */}
+            <main>
                 {loading ? (
-                    <div className="flex justify-center py-20">
+                    <div className="flex flex-col items-center justify-center py-24 space-y-3">
                         <div className="w-8 h-8 border-4 border-gray-200 border-t-cyan-500 rounded-full animate-spin"></div>
+                        <p className="text-xs text-gray-400">
+                            Memuat info terbaru...
+                        </p>
                     </div>
                 ) : notifications.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-gray-400 opacity-60">
-                        <Bell size={64} className="mb-4 text-gray-200" />
-                        <p className="font-medium">Belum ada notifikasi</p>
+                    <div className="flex flex-col items-center justify-center h-[60vh] text-center px-6">
+                        <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4 text-gray-300">
+                            <Bell size={40} />
+                        </div>
+                        <h3 className="text-gray-900 font-bold mb-1">
+                            Tidak ada notifikasi
+                        </h3>
+                        <p className="text-gray-400 text-sm max-w-xs">
+                            Belum ada aktivitas terbaru. Notifikasi pesanan dan
+                            info lainnya akan muncul di sini.
+                        </p>
                     </div>
                 ) : (
-                    notifications.map((notif) => (
-                        <NotificationItem key={notif.id} notification={notif} />
-                    ))
+                    <div>
+                        {notifications.map((notif) => (
+                            // Pastikan key unik
+                            <NotificationItem
+                                key={notif.id}
+                                notification={notif}
+                            />
+                        ))}
+
+                        {/* Footer List Hint */}
+                        <div className="p-6 text-center text-xs text-gray-300 italic">
+                            Semua notifikasi ditampilkan
+                        </div>
+                    </div>
                 )}
             </main>
         </div>

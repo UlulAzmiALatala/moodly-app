@@ -64,6 +64,8 @@ class BookingStatusUpdated extends Notification implements ShouldBroadcastNow
             switch ($status) {
                 case 'Dijadwalkan':
                     $message = "Pembayaran sukses! Sesi dengan {$konselorName} telah dijadwalkan.";
+                    // [MODIFIED] Direct to Receipt Page
+                    $link = "/history/receipt/{$this->booking->id}";
                     break;
                 case 'Dibatalkan':
                 case 'DIBATALKAN':
@@ -81,7 +83,6 @@ class BookingStatusUpdated extends Notification implements ShouldBroadcastNow
                     break;
                 case 'Menunggu Konfirmasi Customer':
                     $message = "{$konselorName} mengajukan perubahan jadwal. Mohon konfirmasi.";
-                    // Arahkan ke halaman khusus notifikasi schedule jika ada, atau history biasa
                     $link = "/notification/schedule/{$this->booking->id}";
                     break;
                 default:
@@ -91,7 +92,7 @@ class BookingStatusUpdated extends Notification implements ShouldBroadcastNow
 
         return [
             'booking_id' => $this->booking->id,
-            'title' => 'Update Status', // Judul untuk UI notifikasi
+            'title' => 'Update Status',
             'message' => $message,
             'link' => $link,
             'status' => $status,

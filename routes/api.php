@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // --- IMPORT CONTROLLERS ---
+
 // Super Admin
 use App\Http\Controllers\SuperAdmin\JenisKonselingController;
 use App\Http\Controllers\SuperAdmin\DurasiKonselingController;
@@ -42,7 +43,7 @@ use App\Http\Controllers\BookingChatController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Middleware\RoleMiddleware;
 
-// --- PUBLIC ROUTES ---
+// --- PUBLIC ROUTES (Tanpa Login) ---
 Route::group(['middleware' => [
     \Illuminate\Cookie\Middleware\EncryptCookies::class,
     \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
@@ -51,25 +52,26 @@ Route::group(['middleware' => [
 
     require __DIR__ . '/auth.php';
 
-    // Public Data
+    // Public Data (Untuk Dropdown/Tampilan Awal)
     Route::get('/jenis-konseling', [JenisKonselingController::class, 'index']);
     Route::get('/payment-methods', [BookingFlowController::class, 'getPaymentMethods']);
     Route::get('/payment-methods/image/{paymentMethod}', [BookingFlowController::class, 'getPaymentMethodImage'])
         ->where('paymentMethod', '[0-9]+');
 
-    // --- PROTECTED ROUTES (AUTH) ---
+    // --- PROTECTED ROUTES (Harus Login) ---
     Route::middleware('auth:sanctum')->group(function () {
 
+        // User Info
         Route::get('/user', function (Request $request) {
             return $request->user();
         });
 
-        // Shared: Notifikasi
+        // Shared: Notifikasi System
         Route::get('/notifications', [NotificationController::class, 'index']);
         Route::get('/notifications/status', [NotificationController::class, 'status']);
         Route::post('/notifications/mark-read', [NotificationController::class, 'markAsRead']);
 
-        // Shared: Chat Sesi Konseling
+        // Shared: Chat Sesi Konseling (Realtime)
         Route::prefix('booking/{booking}/chat')->group(function () {
             Route::get('/messages', [BookingChatController::class, 'index'])->where('booking', '[0-9]+');
             Route::post('/messages', [BookingChatController::class, 'store'])->where('booking', '[0-9]+');
@@ -78,38 +80,44 @@ Route::group(['middleware' => [
         // =================================================================
         // ROLE: CUSTOMER
         // =================================================================
-        Route::prefix('customer')->group(function () {
-            // ... (Jika ingin grouping khusus)
+
+        // Beranda & Dashboard Customer
+        Route::get('/beranda-data', [BerandaController::class, 'getBerandaData']);
+
+        // Profile Customer
+        Route::prefix('profile')->group(function () {
+            Route::post('/update', [ProfileController::class, 'update']);
+            Route::post('/change-password', [ProfileController::class, 'updatePassword']);
+            Route::post('/change-email', [ProfileController::class, 'updateEmail']);
+            Route::post('/change-phone', [ProfileController::class, 'updatePhone']);
+            Route::post('/update-avatar', [ProfileController::class, 'updateAvatar']);
         });
 
-        // Beranda & Profile
-        Route::get('/beranda-data', [BerandaController::class, 'getBerandaData']);
-        Route::post('/profile/update', [ProfileController::class, 'update']);
-        Route::post('/profile/change-password', [ProfileController::class, 'updatePassword']);
-        Route::post('/profile/change-email', [ProfileController::class, 'updateEmail']);
-        Route::post('/profile/change-phone', [ProfileController::class, 'updatePhone']);
-        Route::post('/profile/update-avatar', [ProfileController::class, 'updateAvatar']);
+        // History & Transaksi Customer
+        // (URL tetap /api/history agar frontend tidak perlu diubah)
+        Route::prefix('history')->group(function () {
+            Route::get('/', [HistoryController::class, 'index']);
+            Route::get('/{booking}', [HistoryController::class, 'show'])->where('booking', '[0-9]+');
+            Route::patch('/{booking}/cancel', [HistoryController::class, 'cancel']);
+            Route::patch('/{booking}/reschedule', [HistoryController::class, 'reschedule']);
+            Route::post('/{booking}/reschedule/approve', [HistoryController::class, 'approveReschedule']);
+            Route::post('/{booking}/reschedule/reject', [HistoryController::class, 'rejectReschedule']);
+            Route::post('/{booking}/rate', [HistoryController::class, 'storeRating']);
+            Route::post('/{booking}/submit-refund', [HistoryController::class, 'storeRefundRequest']);
+        });
 
-        // History & Transaksi
-        Route::get('/history', [HistoryController::class, 'index']);
-        Route::get('/history/{booking}', [HistoryController::class, 'show']);
-        Route::patch('/history/{booking}/cancel', [HistoryController::class, 'cancel']);
-        Route::patch('/history/{booking}/reschedule', [HistoryController::class, 'reschedule']);
-        Route::post('/history/{booking}/reschedule/approve', [HistoryController::class, 'approveReschedule']);
-        Route::post('/history/{booking}/reschedule/reject', [HistoryController::class, 'rejectReschedule']);
-        Route::post('/history/{booking}/rate', [HistoryController::class, 'storeRating']);
-        Route::post('/history/{booking}/submit-refund', [HistoryController::class, 'storeRefundRequest']);
+        // Booking Flow (Proses Pemesanan)
+        Route::prefix('booking')->group(function () {
+            Route::get('/tempat-konseling', [BookingFlowController::class, 'getTempatKonseling']);
+            Route::get('/tempat-konseling/{tempatKonseling}', [BookingFlowController::class, 'getTempatDetail'])->where('tempatKonseling', '[0-9]+');
+            Route::get('/counselors', [BookingFlowController::class, 'getCounselors']);
+            Route::get('/counselors/{konselor}', [BookingFlowController::class, 'showCounselor'])->where('konselor', '[0-9]+');
+            Route::get('/counselors/{konselor}/schedule-options', [BookingFlowController::class, 'getScheduleOptions'])->where('konselor', '[0-9]+');
+            Route::post('/create', [BookingFlowController::class, 'storeBooking']);
+            Route::post('/{booking}/upload-proof', [BookingFlowController::class, 'uploadPaymentProof'])->where('booking', '[0-9]+');
+        });
 
-        // Booking Flow
-        Route::get('/booking/tempat-konseling', [BookingFlowController::class, 'getTempatKonseling']);
-        Route::get('/booking/tempat-konseling/{tempatKonseling}', [BookingFlowController::class, 'getTempatDetail'])->where('tempatKonseling', '[0-9]+');
-        Route::get('/booking/counselors', [BookingFlowController::class, 'getCounselors']);
-        Route::get('/booking/counselors/{konselor}', [BookingFlowController::class, 'showCounselor'])->where('konselor', '[0-9]+');
-        Route::get('/booking/counselors/{konselor}/schedule-options', [BookingFlowController::class, 'getScheduleOptions'])->where('konselor', '[0-9]+');
-        Route::post('/booking/create', [BookingFlowController::class, 'storeBooking']);
-        Route::post('/booking/{booking}/upload-proof', [BookingFlowController::class, 'uploadPaymentProof'])->where('booking', '[0-9]+');
-
-        // Help Chat (Customer Side)
+        // Help Chat (Customer Support)
         Route::get('/help/messages', [HelpChatController::class, 'index']);
         Route::post('/help/messages', [HelpChatController::class, 'store']);
 
@@ -123,14 +131,14 @@ Route::group(['middleware' => [
 
             // Jadwal & Sesi
             Route::get('/schedules', [ScheduleController::class, 'index']);
-            Route::get('/booking/{booking}', [ScheduleController::class, 'show']);
-            Route::post('/booking/{booking}/complete', [ScheduleController::class, 'completeSession']);
-            Route::post('/booking/{booking}/reschedule', [ScheduleController::class, 'reschedule']);
+            Route::get('/booking/{booking}', [ScheduleController::class, 'show'])->where('booking', '[0-9]+');
+            Route::post('/booking/{booking}/complete', [ScheduleController::class, 'completeSession'])->where('booking', '[0-9]+');
+            Route::post('/booking/{booking}/reschedule', [ScheduleController::class, 'reschedule'])->where('booking', '[0-9]+');
 
-            // History
+            // History Konselor
             Route::get('/history', [CounselorHistoryController::class, 'index']);
 
-            // Profile
+            // Profile Konselor
             Route::prefix('profile')->group(function () {
                 Route::post('/update', [CounselorProfileController::class, 'update']);
                 Route::post('/update-avatar', [CounselorProfileController::class, 'updateAvatar']);
@@ -142,9 +150,9 @@ Route::group(['middleware' => [
 
             // Ketersediaan (Availability)
             Route::prefix('availability')->group(function () {
-                Route::get('/', [KonselorManagementController::class, 'getAvailabilities'])->scopeBindings();
-                Route::post('/', [KonselorManagementController::class, 'storeAvailability'])->scopeBindings();
-                Route::delete('/{availability}', [KonselorManagementController::class, 'destroyAvailability'])->scopeBindings();
+                Route::get('/', [KonselorManagementController::class, 'getAvailabilities']);
+                Route::post('/', [KonselorManagementController::class, 'storeAvailability']);
+                Route::delete('/{availability}', [KonselorManagementController::class, 'destroyAvailability']);
             });
         });
 
@@ -194,14 +202,20 @@ Route::group(['middleware' => [
 
             Route::get('/dashboard-stats', [SuperAdminDashboardController::class, 'index']);
 
+            // Keuangan & Payout
             Route::get('/keuangan', [FinanceController::class, 'index']);
+            Route::get('/keuangan/{booking}', [FinanceController::class, 'show'])->where('booking', '[0-9]+');
+            Route::post('/keuangan/{booking}/pay', [FinanceController::class, 'processPayment'])->where('booking', '[0-9]+');
 
-            // Master Data
+            // Master Data Resources
             Route::apiResource('jenis-konseling', JenisKonselingController::class);
             Route::post('jenis-konseling/{jenisKonseling}', [JenisKonselingController::class, 'update']);
+
             Route::apiResource('durasi-konseling', DurasiKonselingController::class);
+
             Route::apiResource('tempat-konseling', TempatKonselingController::class);
             Route::post('tempat-konseling/{tempatKonseling}', [TempatKonselingController::class, 'update']);
+
             Route::apiResource('payment-methods', PaymentMethodController::class);
             Route::post('payment-methods/{paymentMethod}', [PaymentMethodController::class, 'update']);
 
@@ -212,8 +226,7 @@ Route::group(['middleware' => [
 
             Route::apiResource('customer-management', CustomerManagementController::class)
                 ->parameters(['customer-management' => 'user'])
-                ->only(['index', 'show', 'update', 'destroy']); // <-- 'update' ditambahkan
-
+                ->only(['index', 'show', 'update', 'destroy']);
             Route::post('customer-management/{user}/block', [CustomerManagementController::class, 'block']);
             Route::post('customer-management/{user}/unblock', [CustomerManagementController::class, 'unblock']);
 
@@ -222,7 +235,7 @@ Route::group(['middleware' => [
             Route::post('konselor-management/{user}/block', [KonselorManagementController::class, 'block']);
             Route::post('konselor-management/{user}/unblock', [KonselorManagementController::class, 'unblock']);
 
-            // Manage Availability Konselor
+            // Manage Availability Konselor (Super Admin Override)
             Route::get('konselor-management/{user}/availabilities', [KonselorManagementController::class, 'getAvailabilities']);
             Route::post('konselor-management/{user}/availabilities', [KonselorManagementController::class, 'storeAvailability']);
             Route::put('konselor-management/{user}/availabilities/{availability}', [KonselorManagementController::class, 'updateAvailability']);

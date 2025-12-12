@@ -25,6 +25,10 @@ class Booking extends Model
         'status_pesanan',
         'total_harga',
         'admin_fee',
+        'counselor_net',
+        'counselor_payment_status',
+        'counselor_payment_proof',
+        'counselor_paid_at',
         'alasan_pembatalan',
         'catatan_pembatalan',
         'payment_proof_image',
@@ -38,7 +42,8 @@ class Booking extends Model
     ];
 
     protected $appends = [
-        'payment_proof_image_url'
+        'payment_proof_image_url',
+        'counselor_payment_proof_url'
     ];
 
     protected $visible = [
@@ -58,6 +63,10 @@ class Booking extends Model
         'payment_proof_image',
         'payment_proof_notes',
         'admin_fee',
+        'counselor_net',
+        'counselor_payment_status',
+        'counselor_payment_proof',
+        'counselor_paid_at',
         'refund_amount',
         'gmeet_link',
         'rating',
@@ -78,6 +87,7 @@ class Booking extends Model
 
         // Accessor
         'payment_proof_image_url',
+        'counselor_payment_proof_url'
     ];
 
     public function customer(): BelongsTo
@@ -115,13 +125,22 @@ class Booking extends Model
         return $this->hasOne(Refund::class);
     }
 
-    // HAPUS relasi paymentMethod() karena kolom ID tidak ada di database
-
+    // Accessor Bukti Bayar Customer
     protected function paymentProofImageUrl(): Attribute
     {
         return Attribute::make(
             get: fn() => $this->payment_proof_image
                 ? url('storage/' . $this->payment_proof_image)
+                : null,
+        );
+    }
+
+    // [BARU] Accessor Bukti Bayar Admin ke Konselor
+    protected function counselorPaymentProofUrl(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => $this->counselor_payment_proof
+                ? url('storage/' . $this->counselor_payment_proof)
                 : null,
         );
     }

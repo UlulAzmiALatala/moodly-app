@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import apiClient from "../../../api/axios";
-// Pastikan path ini sesuai dengan lokasi file NotificationModal yang baru Anda buat
 import NotificationModal from "../../../components/common/NotificationModal";
 
-// --- Komponen Ikon (Tidak Berubah) ---
+// --- Komponen Ikon ---
 const BackArrowIcon = () => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -135,7 +134,6 @@ const ChevronDownIcon = () => (
     </svg>
 );
 
-// Map Ikon Global
 const mediaIconMap = {
     "Voice Call": <VoiceCallIcon />,
     "Video Call": <VideoCallIcon />,
@@ -160,6 +158,24 @@ const ScheduleTabContent = ({
     setSelectedMedia,
     availableMethods,
 }) => {
+    // Helper: Cek apakah waktu sudah lewat (untuk hari ini)
+    const isTimePassed = (timeString) => {
+        if (!selectedDate) return false;
+
+        const todayStr = new Date().toISOString().split("T")[0];
+        if (selectedDate !== todayStr) return false; // Bukan hari ini, tidak perlu disable
+
+        const now = new Date();
+        const [hours, minutes] = timeString.split(":").map(Number);
+
+        // Buat objek date untuk waktu slot ini
+        const slotTime = new Date();
+        slotTime.setHours(hours, minutes, 0, 0);
+
+        // Jika waktu slot < waktu sekarang -> disable
+        return slotTime < now;
+    };
+
     const getAvailableTimesForSelectedDate = () => {
         const dateData = scheduleOptions.availableDates.find(
             (d) => d.date === selectedDate
@@ -201,6 +217,10 @@ const ScheduleTabContent = ({
         }).format(amount);
     };
 
+    // --- LOGIC UTAMA TAMPILAN JAM ---
+    // Filter slot yang sudah lewat (walaupun backend kirim, frontend tetap validasi ganda untuk UX)
+    const validTimes = availableTimes.filter((time) => !isTimePassed(time));
+
     return (
         <div className="space-y-5 bg-white p-4 rounded-xl shadow">
             {/* Waktu & Durasi */}
@@ -219,12 +239,12 @@ const ScheduleTabContent = ({
                                     setSelectedTimeOfDay(e.target.value);
                                     setSelectedTime("");
                                 }}
-                                className="bg-transparent text-sm font-semibold text-gray-700 focus:outline-none appearance-none pr-4"
+                                className="bg-transparent text-sm font-semibold text-gray-700 focus:outline-none appearance-none pr-4 w-full"
                             >
-                                <option value="Pagi">Pagi</option>
-                                <option value="Siang">Siang</option>
-                                <option value="Sore">Sore</option>
-                                <option value="Malam">Malam</option>
+                                <option value="Pagi">Pagi (06-11)</option>
+                                <option value="Siang">Siang (11-15)</option>
+                                <option value="Sore">Sore (15-18)</option>
+                                <option value="Malam">Malam (18-22)</option>
                             </select>
                         </div>
                         <ChevronDownIcon />
@@ -243,14 +263,14 @@ const ScheduleTabContent = ({
                                 onChange={(e) =>
                                     setSelectedDurationId(e.target.value)
                                 }
-                                className="bg-transparent text-sm font-semibold text-gray-700 focus:outline-none appearance-none pr-4"
+                                className="bg-transparent text-sm font-semibold text-gray-700 focus:outline-none appearance-none pr-4 w-full"
                             >
                                 <option value="" disabled>
                                     Pilih durasi
                                 </option>
                                 {scheduleOptions.durations.map((dur) => (
                                     <option key={dur.id} value={dur.id}>
-                                        {dur.durasi_menit} (
+                                        {dur.durasi_menit} Mnt (
                                         {formatCurrencySimple(dur.harga)})
                                     </option>
                                 ))}
@@ -264,34 +284,36 @@ const ScheduleTabContent = ({
             {/* Pilih Tanggal */}
             <div>
                 <h4 className="font-semibold text-sm text-gray-700 mb-2">
-                    Pilih Tanggal dan waktu konseling
+                    Pilih Tanggal Konseling
                 </h4>
                 <div className="flex space-x-2 overflow-x-auto pb-2 scrollbar-hide">
-                    {scheduleOptions.availableDates.map((dateInfo) => (
-                        <button
-                            key={dateInfo.date}
-                            onClick={() => handleDateSelect(dateInfo.date)}
-                            className={`flex flex-col items-center justify-center p-2.5 rounded-lg border w-16 h-16 flex-shrink-0 transition-colors ${
-                                selectedDate === dateInfo.date
-                                    ? "bg-cyan-500 text-white border-cyan-600 shadow"
-                                    : "bg-white text-gray-600 border-gray-300 hover:bg-cyan-50"
-                            }`}
-                        >
-                            <span className="text-[10px] uppercase">
-                                {dateInfo.monthName}
-                            </span>
-                            <span className="text-lg font-bold">
-                                {dateInfo.dayOfMonth}
-                            </span>
-                            <span className="text-[10px]">
-                                {dateInfo.dayName.substring(0, 3)}
-                            </span>{" "}
-                        </button>
-                    ))}
-                    <button className="flex flex-col items-center justify-center p-2.5 rounded-lg border w-16 h-16 flex-shrink-0 bg-white text-cyan-600 border-cyan-300 hover:bg-cyan-50">
-                        <CalendarIcon className="w-6 h-6 mb-1" />
-                        <span className="text-[10px] uppercase">Lain</span>
-                    </button>
+                    {scheduleOptions.availableDates.length > 0 ? (
+                        scheduleOptions.availableDates.map((dateInfo) => (
+                            <button
+                                key={dateInfo.date}
+                                onClick={() => handleDateSelect(dateInfo.date)}
+                                className={`flex flex-col items-center justify-center p-2.5 rounded-lg border w-16 h-16 flex-shrink-0 transition-colors ${
+                                    selectedDate === dateInfo.date
+                                        ? "bg-cyan-500 text-white border-cyan-600 shadow"
+                                        : "bg-white text-gray-600 border-gray-300 hover:bg-cyan-50"
+                                }`}
+                            >
+                                <span className="text-[10px] uppercase">
+                                    {dateInfo.monthName}
+                                </span>
+                                <span className="text-lg font-bold">
+                                    {dateInfo.dayOfMonth}
+                                </span>
+                                <span className="text-[10px]">
+                                    {dateInfo.dayName.substring(0, 3)}
+                                </span>
+                            </button>
+                        ))
+                    ) : (
+                        <p className="text-xs text-gray-400 italic">
+                            Tidak ada tanggal tersedia.
+                        </p>
+                    )}
                 </div>
             </div>
 
@@ -301,29 +323,36 @@ const ScheduleTabContent = ({
                     Jadwal {selectedTimeOfDay}
                 </h4>
                 <div className="flex flex-wrap gap-2">
-                    {availableTimes.length > 0 ? (
-                        availableTimes.map((time, index) => (
-                            <button
-                                key={index}
-                                onClick={() => handleTimeSelect(time)}
-                                className={`px-4 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
-                                    selectedTime === time
-                                        ? "bg-cyan-500 text-white border-cyan-600"
-                                        : "bg-white text-gray-700 border-gray-300 hover:bg-cyan-50"
-                                }`}
-                            >
-                                {time} WIB
-                            </button>
-                        ))
+                    {validTimes.length > 0 ? (
+                        validTimes.map((time, index) => {
+                            // Format tampil hanya HH:MM
+                            const displayTime = time.substring(0, 5);
+                            return (
+                                <button
+                                    key={index}
+                                    onClick={() => handleTimeSelect(time)}
+                                    className={`px-4 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
+                                        selectedTime === time
+                                            ? "bg-cyan-500 text-white border-cyan-600 shadow-sm"
+                                            : "bg-white text-gray-700 border-gray-300 hover:bg-cyan-50 hover:border-cyan-200"
+                                    }`}
+                                >
+                                    {displayTime}
+                                </button>
+                            );
+                        })
                     ) : (
-                        <p className="text-xs text-gray-400">
-                            Tidak ada jadwal tersedia.
-                        </p>
+                        <div className="w-full bg-gray-50 border border-gray-200 border-dashed rounded-lg p-4 text-center">
+                            <p className="text-xs text-gray-400 italic">
+                                Slot penuh atau waktu sudah lewat. <br /> Coba
+                                pilih durasi, waktu, atau tanggal lain.
+                            </p>
+                        </div>
                     )}
                 </div>
             </div>
 
-            {/* Tampilkan Media Konseling secara kondisional & DINAMIS */}
+            {/* Media Konseling */}
             {method !== "Offline" && (
                 <div>
                     <h4 className="font-semibold text-sm text-gray-700 mb-2">
@@ -383,6 +412,7 @@ export default function PsychologistDetailPage() {
     const [loadingSchedule, setLoadingSchedule] = useState(true);
     const [errorSchedule, setErrorSchedule] = useState(null);
 
+    // Initial value 'Siang' hanya default, nanti di-override oleh useEffect
     const [selectedTimeOfDay, setSelectedTimeOfDay] = useState("Siang");
     const [selectedDurationId, setSelectedDurationId] = useState("");
     const [selectedDate, setSelectedDate] = useState(null);
@@ -391,7 +421,7 @@ export default function PsychologistDetailPage() {
 
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // --- STATE MODAL NOTIFIKASI ---
+    // Modal State
     const [modalState, setModalState] = useState({
         isOpen: false,
         type: "error",
@@ -399,19 +429,10 @@ export default function PsychologistDetailPage() {
         message: "",
     });
 
-    const closeModal = () => {
+    const closeModal = () =>
         setModalState((prev) => ({ ...prev, isOpen: false }));
-    };
-
-    const showNotification = (title, message, type = "error") => {
-        setModalState({
-            isOpen: true,
-            title,
-            message,
-            type,
-        });
-    };
-    // --- AKHIR STATE MODAL ---
+    const showNotification = (title, message, type = "error") =>
+        setModalState({ isOpen: true, title, message, type });
 
     // Fetch detail psikolog
     useEffect(() => {
@@ -438,7 +459,7 @@ export default function PsychologistDetailPage() {
         fetchPsychologistDetail();
     }, [counselorId]);
 
-    // useEffect untuk fetch jadwal
+    // Fetch Jadwal & Auto Select Tab
     useEffect(() => {
         const fetchSchedule = async () => {
             if (!counselorId) return;
@@ -449,12 +470,44 @@ export default function PsychologistDetailPage() {
                 );
                 setScheduleOptions(response.data);
 
+                // LOGIC BARU: Auto-select Tanggal & Waktu yang tersedia
                 if (
                     response.data.availableDates &&
-                    response.data.availableDates.length > 0 &&
-                    !selectedDate
+                    response.data.availableDates.length > 0
                 ) {
-                    setSelectedDate(response.data.availableDates[0].date);
+                    const firstDate = response.data.availableDates[0];
+
+                    // 1. Set Tanggal Pertama jika belum ada
+                    if (!selectedDate) {
+                        setSelectedDate(firstDate.date);
+                    }
+
+                    // 2. Cek Ketersediaan Waktu di Tanggal Tersebut
+                    const targetDateStr = selectedDate || firstDate.date;
+                    const targetDateData = response.data.availableDates.find(
+                        (d) => d.date === targetDateStr
+                    );
+
+                    if (targetDateData && targetDateData.availableTimes) {
+                        const times = targetDateData.availableTimes;
+
+                        // Prioritas: Pagi -> Siang -> Sore -> Malam
+                        if (times["Pagi"] && times["Pagi"].length > 0) {
+                            setSelectedTimeOfDay("Pagi");
+                        } else if (
+                            times["Siang"] &&
+                            times["Siang"].length > 0
+                        ) {
+                            setSelectedTimeOfDay("Siang");
+                        } else if (times["Sore"] && times["Sore"].length > 0) {
+                            setSelectedTimeOfDay("Sore");
+                        } else if (
+                            times["Malam"] &&
+                            times["Malam"].length > 0
+                        ) {
+                            setSelectedTimeOfDay("Malam");
+                        }
+                    }
                 }
                 setErrorSchedule(null);
             } catch (err) {
@@ -465,7 +518,33 @@ export default function PsychologistDetailPage() {
             }
         };
         fetchSchedule();
-    }, [counselorId]);
+    }, [counselorId]); // Removed selectedDate dependency to avoid loops
+
+    // Auto-switch tab when date changes
+    useEffect(() => {
+        if (
+            !scheduleOptions.availableDates ||
+            scheduleOptions.availableDates.length === 0
+        )
+            return;
+
+        const dateData = scheduleOptions.availableDates.find(
+            (d) => d.date === selectedDate
+        );
+        if (dateData && dateData.availableTimes) {
+            const times = dateData.availableTimes;
+            // Cek apakah tab yang sedang aktif (misal "Siang") kosong di tanggal baru ini?
+            // Jika kosong, cari tab lain yang ada isinya.
+            const currentTabSlots = times[selectedTimeOfDay] || [];
+
+            if (currentTabSlots.length === 0) {
+                if (times["Pagi"]?.length) setSelectedTimeOfDay("Pagi");
+                else if (times["Siang"]?.length) setSelectedTimeOfDay("Siang");
+                else if (times["Sore"]?.length) setSelectedTimeOfDay("Sore");
+                else if (times["Malam"]?.length) setSelectedTimeOfDay("Malam");
+            }
+        }
+    }, [selectedDate, scheduleOptions]); // Add scheduleOptions dependency
 
     const handleBack = () => navigate(-1);
 
@@ -475,7 +554,6 @@ export default function PsychologistDetailPage() {
             return;
         }
 
-        // 1. Validasi Input (Gunakan showNotification)
         if (!selectedDurationId || !selectedDate || !selectedTime) {
             showNotification(
                 "Jadwal Belum Lengkap",
@@ -485,9 +563,7 @@ export default function PsychologistDetailPage() {
             return;
         }
 
-        // Tentukan metode final
         const finalMethod = method === "Offline" ? "Tatap Muka" : selectedMedia;
-
         if (method !== "Offline" && !finalMethod) {
             showNotification(
                 "Media Belum Dipilih",
@@ -497,20 +573,17 @@ export default function PsychologistDetailPage() {
             return;
         }
 
-        // 2. Dapatkan Data Pendukung
         const selectedDurationData = scheduleOptions.durations.find(
             (d) => d.id == selectedDurationId
         );
-
         if (!selectedDurationData) {
             showNotification("Error", "Data durasi tidak ditemukan.", "error");
             return;
         }
 
-        // 3. Siapkan Payload API
         const apiPayload = {
             counselorId: parseInt(counselorId),
-            jenisKonselingId: serviceId ?? 1, // --- SAFETY: Gunakan nilai default jika null (misal 1) ---
+            jenisKonselingId: serviceId ?? 1,
             durationId: parseInt(selectedDurationId),
             tempatId: tempatId || null,
             date: selectedDate,
@@ -518,26 +591,37 @@ export default function PsychologistDetailPage() {
             method: finalMethod,
         };
 
-        // 4. Panggil API
         setIsSubmitting(true);
         try {
             const response = await apiClient.post(
                 "/api/booking/create",
                 apiPayload
             );
-
             const newBooking = response.data.booking;
-
             const confirmationPageRoute =
                 method === "Offline"
                     ? "/booking/payment-offline"
                     : "/booking/payment-online";
 
+            // --- [FIX] Definisi variable specialtyString DI SINI ---
+            const specialtyString = Array.isArray(
+                psychologistData?.spesialisasi
+            )
+                ? psychologistData.spesialisasi.join(", ")
+                : psychologistData?.spesialisasi || "Umum";
+
             navigate(confirmationPageRoute, {
                 state: {
                     booking: newBooking,
                     displayData: {
+                        // Data Profil (Fallback untuk UI agar tidak kosong saat loading)
                         counselorName: psychologistData?.name,
+                        counselorImage: psychologistData?.avatar,
+                        counselorUniversity: psychologistData?.universitas,
+                        counselorSpecialty: specialtyString, // Sekarang variabel ini sudah ada
+                        counselorLicense: psychologistData?.surat_izin_praktik,
+
+                        // Data Layanan
                         serviceName: serviceName,
                         tempatName: tempatName || null,
                         scheduleDateDisplay: newBooking.tanggal_konsultasi,
@@ -552,13 +636,9 @@ export default function PsychologistDetailPage() {
             });
         } catch (err) {
             console.error("Gagal membuat booking:", err);
-            // Tampilkan error spesifik dari backend jika ada (terutama debug_error dari controller baru)
             const errorMessage =
-                err.response?.data?.debug_error ||
                 err.response?.data?.message ||
                 "Gagal membuat booking. Silakan coba lagi.";
-
-            // GANTI ALERT dengan MODAL NOTIFIKASI
             showNotification("Gagal Membuat Jadwal", errorMessage, "error");
         } finally {
             setIsSubmitting(false);
@@ -581,18 +661,14 @@ export default function PsychologistDetailPage() {
         : null;
     const ratingDisplay = ratingValue !== null ? ratingValue.toFixed(1) : "N/A";
     const firstName = psychologistData.name?.split(",")[0];
-
     const specs = Array.isArray(psychologistData.spesialisasi)
         ? psychologistData.spesialisasi.map(String)
         : [];
     const specializationTags = specs.slice(0, 4);
-    if (specs.length > 4) {
+    if (specs.length > 4)
         specializationTags[3] = `${specs.length - 3}+ lainnya`;
-    }
 
-    // --- LOGIKA UTAMA: FILTER METODE ---
     const rawMethods = psychologistData.metode_layanan || [];
-    // Filter "Tatap Muka" karena ini halaman Online
     const onlineMethods = rawMethods.filter((m) => m !== "Tatap Muka");
 
     return (
@@ -783,7 +859,6 @@ export default function PsychologistDetailPage() {
                                 Melayani via:
                             </h3>
                             <div className="flex flex-wrap gap-2">
-                                {/* Gunakan onlineMethods agar 'Tatap Muka' tidak muncul jika kita sepakat ini halaman online */}
                                 {onlineMethods.length > 0 ? (
                                     onlineMethods.map((method, index) => (
                                         <span
@@ -803,7 +878,6 @@ export default function PsychologistDetailPage() {
                         </div>
                     </div>
                 ) : (
-                    // Render Komponen Jadwal dengan Props yang sudah difilter
                     <ScheduleTabContent
                         method={method}
                         scheduleOptions={scheduleOptions}
@@ -819,13 +893,11 @@ export default function PsychologistDetailPage() {
                         setSelectedTime={setSelectedTime}
                         selectedMedia={selectedMedia}
                         setSelectedMedia={setSelectedMedia}
-                        // KIRIM DATA YANG SUDAH DI-FILTER DI SINI
                         availableMethods={onlineMethods}
                     />
                 )}
             </main>
 
-            {/* Tombol Mulai Konseling */}
             <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-4 bg-white border-t border-gray-200 shadow-[0_-2px_5px_rgba(0,0,0,0.05)] z-20">
                 <button
                     onClick={handleStartCounseling}
@@ -847,7 +919,6 @@ export default function PsychologistDetailPage() {
                 </button>
             </div>
 
-            {/* --- MODAL NOTIFIKASI (RENDER) --- */}
             <NotificationModal
                 isOpen={modalState.isOpen}
                 onClose={closeModal}

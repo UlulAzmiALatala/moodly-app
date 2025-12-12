@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../../context/AuthContext.jsx";
-import apiClient from "../../../api/axios.js";
+import { useAuth } from "../../../context/AuthContext";
+import apiClient from "../../../api/axios";
 
 // --- Komponen Ikon ---
 const BackArrowIcon = () => (
@@ -185,48 +185,79 @@ const EditableInputItem = ({ label, initialValue, onSave }) => {
     );
 };
 
-// --- Komponen Edit Spesialisasi (Multi-Select) ---
+// --- Komponen Edit Spesialisasi (Multi-Select ID) ---
 const EditableSpecialization = ({ initialSpecs, onSave }) => {
     const [isEditing, setIsEditing] = useState(false);
-    const [selectedSpecs, setSelectedSpecs] = useState([]);
+    const [selectedSpecIds, setSelectedSpecIds] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [availableSpecs, setAvailableSpecs] = useState([]);
 
-    const options = [
-        "Depresi",
-        "Kecemasan",
-        "Stress",
-        "Trauma",
-        "Hubungan",
-        "Karir",
-        "Keluarga",
-        "Pengembangan Diri",
-        "Gangguan Tidur",
-        "Adiksi",
-        "LGBTQ+",
-        "Duka & Kehilangan",
-    ];
-
+    // Fetch Master Data Jenis Konseling (ID & Nama)
     useEffect(() => {
-        const current = Array.isArray(initialSpecs)
-            ? initialSpecs
-            : typeof initialSpecs === "string"
-            ? initialSpecs.split(", ").filter(Boolean)
-            : [];
-        setSelectedSpecs(current);
-    }, [initialSpecs]);
+        apiClient
+            .get("/api/jenis-konseling")
+            .then((res) => {
+                // Pastikan yang disimpan adalah array
+                if (Array.isArray(res.data)) {
+                    setAvailableSpecs(res.data);
+                } else if (res.data.data && Array.isArray(res.data.data)) {
+                    // Jika backend membungkus response dalam { data: [...] }
+                    setAvailableSpecs(res.data.data);
+                } else {
+                    console.error(
+                        "Format data jenis konseling tidak valid:",
+                        res.data
+                    );
+                    setAvailableSpecs([]);
+                }
+            })
+            .catch((err) => {
+                console.error("Gagal load jenis konseling:", err);
+                setAvailableSpecs([]);
+            });
+    }, []);
 
-    const toggleSpec = (spec) => {
-        setSelectedSpecs((prev) =>
-            prev.includes(spec)
-                ? prev.filter((s) => s !== spec)
-                : [...prev, spec]
+    // Sinkronisasi data awal user (Bisa berupa Array String atau Array ID)
+    useEffect(() => {
+        if (!initialSpecs) {
+            setSelectedSpecIds([]);
+            return;
+        }
+
+        // Pastikan availableSpecs sudah terload sebelum mapping
+        if (availableSpecs.length > 0) {
+            const ids = [];
+
+            // Cek tipe data initialSpecs
+            if (Array.isArray(initialSpecs) && initialSpecs.length > 0) {
+                // Jika elemen pertama adalah string (nama), cari ID-nya
+                if (typeof initialSpecs[0] === "string") {
+                    initialSpecs.forEach((name) => {
+                        const found = availableSpecs.find(
+                            (s) => s.jenis_konseling === name
+                        );
+                        if (found) ids.push(found.id);
+                    });
+                } else {
+                    // Jika sudah ID, langsung pakai
+                    ids.push(...initialSpecs.map(Number)); // Pastikan ID jadi number
+                }
+            }
+            setSelectedSpecIds(ids);
+        }
+    }, [initialSpecs, availableSpecs]);
+
+    const toggleSpec = (id) => {
+        setSelectedSpecIds((prev) =>
+            prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
         );
     };
 
     const handleSave = async () => {
         setLoading(true);
         try {
-            await onSave(selectedSpecs);
+            // Kirim Array ID ke Backend
+            await onSave(selectedSpecIds);
             setIsEditing(false);
         } catch (error) {
             console.error("Gagal menyimpan spesialisasi:", error);
@@ -253,28 +284,35 @@ const EditableSpecialization = ({ initialSpecs, onSave }) => {
 
             {isEditing ? (
                 <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                        {options.map((option) => (
-                            <label
-                                key={option}
-                                className={`flex items-center space-x-2 p-2 rounded-lg border cursor-pointer transition-all ${
-                                    selectedSpecs.includes(option)
-                                        ? "bg-cyan-50 border-cyan-200"
-                                        : "bg-white border-gray-200 hover:bg-gray-100"
-                                }`}
-                            >
-                                <input
-                                    type="checkbox"
-                                    checked={selectedSpecs.includes(option)}
-                                    onChange={() => toggleSpec(option)}
-                                    className="h-4 w-4 text-cyan-600 rounded border-gray-300 focus:ring-cyan-500"
-                                />
-                                <span className="text-xs font-medium text-gray-700">
-                                    {option}
-                                </span>
-                            </label>
-                        ))}
-                    </div>
+                    {!Array.isArray(availableSpecs) ||
+                    availableSpecs.length === 0 ? (
+                        <p className="text-xs text-gray-400">Memuat opsi...</p>
+                    ) : (
+                        <div className="grid grid-cols-2 gap-3 mb-4">
+                            {availableSpecs.map((spec) => (
+                                <label
+                                    key={spec.id}
+                                    className={`flex items-center space-x-2 p-2 rounded-lg border cursor-pointer transition-all ${
+                                        selectedSpecIds.includes(spec.id)
+                                            ? "bg-cyan-50 border-cyan-200"
+                                            : "bg-white border-gray-200 hover:bg-gray-100"
+                                    }`}
+                                >
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedSpecIds.includes(
+                                            spec.id
+                                        )}
+                                        onChange={() => toggleSpec(spec.id)}
+                                        className="h-4 w-4 text-cyan-600 rounded border-gray-300 focus:ring-cyan-500"
+                                    />
+                                    <span className="text-xs font-medium text-gray-700">
+                                        {spec.jenis_konseling}
+                                    </span>
+                                </label>
+                            ))}
+                        </div>
+                    )}
                     <div className="flex justify-end gap-2">
                         <button
                             onClick={() => setIsEditing(false)}
@@ -294,15 +332,20 @@ const EditableSpecialization = ({ initialSpecs, onSave }) => {
                 </div>
             ) : (
                 <div className="w-full bg-white border border-gray-200 rounded-lg p-3 min-h-[46px] flex flex-wrap gap-2">
-                    {selectedSpecs.length > 0 ? (
-                        selectedSpecs.map((spec, idx) => (
-                            <span
-                                key={idx}
-                                className="px-2 py-1 bg-cyan-50 text-cyan-700 text-xs font-bold rounded-md border border-cyan-100"
-                            >
-                                {spec}
-                            </span>
-                        ))
+                    {selectedSpecIds.length > 0 ? (
+                        selectedSpecIds.map((id) => {
+                            const spec = availableSpecs.find(
+                                (s) => s.id === id
+                            );
+                            return spec ? (
+                                <span
+                                    key={id}
+                                    className="px-2 py-1 bg-cyan-50 text-cyan-700 text-xs font-bold rounded-md border border-cyan-100"
+                                >
+                                    {spec.jenis_konseling}
+                                </span>
+                            ) : null;
+                        })
                     ) : (
                         <span className="text-gray-400 text-sm italic">
                             Belum ada spesialisasi dipilih
@@ -314,7 +357,6 @@ const EditableSpecialization = ({ initialSpecs, onSave }) => {
     );
 };
 
-// --- Komponen Item Menu (Link Only) ---
 const MenuItem = ({ label, value, onClick, valueLines = 1 }) => (
     <div className="mb-4">
         <label className="text-sm text-gray-700 font-bold block mb-2">
@@ -338,7 +380,6 @@ const MenuItem = ({ label, value, onClick, valueLines = 1 }) => (
     </div>
 );
 
-// --- Komponen Read Only Item ---
 const ReadOnlyItem = ({ label, value }) => (
     <div className="mb-4">
         <label className="text-sm text-gray-700 font-bold block mb-2">
@@ -354,11 +395,11 @@ export default function CounselorEditProfilePage() {
     const navigate = useNavigate();
     const { user, getUser } = useAuth();
     const fileInputRef = useRef(null);
-
     const [isUploading, setIsUploading] = useState(false);
     const [avatarError, setAvatarError] = useState(null);
 
-    // Format Data
+    // Pastikan user.spesialisasi_label (teks) yang dipakai untuk tampilan awal jika ada
+    // Tapi EditableSpecialization akan memetakan ini kembali ke ID
     const profileData = {
         name: user?.name || "Nama Konselor",
         email: user?.email || "email@konselor.com",
@@ -377,7 +418,8 @@ export default function CounselorEditProfilePage() {
         gender: user?.gender || "Belum diatur",
         izinPraktik: user?.surat_izin_praktik || "Belum diatur",
         universitas: user?.universitas || "Belum diatur",
-        spesialisasi: user?.spesialisasi || [],
+        // Gunakan spesialisasi_label (Teks) dari Accessor Model User jika ada, atau spesialisasi (ID)
+        spesialisasi: user?.spesialisasi_label || user?.spesialisasi || [],
         avatar:
             user?.avatar_url ||
             `https://ui-avatars.com/api/?name=${encodeURIComponent(
@@ -385,11 +427,8 @@ export default function CounselorEditProfilePage() {
             )}&background=E0F2FE&color=0EA5E9&bold=true`,
     };
 
-    const handleBack = () => {
-        navigate(-1);
-    };
+    const handleBack = () => navigate(-1);
 
-    // --- Handlers Update ---
     const handleSaveName = async (newName) => {
         await apiClient.post("/api/counselor/profile/update", {
             name: newName,
@@ -404,16 +443,15 @@ export default function CounselorEditProfilePage() {
         await getUser();
     };
 
-    const handleSaveSpesialisasi = async (newSpecs) => {
+    const handleSaveSpesialisasi = async (newSpecsIds) => {
+        // newSpecsIds adalah Array ID (ex: [1, 2])
         await apiClient.post("/api/counselor/profile/update", {
-            spesialisasi: newSpecs,
+            spesialisasi: newSpecsIds,
         });
         await getUser();
     };
 
-    const handleEditAvatar = () => {
-        fileInputRef.current.click();
-    };
+    const handleEditAvatar = () => fileInputRef.current.click();
 
     const handleAvatarChange = async (e) => {
         const file = e.target.files[0];
@@ -426,9 +464,7 @@ export default function CounselorEditProfilePage() {
             await apiClient.post(
                 "/api/counselor/profile/update-avatar",
                 formData,
-                {
-                    headers: { "Content-Type": "multipart/form-data" },
-                }
+                { headers: { "Content-Type": "multipart/form-data" } }
             );
             await getUser();
         } catch (err) {
@@ -442,7 +478,6 @@ export default function CounselorEditProfilePage() {
 
     return (
         <div className="bg-white min-h-full font-sans">
-            {/* Header Halaman */}
             <header className="bg-white p-4 py-5 flex items-center sticky top-0 z-10 border-b border-gray-200 shadow-sm">
                 <button
                     onClick={handleBack}
@@ -457,7 +492,6 @@ export default function CounselorEditProfilePage() {
                 <div className="w-8"></div>
             </header>
 
-            {/* Konten Utama */}
             <main className="p-5 pt-8 space-y-8 pb-20">
                 <input
                     type="file"
@@ -467,7 +501,6 @@ export default function CounselorEditProfilePage() {
                     style={{ display: "none" }}
                 />
 
-                {/* 1. Foto Profil */}
                 <div className="flex flex-col items-center text-center">
                     <div className="relative mb-3 group">
                         <img
@@ -505,7 +538,6 @@ export default function CounselorEditProfilePage() {
                     </p>
                 </div>
 
-                {/* 2. Data Diri */}
                 <section>
                     <h2 className="text-lg font-bold text-gray-900 border-b-2 border-cyan-100 pb-2 mb-5">
                         Data Diri
@@ -541,12 +573,10 @@ export default function CounselorEditProfilePage() {
                     </div>
                 </section>
 
-                {/* 3. Alamat */}
                 <section>
                     <h2 className="text-lg font-bold text-gray-900 border-b-2 border-cyan-100 pb-2 mb-5">
                         Alamat Domisili
                     </h2>
-                    {/* PERBAIKAN LINK: Mengarah ke change-address */}
                     <MenuItem
                         label="Lokasi (Provinsi, Kota, Kecamatan, Kode Pos)"
                         value={profileData.location}
@@ -569,26 +599,19 @@ export default function CounselorEditProfilePage() {
                     />
                 </section>
 
-                {/* 4. Data Profesional */}
                 <section>
                     <h2 className="text-lg font-bold text-gray-900 border-b-2 border-cyan-100 pb-2 mb-5">
                         Data Profesional
                     </h2>
-
-                    {/* Edit Universitas - Inline */}
                     <EditableInputItem
                         label="Universitas Asal"
                         initialValue={profileData.universitas}
                         onSave={handleSaveUniversitas}
                     />
-
-                    {/* SIP - Read Only */}
                     <ReadOnlyItem
                         label="Nomor SIPP / STR"
                         value={profileData.izinPraktik}
                     />
-
-                    {/* Edit Spesialisasi - Multi Checkbox */}
                     <EditableSpecialization
                         initialSpecs={profileData.spesialisasi}
                         onSave={handleSaveSpesialisasi}

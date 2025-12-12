@@ -1,112 +1,134 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom"; // Import useLocation
+import { useLocation, useNavigate } from "react-router-dom";
+import { ChevronLeft, Send, Bot } from "lucide-react";
 
-// --- Komponen Ikon Bantuan ---
-// Icon Panah Kiri (SVG)
-function BackArrowIcon() {
-    return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2.5}
-        >
-            <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 19l-7-7 7-7"
-            />
-        </svg>
-    );
-}
-// Icon Kirim (Play)
-const PlayIcon = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-6 w-6 ml-1"
-        fill="currentColor"
-        viewBox="0 0 24 24"
-    >
-        <path d="M8 5v14l11-7z" />
-    </svg>
-);
-// --- Akhir Komponen Ikon ---
-
-// --- Komponen Utama ---
-// Ganti nama komponen menjadi FaqPage
-export default function FaqPage() {
+export default function CounselorFaqPage() {
     const navigate = useNavigate();
-    const location = useLocation(); // Gunakan useLocation untuk state
+    const location = useLocation();
+    const messagesEndRef = useRef(null);
 
-    // Ambil pertanyaan dari state navigasi
-    const faqQuestion = location.state?.question;
+    const initialQuestion = location.state?.question;
 
-    // Daftar jawaban (tetap hardcoded untuk saat ini)
-    const answers = {
-        "Apa yang harus dilakukan jika lupa kata sandi?":
-            "Jika kamu lupa kata sandi kamu bisa masuk ke profile lalu akan ada pilihan menu lupa kata sandi. Pilih menu tersebut dan kamu akan di arahkan untuk membuat kata sandi baru.",
-        "Bagaimana cara memulai sesi curhat?":
-            "Untuk memulai sesi curhat, kembali ke Beranda, pilih psikolog, dan jadwalkan sesi.",
-        "Bagaimana cara berlangganan pro?":
-            "Berlangganan pro dapat dilakukan di menu 'Profile' dengan memilih paket yang diinginkan.",
-        "Berapa lama durasi sesi curhat?":
-            "Durasi standar untuk sesi curhat adalah 60 menit.",
-        "Apa yang terjadi jika saya terlambat?":
-            "Jika terlambat lebih dari 15 menit, sesi akan dianggap hangus. Harap hubungi admin jika ada kendala.",
+    // --- DATABASE PENGETAHUAN BOT (KHUSUS KONSELOR) ---
+    // Konten tetap menggunakan data Konselor, tapi tampilan mengikuti Customer
+    const knowledgeBase = [
+        {
+            keywords: ["jadwal", "atur", "waktu", "availability", "praktik"],
+            answer: "Untuk mengatur jadwal, buka menu 'Jadwal Saya' di dashboard. Anda bisa menambahkan atau menghapus slot waktu yang tersedia.",
+        },
+        {
+            keywords: [
+                "gaji",
+                "cair",
+                "bayar",
+                "transfer",
+                "pendapatan",
+                "rekening",
+            ],
+            answer: "Gaji akan dicairkan oleh Admin setelah Anda menandai sesi sebagai 'Selesai'. Pastikan nomor rekening di profil Anda sudah benar.",
+        },
+        {
+            keywords: ["tidak hadir", "absen", "telat", "pasien", "customer"],
+            answer: "Jika pasien tidak hadir setelah 15 menit, Anda berhak membatalkan sesi. Hubungi Admin jika butuh bantuan verifikasi.",
+        },
+        {
+            keywords: ["profil", "foto", "keahlian", "spesialisasi", "ubah"],
+            answer: "Anda bisa mengubah foto profil, universitas, dan spesialisasi di menu 'Profil Saya' -> 'Edit Profil'.",
+        },
+        {
+            keywords: ["batal", "cancel", "reschedule", "jadwal ulang"],
+            answer: "Jika Anda perlu membatalkan atau menjadwal ulang sesi mendadak, harap informasikan kepada pasien melalui fitur chat dan ajukan Reschedule.",
+        },
+        {
+            keywords: ["sanksi", "hukuman", "blokir"],
+            answer: "Pembatalan sepihak tanpa alasan jelas dapat mempengaruhi rating performa Anda dan visibilitas di pencarian pasien.",
+        },
+        {
+            keywords: ["halo", "hi", "pagi", "siang", "malam", "admin"],
+            answer: "Halo Dok/Kak! Saya asisten virtual Moodly. Ada yang bisa saya bantu terkait praktik Anda hari ini?",
+        },
+    ];
+
+    const getBotResponse = (userInput) => {
+        const lowerInput = userInput.toLowerCase();
+        const found = knowledgeBase.find((item) =>
+            item.keywords.some((keyword) => lowerInput.includes(keyword))
+        );
+        return found
+            ? found.answer
+            : "Maaf, saya belum mengerti konteks pertanyaan Anda. 🤔 Silakan gunakan kata kunci yang lebih spesifik atau hubungi Admin Support langsung.";
     };
 
-    // Cari jawaban berdasarkan pertanyaan yang diterima
-    const faqAnswer = faqQuestion
-        ? answers[faqQuestion] ||
-          "Maaf, jawaban untuk pertanyaan ini belum tersedia."
-        : "Silakan ajukan pertanyaan Anda.";
-
-    // State untuk pesan chat
+    // 1. Inisialisasi State
     const [messages, setMessages] = useState(() => {
-        // Inisialisasi chat dengan pertanyaan user dan jawaban admin
-        if (faqQuestion) {
-            return [
-                { id: 1, sender: "user", text: faqQuestion },
-                { id: 2, sender: "admin", text: faqAnswer },
-            ];
+        if (initialQuestion) {
+            return [{ id: 1, sender: "user", text: initialQuestion }];
         }
-        // Jika tidak ada pertanyaan awal (misal akses langsung), tampilkan pesan default
-        return [{ id: 1, sender: "admin", text: "Ada yang bisa dibantu?" }];
+        return [
+            {
+                id: 1,
+                sender: "bot",
+                text: "Halo! Saya asisten virtual Moodly untuk Mitra. Ada yang ingin ditanyakan seputar praktik?",
+            },
+        ];
     });
 
     const [inputText, setInputText] = useState("");
-    const messagesEndRef = useRef(null); // Ref untuk auto-scroll
+    const [isTyping, setIsTyping] = useState(false);
 
-    // Auto-scroll ke pesan terbaru
+    // 2. Efek Bot Menjawab
+    useEffect(() => {
+        if (initialQuestion) {
+            setIsTyping(true);
+            const timer = setTimeout(() => {
+                const answer = getBotResponse(initialQuestion);
+                setMessages((prev) => {
+                    if (
+                        prev.some(
+                            (m) => m.sender === "bot" && m.text === answer
+                        )
+                    )
+                        return prev;
+                    return [
+                        ...prev,
+                        { id: Date.now(), sender: "bot", text: answer },
+                    ];
+                });
+                setIsTyping(false);
+            }, 800);
+            return () => clearTimeout(timer);
+        }
+    }, [initialQuestion]);
+
+    // 3. Auto Scroll
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages]);
+    }, [messages, isTyping]);
 
-    // Fungsi kirim pesan
+    // 4. Handle Kirim Pesan
     const handleSend = () => {
-        const trimmedInput = inputText.trim();
-        if (!trimmedInput) return;
+        if (!inputText.trim()) return;
 
-        const newUserMessage = {
-            id: Date.now(), // Gunakan timestamp sebagai ID sementara
-            sender: "user",
-            text: trimmedInput,
-        };
-
-        setMessages((prev) => [...prev, newUserMessage]);
+        const userText = inputText;
         setInputText("");
 
-        // TODO: Logika untuk mendapatkan jawaban dari admin/bot (jika diperlukan)
-        // Contoh response dummy:
-        // setTimeout(() => {
-        //     const adminResponse = { id: Date.now() + 1, sender: 'admin', text: `Saya menerima pesan Anda: "${trimmedInput}". Saya akan segera merespon.`};
-        //     setMessages(prev => [...prev, adminResponse]);
-        // }, 1000);
+        const newUserMsg = { id: Date.now(), sender: "user", text: userText };
+        setMessages((prev) => [...prev, newUserMsg]);
+
+        setIsTyping(true);
+
+        setTimeout(() => {
+            const botAnswer = getBotResponse(userText);
+            const newBotMsg = {
+                id: Date.now() + 1,
+                sender: "bot",
+                text: botAnswer,
+            };
+            setMessages((prev) => [...prev, newBotMsg]);
+            setIsTyping(false);
+        }, 1000 + Math.random() * 500);
     };
 
-    // Kirim dengan Enter
     const handleKeyDown = (e) => {
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
@@ -115,94 +137,99 @@ export default function FaqPage() {
     };
 
     return (
-        // Hapus MobileLayout wrapper
-        // --- Warna biru untuk latar belakang ---
-        <div className="flex flex-col h-screen w-full bg-[#00D1FF]">
-            {" "}
-            {/* Gunakan h-screen */}
-            {/* Header tetap di atas (sticky) */}
-            <header className="w-full p-4 pt-8 sticky top-0 z-20 bg-[#00D1FF] flex-shrink-0">
-                {" "}
-                {/* Tambah flex-shrink-0 */}
-                <div className="flex items-center gap-4">
-                    <button className="text-white" onClick={() => navigate(-1)}>
-                        <BackArrowIcon />
+        <div className="flex justify-center min-h-screen bg-gray-50 font-sans">
+            <div className="w-full max-w-md min-h-screen bg-white flex flex-col shadow-xl relative overflow-hidden">
+                {/* HEADER - Diubah menyesuaikan style Customer (Gradient & Lucide Icon) */}
+                <header className="relative h-24 flex-shrink-0 bg-gradient-to-r from-cyan-500 to-blue-600 flex items-center px-4 shadow-md z-20">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="p-2 rounded-full text-white hover:bg-white/20 transition-colors mr-3"
+                    >
+                        <ChevronLeft />
                     </button>
-                    <img
-                        src="/images/Admin_Moodly.png" // Pastikan path ini benar
-                        alt="Admin Avatar"
-                        className="w-12 h-12 rounded-full object-cover"
-                        onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src =
-                                "https://ui-avatars.com/api/?name=Admin&background=fff&color=00D1FF&bold=true";
-                        }} // Fallback
-                    />
-                    <div>
-                        <h1 className="font-semibold text-white text-base">
-                            Admin Moodly
-                        </h1>
-                        <p className="text-xs text-white/90">Online</p>
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center border-2 border-white/30 backdrop-blur-sm">
+                            <Bot size={24} className="text-white" />
+                        </div>
+                        <div>
+                            <h1 className="font-bold text-white text-base leading-tight">
+                                Moodly Bot (Mitra)
+                            </h1>
+                            <p className="text-xs text-white/90 flex items-center gap-1">
+                                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                                Online
+                            </p>
+                        </div>
                     </div>
-                </div>
-            </header>
-            {/* Kontainer putih untuk isi chat */}
-            {/* Gunakan flex-grow dan overflow-y-auto di sini */}
-            <div className="flex-grow flex flex-col bg-white pt-8 z-10 rounded-t-[2.5rem] overflow-hidden">
-                {/* Chat area */}
-                {/* Gunakan flex-grow dan overflow-y-auto di sini */}
-                <main className="flex-grow p-4 space-y-4 overflow-y-auto">
+                </header>
+
+                {/* CHAT AREA */}
+                <main className="flex-grow p-4 space-y-4 overflow-y-auto bg-gray-50 pb-20">
                     {messages.map((msg) => (
                         <div
-                            key={msg.id} // Gunakan ID unik
-                            className={`flex ${
+                            key={msg.id}
+                            className={`flex w-full ${
                                 msg.sender === "user"
                                     ? "justify-end"
                                     : "justify-start"
                             }`}
                         >
                             <div
-                                className={`max-w-[80%] md:max-w-[70%] px-5 py-3 rounded-2xl shadow-sm ${
-                                    // Tambah shadow
+                                className={`max-w-[85%] px-5 py-3.5 text-sm leading-relaxed shadow-sm transition-all duration-300 animate-fadeIn ${
                                     msg.sender === "user"
-                                        ? "rounded-tr-none bg-blue-50 text-gray-800 border border-blue-200" // Warna user
-                                        : "rounded-tl-none bg-gray-100 text-gray-800 border border-gray-200" // Warna admin
+                                        ? "bg-cyan-500 text-white rounded-2xl rounded-tr-none" // Style bubble user disamakan
+                                        : "bg-white text-gray-800 rounded-2xl rounded-tl-none border border-gray-200"
                                 }`}
                             >
-                                <p className="text-sm leading-relaxed whitespace-pre-line">
-                                    {msg.text}
-                                </p>
+                                {msg.text}
                             </div>
                         </div>
                     ))}
-                    {/* Elemen kosong untuk target auto-scroll */}
+
+                    {/* Indikator Typing */}
+                    {isTyping && (
+                        <div className="flex w-full justify-start">
+                            <div className="bg-white px-4 py-3 rounded-2xl rounded-tl-none border border-gray-200 flex items-center gap-1 shadow-sm">
+                                <span
+                                    className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+                                    style={{ animationDelay: "0s" }}
+                                ></span>
+                                <span
+                                    className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+                                    style={{ animationDelay: "0.2s" }}
+                                ></span>
+                                <span
+                                    className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+                                    style={{ animationDelay: "0.4s" }}
+                                ></span>
+                            </div>
+                        </div>
+                    )}
                     <div ref={messagesEndRef} />
                 </main>
 
-                {/* Input bawah */}
-                {/* Gunakan flex-shrink-0 agar tidak ikut scroll */}
-                <footer className="bg-white p-4 sticky bottom-0 border-t border-gray-200 flex-shrink-0">
-                    <div className="flex items-center space-x-3">
-                        <textarea
+                {/* INPUT AREA - Diubah menyesuaikan style Customer */}
+                <footer className="bg-white p-4 sticky bottom-0 border-t border-gray-100 z-30">
+                    <div className="flex items-center gap-3 bg-gray-50 p-2 pr-2 pl-4 rounded-full border border-gray-200 focus-within:border-cyan-400 focus-within:ring-2 focus-within:ring-cyan-100 transition-all shadow-sm">
+                        <input
+                            type="text"
                             value={inputText}
                             onChange={(e) => setInputText(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            className="flex-1 w-full px-5 py-3 bg-gray-100 border border-gray-300 rounded-xl focus:outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400 resize-none text-sm"
-                            rows={1}
-                            placeholder="Ketik pesan..."
+                            placeholder="Ketik pertanyaan seputar praktik..."
+                            className="flex-grow bg-transparent outline-none text-sm text-gray-700 placeholder-gray-400"
+                            disabled={isTyping}
                         />
                         <button
                             onClick={handleSend}
-                            disabled={!inputText.trim()}
-                            className="bg-[#00D1FF] text-white w-12 h-12 flex items-center justify-center rounded-full border border-sky-300 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-sky-500 transition-colors"
-                            aria-label="Kirim Pesan"
+                            disabled={!inputText.trim() || isTyping}
+                            className="w-9 h-9 flex items-center justify-center bg-cyan-500 text-white rounded-full hover:bg-cyan-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all shadow-md active:scale-95"
                         >
-                            <PlayIcon />
+                            <Send size={16} />
                         </button>
                     </div>
                 </footer>
             </div>
         </div>
-        // Hapus </MobileLayout>
     );
 }

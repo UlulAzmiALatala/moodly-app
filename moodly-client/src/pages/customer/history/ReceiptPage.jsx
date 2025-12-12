@@ -3,7 +3,7 @@ import { useNavigate, useLocation, useParams, Link } from "react-router-dom";
 import apiClient from "../../../api/axios";
 import html2canvas from "html2canvas";
 
-// --- CSS Animasi Centang (DIPERBAIKI & LEBIH STABIL) ---
+// --- CSS Animasi Centang ---
 const styles = `
 .checkmark-container {
   width: 80px;
@@ -36,16 +36,9 @@ const styles = `
   stroke-dashoffset: 48;
   animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
 }
-@keyframes stroke {
-  100% { stroke-dashoffset: 0; }
-}
-@keyframes scale {
-  0%, 100% { transform: none; }
-  50% { transform: scale3d(1.1, 1.1, 1); }
-}
-@keyframes fill {
-  100% { box-shadow: inset 0px 0px 0px 50px #4bb71b; }
-}
+@keyframes stroke { 100% { stroke-dashoffset: 0; } }
+@keyframes scale { 0%, 100% { transform: none; } 50% { transform: scale3d(1.1, 1.1, 1); } }
+@keyframes fill { 100% { box-shadow: inset 0px 0px 0px 50px #4bb71b; } }
 `;
 
 // --- Komponen Layout ---
@@ -92,6 +85,23 @@ const DownloadIcon = () => (
     </svg>
 );
 
+const AlertIcon = () => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-16 w-16 text-red-400 mb-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+    >
+        <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+        />
+    </svg>
+);
+
 // --- Helper ---
 function formatReceiptTimestamp(dateString) {
     if (!dateString) return "-";
@@ -113,20 +123,18 @@ function formatReceiptTimestamp(dateString) {
 
 const formatCurrency = (amount) => {
     if (amount == null) return "Rp 0";
-    const numericAmount = Number(amount);
     return new Intl.NumberFormat("id-ID", {
         style: "currency",
         currency: "IDR",
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
-    }).format(numericAmount);
+    }).format(amount);
 };
 
 export default function TransactionDetailPage() {
     const navigate = useNavigate();
     const { id: bookingId } = useParams();
     const { state } = useLocation();
-
     const receiptRef = useRef(null);
 
     const [booking, setBooking] = useState(state?.booking || null);
@@ -134,15 +142,27 @@ export default function TransactionDetailPage() {
     const [error, setError] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
 
+    // Fetch Data jika tidak ada di state (misal dari notifikasi)
     useEffect(() => {
         if (!booking && bookingId) {
             setLoading(true);
             apiClient
                 .get(`/api/history/${bookingId}`)
-                .then((response) => setBooking(response.data))
+                .then((response) => {
+                    setBooking(response.data);
+                    setError(null);
+                })
                 .catch((err) => {
                     console.error("Gagal fetch booking:", err);
-                    setError("Gagal memuat detail transaksi.");
+                    if (err.response && err.response.status === 404) {
+                        setError(
+                            "Data transaksi tidak ditemukan atau telah dihapus."
+                        );
+                    } else {
+                        setError(
+                            "Gagal memuat detail transaksi. Periksa koneksi Anda."
+                        );
+                    }
                 })
                 .finally(() => setLoading(false));
         }
@@ -150,19 +170,15 @@ export default function TransactionDetailPage() {
 
     const handleSaveReceipt = async () => {
         if (!receiptRef.current) return;
-
         setIsSaving(true);
         try {
-            // Tambahkan delay sedikit agar animasi selesai sebelum capture
             await new Promise((resolve) => setTimeout(resolve, 500));
-
             const canvas = await html2canvas(receiptRef.current, {
-                scale: 3, // Resolusi tinggi biar tajam
+                scale: 3,
                 backgroundColor: "#ffffff",
                 useCORS: true,
                 logging: false,
             });
-
             const image = canvas.toDataURL("image/png");
             const link = document.createElement("a");
             link.href = image;
@@ -171,37 +187,47 @@ export default function TransactionDetailPage() {
             link.click();
             document.body.removeChild(link);
         } catch (err) {
-            console.error("Gagal menyimpan gambar:", err);
+            console.error("Gagal simpan:", err);
             alert("Gagal menyimpan nota.");
         } finally {
             setIsSaving(false);
         }
     };
 
-    if (loading)
+    // --- RENDER ERROR STATE ---
+    if (error) {
         return (
             <MobileLayout>
-                <div className="flex items-center justify-center flex-1">
-                    Memuat data nota...
-                </div>
-            </MobileLayout>
-        );
-    if (error || !booking)
-        return (
-            <MobileLayout>
-                <div className="flex flex-col items-center justify-center flex-1 p-4 text-center">
-                    <p className="text-red-500">
-                        {error || "Data transaksi tidak ditemukan."}
-                    </p>
-                    <Link
-                        to="/history"
-                        className="mt-4 text-blue-600 font-semibold"
+                <div className="flex flex-col flex-1 bg-white relative items-center justify-center p-6 text-center">
+                    <AlertIcon />
+                    <h2 className="text-xl font-bold text-gray-800 mb-2">
+                        Oops!
+                    </h2>
+                    <p className="text-gray-500 mb-8">{error}</p>
+                    <button
+                        onClick={() => navigate("/history")}
+                        className="bg-[#00D1FF] text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-cyan-100 hover:bg-[#00b8e0] transition active:scale-95"
                     >
                         Kembali ke Riwayat
-                    </Link>
+                    </button>
                 </div>
             </MobileLayout>
         );
+    }
+
+    if (loading) {
+        return (
+            <MobileLayout>
+                <div className="flex flex-col flex-1 bg-[#00D1FF] items-center justify-center text-white">
+                    <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p className="font-medium animate-pulse">Memuat Nota...</p>
+                </div>
+            </MobileLayout>
+        );
+    }
+
+    // Pastikan booking ada sebelum render receipt
+    if (!booking) return null;
 
     const adminFee = 5000;
     const subtotal = booking.total_harga - adminFee;
@@ -211,9 +237,7 @@ export default function TransactionDetailPage() {
     return (
         <MobileLayout>
             <style>{styles}</style>
-            {/* Background Konsisten: #00D1FF */}
             <div className="flex flex-col flex-1 bg-[#00D1FF] relative">
-                {/* Header */}
                 <header className="w-full p-4 pt-8 flex items-center bg-[#00D1FF] relative z-10">
                     <button
                         onClick={() => navigate("/history")}
@@ -223,12 +247,10 @@ export default function TransactionDetailPage() {
                     </button>
                 </header>
 
-                {/* AREA NOTA (White Card) */}
                 <div
                     ref={receiptRef}
                     className="bg-white rounded-3xl mx-4 p-6 mt-4 shadow-xl mb-24 flex flex-col relative z-0 pb-10"
                 >
-                    {/* Animasi Centang Sukses (Diperbaiki) */}
                     <div className="checkmark-container">
                         <svg
                             className="checkmark-svg"
@@ -257,7 +279,6 @@ export default function TransactionDetailPage() {
                         {transactionDate}
                     </p>
 
-                    {/* ID Transaksi Box */}
                     <div className="bg-gray-50 rounded-xl p-4 flex justify-between items-center mb-6">
                         <span className="text-gray-500 text-sm">
                             ID Transaksi
@@ -278,7 +299,6 @@ export default function TransactionDetailPage() {
 
                     <hr className="border-gray-200 my-4 border-dashed" />
 
-                    {/* Detail Pembayar */}
                     <div className="mb-4">
                         <h3 className="font-bold text-gray-900 text-sm mb-3">
                             Detail Pembayar
@@ -286,7 +306,7 @@ export default function TransactionDetailPage() {
                         <div className="flex justify-between text-sm mb-2">
                             <span className="text-gray-500">Nama</span>
                             <span className="font-medium text-gray-800">
-                                {booking.customer.name}
+                                {booking.customer?.name || "-"}
                             </span>
                         </div>
                         <div className="flex justify-between text-sm">
@@ -322,7 +342,6 @@ export default function TransactionDetailPage() {
                     </div>
                 </div>
 
-                {/* FOOTER TOMBOL */}
                 <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-4 bg-white border-t border-gray-100 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-50">
                     <div className="flex gap-3">
                         <button
@@ -331,7 +350,6 @@ export default function TransactionDetailPage() {
                         >
                             Tutup
                         </button>
-
                         <button
                             onClick={handleSaveReceipt}
                             disabled={isSaving}

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import apiClient from "../../../api/axios.js";
-import { useAuth } from "../../../context/AuthContext.jsx";
 import {
     AlertCircle,
     CheckCircle2,
@@ -14,6 +13,8 @@ import {
     User,
     ChevronLeft,
     Star,
+    Hourglass,
+    Info,
 } from "lucide-react";
 
 // --- HOOK USE COUNTDOWN ---
@@ -155,6 +156,14 @@ const formatTimeRange = (startTime, durationMinutes) => {
     }
 };
 
+const ScheduleHeaderLoading = () => (
+    <header className="w-full p-4 pt-8 z-30 relative flex items-center justify-between">
+        <div className="w-10 h-10 bg-white/20 rounded-full animate-pulse"></div>
+        <div className="h-6 w-32 bg-white/20 rounded animate-pulse"></div>
+        <div className="w-10"></div>
+    </header>
+);
+
 // --- MAIN PAGE ---
 export default function CounselorScheduleDetailPage() {
     const navigate = useNavigate();
@@ -201,36 +210,6 @@ export default function CounselorScheduleDetailPage() {
             alert("Sesi selesai!");
         } catch (err) {
             alert("Gagal menyelesaikan sesi.");
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-    const handleApproveReschedule = async () => {
-        if (!window.confirm("Setujui perubahan jadwal ini?")) return;
-        setIsSubmitting(true);
-        try {
-            const res = await apiClient.post(
-                `/api/history/${bookingId}/reschedule/approve`
-            );
-            setBooking(res.data.booking);
-            alert("Jadwal baru disetujui!");
-        } catch (err) {
-            alert("Gagal menyetujui jadwal.");
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-    const handleRejectReschedule = async () => {
-        if (!window.confirm("Tolak perubahan jadwal ini?")) return;
-        setIsSubmitting(true);
-        try {
-            const res = await apiClient.post(
-                `/api/history/${bookingId}/reschedule/reject`
-            );
-            setBooking(res.data.booking);
-            alert("Jadwal dikembalikan ke semula.");
-        } catch (err) {
-            alert("Gagal menolak jadwal.");
         } finally {
             setIsSubmitting(false);
         }
@@ -312,6 +291,7 @@ export default function CounselorScheduleDetailPage() {
     const renderActionButtons = (booking) => {
         const status = booking.status_pesanan;
 
+        // --- STATUS: MENUNGGU KONFIRMASI (RESCHEDULE OLEH KONSELOR) ---
         if (
             status === "Menunggu Konfirmasi Customer" ||
             status === "MENUNGGU_KONFIRMASI_JADWAL"
@@ -320,43 +300,55 @@ export default function CounselorScheduleDetailPage() {
                 <div className="mt-6 w-full p-5 bg-white rounded-3xl border border-gray-100 shadow-xl relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-400 to-pink-500"></div>
                     <h3 className="text-center font-bold text-gray-800 mb-4 flex items-center justify-center gap-2">
-                        <Clock className="text-orange-500" size={20} />{" "}
-                        Permintaan Jadwal Baru
+                        <Hourglass
+                            className="text-orange-500 animate-pulse"
+                            size={20}
+                        />
+                        Menunggu Konfirmasi Customer
                     </h3>
-                    <div className="text-center mb-6 bg-orange-50 p-4 rounded-2xl border border-orange-100">
+
+                    {/* Detail Jadwal yang Diajukan */}
+                    <div className="text-center mb-4 bg-orange-50 p-4 rounded-2xl border border-orange-100">
+                        <p className="text-xs text-gray-500 mb-1">
+                            Jadwal yang Anda ajukan:
+                        </p>
                         <p className="text-lg font-bold text-gray-800">
-                            {formatDate(booking.tanggal_konsultasi)}
+                            {formatDate(
+                                booking.proposed_date ||
+                                    booking.tanggal_konsultasi
+                            )}
                         </p>
                         <p className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-pink-600 my-1 font-mono">
-                            {booking.jam_konsultasi?.substring(0, 5)} WIB
+                            {(
+                                booking.proposed_time || booking.jam_konsultasi
+                            )?.substring(0, 5)}{" "}
+                            WIB
                         </p>
                     </div>
-                    <div className="flex gap-3">
-                        <button
-                            onClick={handleRejectReschedule}
-                            disabled={isSubmitting}
-                            className="flex-1 py-3.5 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition active:scale-95"
-                        >
-                            Tolak
-                        </button>
-                        <button
-                            onClick={handleApproveReschedule}
-                            disabled={isSubmitting}
-                            className="flex-1 py-3.5 bg-gradient-to-r from-green-400 to-emerald-500 text-white font-bold rounded-2xl hover:shadow-lg transition active:scale-95 shadow-green-500/30"
-                        >
-                            Terima Jadwal
-                        </button>
+
+                    <div className="flex items-start gap-2 bg-gray-50 p-3 rounded-xl">
+                        <Info
+                            size={16}
+                            className="text-gray-400 mt-0.5 shrink-0"
+                        />
+                        <p className="text-xs text-gray-500 leading-relaxed">
+                            Anda tidak perlu melakukan tindakan apapun saat ini.
+                            Customer akan menerima atau menolak pengajuan jadwal
+                            ulang ini.
+                        </p>
                     </div>
                 </div>
             );
         }
 
+        // --- STATUS: DIJADWALKAN / AKTIF ---
         if (["Dijadwalkan", "Aktif", "Proses"].includes(status)) {
             const isChat = booking.metode_konsultasi === "Chat";
             const MainIcon = isChat ? MessageCircle : Video;
 
             return (
                 <div className="mt-8 w-full space-y-4 px-2">
+                    {/* Tombol Masuk Sesi (Chat/Gmeet) */}
                     {isChat ? (
                         <button
                             onClick={() =>
@@ -412,6 +404,7 @@ export default function CounselorScheduleDetailPage() {
                     )}
 
                     <div className="grid grid-cols-2 gap-3">
+                        {/* Tombol Reschedule */}
                         <button
                             onClick={() =>
                                 navigate(
@@ -423,7 +416,7 @@ export default function CounselorScheduleDetailPage() {
                             <Clock size={18} /> Reschedule
                         </button>
 
-                        {/* --- LOGIKA BARU: TOMBOL SELESAI HANYA JIKA isReady (SESI MULAI) --- */}
+                        {/* Tombol Selesai (Hanya jika sesi sudah mulai / isReady) */}
                         {isReady ? (
                             <button
                                 onClick={handleCompleteSession}
@@ -437,7 +430,6 @@ export default function CounselorScheduleDetailPage() {
                                 <CheckCircle2 size={18} /> Belum Mulai
                             </div>
                         )}
-                        {/* ----------------------------------------------------------------- */}
                     </div>
                 </div>
             );
@@ -582,11 +574,3 @@ export default function CounselorScheduleDetailPage() {
         </MobileLayout>
     );
 }
-
-const ScheduleHeaderLoading = () => (
-    <header className="w-full p-4 pt-8 z-30 relative flex items-center justify-between">
-        <div className="w-10 h-10 bg-white/20 rounded-full animate-pulse"></div>
-        <div className="h-6 w-32 bg-white/20 rounded animate-pulse"></div>
-        <div className="w-10"></div>
-    </header>
-);

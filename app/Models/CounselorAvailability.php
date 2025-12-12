@@ -10,18 +10,19 @@ class CounselorAvailability extends Model
 {
     use HasFactory;
 
-    // Tentukan nama tabel jika tidak standar
+    // Nama tabel
     protected $table = 'counselor_availabilities';
 
-    /**
-     * The attributes that are mass assignable.
-     * (Ini adalah perbaikan untuk error 500)
-     */
     protected $fillable = [
         'counselor_id',
-        'tanggal_konsultasi', // <-- Kita ganti dari day_of_week
+        'tanggal_konsultasi',
         'start_time',
         'end_time',
+    ];
+
+    // [TAMBAHAN PENTING] Casting agar tanggal otomatis jadi object Carbon
+    protected $casts = [
+        'tanggal_konsultasi' => 'date:Y-m-d',
     ];
 
     /**

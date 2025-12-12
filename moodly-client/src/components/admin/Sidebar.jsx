@@ -21,7 +21,7 @@ import {
     Tag,
     Receipt,
     MessageCircleQuestion,
-    Wallet, // <-- Ikon Baru untuk Keuangan
+    Wallet, // Ikon Keuangan
 } from "lucide-react";
 
 // --- KOMPONEN SECTION HEADER ---
@@ -143,13 +143,13 @@ const SidebarMenu = ({ role }) => {
             items: [
                 {
                     label: "Dashboard",
-                    path: "/super-admin/dashboard", // Pastikan path dashboard super admin benar
+                    path: "/super-admin/dashboard",
                     icon: LayoutDashboard,
                 },
             ],
         },
         {
-            section: "Laporan", // <-- SECTION BARU
+            section: "Laporan",
             items: [
                 {
                     label: "Laporan Keuangan",
@@ -236,7 +236,8 @@ const SidebarMenu = ({ role }) => {
         },
     ];
 
-    // --- MENU ADMIN ---
+    // --- MENU ADMIN (YANG SUDAH DIGABUNG) ---
+    // [PERBAIKAN] Menambahkan Menu Keuangan di sini juga
     const adminStructure = [
         {
             section: "Utama",
@@ -245,6 +246,18 @@ const SidebarMenu = ({ role }) => {
                     label: "Dashboard",
                     path: "/admin/dashboard",
                     icon: LayoutDashboard,
+                },
+            ],
+        },
+        // [BARU] Agar Role ADMIN juga bisa akses Keuangan
+        {
+            section: "Laporan",
+            items: [
+                {
+                    label: "Laporan Keuangan",
+                    // Kita arahkan ke route super-admin dulu karena logic page ada disana
+                    path: "/super-admin/keuangan",
+                    icon: Wallet,
                 },
             ],
         },
@@ -277,13 +290,12 @@ const SidebarMenu = ({ role }) => {
                 },
             ],
         },
-        // Admin Biasa juga bisa akses Pusat Bantuan (Optional)
         {
             section: "Dukungan",
             items: [
                 {
                     label: "Pusat Bantuan",
-                    path: "/admin/help/conversations", // Sesuaikan route admin chat
+                    path: "/admin/help/conversations",
                     icon: MessageCircleQuestion,
                 },
             ],
@@ -334,12 +346,10 @@ export default function Sidebar() {
                 </div>
             </div>
 
-            {/* Area Menu Scrollable */}
             <div className="flex-1 overflow-y-auto scrollbar-hide py-2">
                 <SidebarMenu role={user?.role} />
             </div>
 
-            {/* Footer Logout */}
             <div className="p-4 border-t border-gray-800 bg-gray-900">
                 <button
                     onClick={logout}

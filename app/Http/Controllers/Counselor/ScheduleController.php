@@ -6,50 +6,51 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Booking;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Notification;
+use Carbon\Carbon; // Import Carbon
+
+// --- IMPORT SERVICE KEUANGAN ---
+use App\Services\BookingFinanceService;
 
 // --- IMPORT NOTIFIKASI ---
 use App\Notifications\RescheduleRequested;
-use App\Notifications\BookingStatusUpdated; // <-- Tambahkan ini untuk notifikasi 'Selesai'
+use App\Notifications\BookingStatusUpdated;
 
 class ScheduleController extends Controller
 {
-    /**
-     * Mengambil semua jadwal (Akan Datang) untuk konselor yang login.
-     * [MODIFIKASI] Menambahkan fitur Pencarian
-     */
+    protected $financeService;
+
+    // --- INJECT SERVICE DI CONSTRUCTOR ---
+    public function __construct(BookingFinanceService $financeService)
+    {
+        $this->financeService = $financeService;
+    }
+
     public function index(Request $request)
     {
         $user = Auth::user();
-        $search = $request->query('search'); // Ambil parameter pencarian
+        $search = $request->query('search');
 
         $upcomingStatuses = [
             'Dijadwalkan',
             'Aktif',
             'Proses',
             'Menunggu Konfirmasi',
-            'Menunggu Konfirmasi Customer' // Tambahkan status ini agar jadwal reschedule muncul
+            'Menunggu Konfirmasi Customer'
         ];
 
         $query = Booking::where('konselor_id', $user->id)
             ->whereIn('status_pesanan', $upcomingStatuses)
             ->where('tanggal_konsultasi', '>=', now()->toDateString());
 
-        // --- LOGIKA PENCARIAN ---
         if ($search) {
             $query->where(function ($q) use ($search) {
-                // Cari berdasarkan Nama Customer
                 $q->whereHas('customer', function ($subQ) use ($search) {
                     $subQ->where('name', 'like', "%{$search}%");
-                })
-                    // ATAU Cari berdasarkan ID Pesanan
-                    ->orWhere('id', 'like', "%{$search}%");
+                })->orWhere('id', 'like', "%{$search}%");
             });
         }
-        // ------------------------
 
         $schedules = $query->with([
             'customer:id,name,avatar',
@@ -62,9 +63,6 @@ class ScheduleController extends Controller
         return response()->json($schedules);
     }
 
-    /**
-     * Menampilkan detail spesifik dari satu booking.
-     */
     public function show(Request $request, Booking $booking)
     {
         $user = Auth::user();
@@ -83,7 +81,7 @@ class ScheduleController extends Controller
     }
 
     /**
-     * Menandai sesi booking sebagai 'Selesai'.
+     * Menandai sesi booking sebagai 'Selesai' & HITUNG KEUANGAN.
      */
     public function completeSession(Request $request, Booking $booking)
     {
@@ -99,21 +97,20 @@ class ScheduleController extends Controller
         }
 
         try {
-            $booking->status_pesanan = 'Selesai';
-            $booking->save();
+            // --- GUNAKAN SERVICE UNTUK UPDATE STATUS & KEUANGAN ---
+            $this->financeService->completeBooking($booking);
 
-            // --- [MODIFIKASI] KIRIM NOTIFIKASI KE CUSTOMER ---
+            // --- KIRIM NOTIFIKASI KE CUSTOMER ---
             try {
                 $booking->customer->notify(new BookingStatusUpdated($booking));
             } catch (\Exception $e) {
                 Log::error('Gagal kirim notif selesai: ' . $e->getMessage());
             }
-            // ------------------------------------------------
 
-            Log::info('Sesi Selesai (oleh Konselor):', ['booking_id' => $booking->id]);
+            Log::info('Sesi Selesai & Perhitungan Keuangan Sukses:', ['booking_id' => $booking->id]);
 
             return response()->json([
-                'message' => 'Sesi berhasil ditandai sebagai Selesai.',
+                'message' => 'Sesi berhasil ditandai sebagai Selesai. Pendapatan telah dicatat.',
                 'booking' => $booking->fresh()->load([
                     'customer:id,name,avatar,phone',
                     'durasiKonseling',
@@ -128,7 +125,7 @@ class ScheduleController extends Controller
 
     /**
      * MENGAJUKAN jadwal ulang booking oleh Konselor.
-     * POST /api/counselor/booking/{booking}/reschedule
+     * (Versi Lebih Cerdas: Cek Bentrok & Waktu Fleksibel)
      */
     public function reschedule(Request $request, Booking $booking)
     {
@@ -140,22 +137,17 @@ class ScheduleController extends Controller
 
         $nonReschedulableStatus = ['Selesai', 'Batal', 'DIBATALKAN', 'DITOLAK', 'SELESAI'];
         if (in_array($booking->status_pesanan, $nonReschedulableStatus)) {
-            return response()->json([
-                'message' => 'Sesi dengan status ini tidak dapat dijadwal ulang.'
-            ], 422);
+            return response()->json(['message' => 'Sesi dengan status ini tidak dapat dijadwal ulang.'], 422);
         }
 
-        // Cek apakah sudah ada pengajuan
         if ($booking->status_pesanan === 'Menunggu Konfirmasi Customer') {
-            return response()->json([
-                'message' => 'Sudah ada pengajuan jadwal ulang yang menunggu konfirmasi customer.'
-            ], 409);
+            return response()->json(['message' => 'Sudah ada pengajuan jadwal ulang yang menunggu konfirmasi customer.'], 409);
         }
 
+        // 1. Validasi Input (Support H:i dan H:i:s)
         $validator = Validator::make($request->all(), [
-            'tanggal_konsultasi' => 'required|date|after_or_equal:today',
-            // Gunakan format H:i agar sesuai dengan frontend input type="time"
-            'jam_konsultasi' => 'required|date_format:H:i',
+            'tanggal_konsultasi' => 'required|date',
+            'jam_konsultasi' => ['required', 'string'], // Kita parsing manual nanti
         ]);
 
         if ($validator->fails()) {
@@ -163,25 +155,65 @@ class ScheduleController extends Controller
         }
 
         $validated = $validator->validated();
+        $newDate = $validated['tanggal_konsultasi'];
+
+        // Normalisasi jam (ambil 5 karakter pertama: "09:30")
+        $newTime = substr($validated['jam_konsultasi'], 0, 5);
+
+        // 2. Validasi Waktu Logis (Manual dengan Carbon)
+        $reqDateTime = Carbon::parse("$newDate $newTime");
+
+        // Toleransi: Tidak boleh reschedule ke waktu > 15 menit yang lalu (untuk antisipasi selisih waktu server/client)
+        if ($reqDateTime->lt(now()->subMinutes(15))) {
+            return response()->json(['message' => 'Waktu yang dipilih sudah berlalu.'], 422);
+        }
+
+        // 3. CEK BENTROK (COLLISION DETECTION)
+        $durationMinutes = $booking->durasiKonseling->durasi_menit ?? 60;
+        $reqEnd = $reqDateTime->copy()->addMinutes($durationMinutes);
+
+        // Ambil SEMUA booking aktif di tanggal tersebut (kecuali diri sendiri)
+        $conflictingBookings = Booking::where('konselor_id', $user->id)
+            ->where('tanggal_konsultasi', $newDate)
+            ->where('id', '!=', $booking->id) // PENTING: Abaikan booking ini sendiri
+            ->whereIn('status_pesanan', ['Dijadwalkan', 'Aktif', 'Proses', 'Menunggu Konfirmasi', 'Menunggu Konfirmasi Customer'])
+            ->with('durasiKonseling')
+            ->get();
+
+        $conflict = null;
+        foreach ($conflictingBookings as $existing) {
+            $existingStart = Carbon::parse($existing->tanggal_konsultasi . ' ' . $existing->jam_konsultasi);
+            $existingDuration = $existing->durasiKonseling->durasi_menit ?? 60;
+            $existingEnd = $existingStart->copy()->addMinutes($existingDuration);
+
+            // Rumus Overlap: (StartA < EndB) && (EndA > StartB)
+            if ($reqDateTime->lt($existingEnd) && $reqEnd->gt($existingStart)) {
+                $conflict = $existing;
+                break;
+            }
+        }
+
+        if ($conflict) {
+            return response()->json([
+                'message' => 'Jadwal baru bentrok dengan sesi lain.',
+                'conflict_with' => substr($conflict->jam_konsultasi, 0, 5)
+            ], 409); // Gunakan 409 Conflict
+        }
 
         try {
-            // Update booking dengan JADWAL YANG DIAJUKAN (PROPOSED)
             $booking->update([
-                'proposed_date' => $validated['tanggal_konsultasi'],
-                'proposed_time' => $validated['jam_konsultasi'],
+                'proposed_date' => $newDate,
+                'proposed_time' => $newTime, // Simpan format H:i bersih
                 'status_pesanan' => 'Menunggu Konfirmasi Customer',
             ]);
 
-            // Kirim notifikasi ke CUSTOMER
             $booking->load('customer');
 
-            // --- [MODIFIKASI] Gunakan notify() standar ---
             try {
                 $booking->customer->notify(new RescheduleRequested($booking));
             } catch (\Exception $e) {
                 Log::error('Gagal kirim notif reschedule ke customer: ' . $e->getMessage());
             }
-            // ---------------------------------------------
 
             Log::info('Pengajuan reschedule oleh konselor:', ['booking_id' => $booking->id]);
 

@@ -44,7 +44,7 @@ import VerifyCodePage from "../pages/auth/VerifyCodePage.jsx";
 import HomePage from "../pages/customer/HomePage.jsx";
 import NotificationPage from "../pages/customer/NotificationPage.jsx";
 import NotificationSchedule from "../pages/customer/NotificationSchedule.jsx";
-import NotificationRefund from "../pages/customer/NotificationRefund.jsx"; // Halaman Status Refund (Notifikasi)
+import NotificationRefund from "../pages/customer/NotificationRefund.jsx";
 import PrivacyPolicyPage from "../pages/customer/PrivacyPolicyPage.jsx";
 
 // --- Booking & Payment ---
@@ -66,10 +66,10 @@ import ReschedulePage from "../pages/customer/history/ReschedulePage.jsx";
 import LoadingPage from "../pages/customer/history/LoadingPage.jsx";
 import ReceiptPage from "../pages/customer/history/ReceiptPage.jsx";
 
-// --- History Cancellation Flow (FOLDER BARU) ---
+// --- History Cancellation Flow ---
 import CancelPage from "../pages/customer/history/cancellation/CancelPage.jsx";
 import RefundAgreement from "../pages/customer/history/cancellation/RefundAgreement.jsx";
-import RefundPage from "../pages/customer/history/cancellation/RefundPage.jsx"; // Halaman Form Refund
+import RefundPage from "../pages/customer/history/cancellation/RefundPage.jsx";
 import CancelDetailPage from "../pages/customer/history/cancellation/CancelDetailPage.jsx";
 
 // --- Profile ---
@@ -99,6 +99,7 @@ import CounselorScheduleDetailPage from "../pages/counselor/schedule/DetailPage.
 import CounselorHistoryPage from "../pages/counselor/history/HistoryPage.jsx";
 import CounselorHistoryEditPage from "../pages/counselor/history/Edit.jsx";
 import CounselorReschedulePage from "../pages/counselor/history/ReSchedulePage.jsx";
+import CounselorReceiptPage from "../pages/counselor/history/ReceiptPage.jsx";
 
 // --- Profile ---
 import CounselorProfilePage from "../pages/counselor/profile/Index.jsx";
@@ -148,7 +149,10 @@ import VerifikasiCustomerPage from "../pages/admin/verifikasi-customer/Index.jsx
 import VerifikasiCustomerDetailPage from "../pages/admin/verifikasi-customer/Show.jsx";
 import RefundManagementPage from "../pages/super-admin/refund/Index.jsx";
 import SuperAdminHelpChatPage from "../pages/super-admin/help/Index.jsx";
+
+// --- Finance ---
 import FinancePage from "../pages/super-admin/keuangan/Index.jsx";
+import FinanceDetailPage from "../pages/super-admin/keuangan/Show.jsx"; // [IMPORT BARU]
 
 // === GUARDS ===
 const GuestGuard = () => {
@@ -454,6 +458,10 @@ const AppRouter = () => {
                         element={<CounselorReschedulePage />}
                     />
                     <Route
+                        path="/counselor/history/receipt/:id"
+                        element={<CounselorReceiptPage />}
+                    />
+                    <Route
                         path="/counselor/chat/:id"
                         element={<CounselorChatPage />}
                     />
@@ -624,9 +632,15 @@ const AppRouter = () => {
                         path="/super-admin/help-center"
                         element={<SuperAdminHelpChatPage />}
                     />
+
+                    {/* --- KEUANGAN (FINANCE) --- */}
                     <Route
                         path="/super-admin/keuangan"
                         element={<FinancePage />}
+                    />
+                    <Route
+                        path="/super-admin/keuangan/:id" // Rute Detail Transaksi Baru
+                        element={<FinanceDetailPage />}
                     />
                 </Route>
             </Route>

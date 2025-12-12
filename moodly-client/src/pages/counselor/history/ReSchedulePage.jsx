@@ -1,71 +1,68 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-// Pastikan path ini benar
 import apiClient from "../../../api/axios";
+import { Calendar, Clock, ChevronLeft, CalendarDays, Info } from "lucide-react";
 
-// --- Komponen Layout & Ikon (Tidak Berubah) ---
+// --- Components Layout ---
 const MobileLayout = ({ children }) => (
-    <div className="flex justify-center min-h-screen bg-white">
-        <div className="w-full max-w-md min-h-screen bg-white flex flex-col">
+    <div className="flex justify-center min-h-screen bg-gray-50 font-sans">
+        <div className="w-full max-w-md min-h-screen bg-gray-50 flex flex-col relative shadow-2xl overflow-hidden">
             {children}
         </div>
     </div>
 );
-const BackArrowIcon = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-6 w-6"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={2.5}
-    >
-        <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M15 19l-7-7 7-7"
-        />
-    </svg>
+
+const Spinner = () => (
+    <div className="flex justify-center items-center py-10">
+        <div className="w-10 h-10 border-4 border-cyan-100 border-t-cyan-600 rounded-full animate-spin"></div>
+    </div>
 );
-// --- Akhir Komponen ---
+
+// --- Helper Format Tanggal ---
+const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    return new Date(dateString).toLocaleDateString("id-ID", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+    });
+};
 
 export default function CounselorReschedulePage() {
     const navigate = useNavigate();
-    const { id: bookingId } = useParams(); // <-- Ambil bookingId dari URL
+    const { id: bookingId } = useParams();
 
-    // --- State Baru ---
     const [booking, setBooking] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // State untuk form
+    // Form State
     const [tanggal, setTanggal] = useState("");
-    const [jam, setJam] = useState(""); // Format: HH:MM
-    // --- Akhir State Baru ---
+    const [jam, setJam] = useState("");
 
-    // --- Fetch Data Booking ---
+    // 1. Fetch Data Booking
     useEffect(() => {
         if (!bookingId) {
-            navigate("/counselor/schedule"); // Kembali jika tidak ada ID
+            navigate("/counselor/schedule");
             return;
         }
 
         const fetchBooking = async () => {
             try {
                 setLoading(true);
-                // Panggil API yang sudah ada
                 const response = await apiClient.get(
                     `/api/counselor/booking/${bookingId}`
                 );
                 const data = response.data;
-
                 setBooking(data);
-                // Isi form dengan data jadwal yang lama
+
+                // Isi default form dengan jadwal lama
                 setTanggal(data.tanggal_konsultasi);
-                setJam(data.jam_konsultasi.substring(0, 5)); // Ambil "14:00" dari "14:00:00"
+                setJam(data.jam_konsultasi.substring(0, 5));
             } catch (err) {
-                console.error("Gagal fetch data booking:", err);
+                console.error("Fetch error:", err);
                 setError("Gagal memuat data sesi.");
             } finally {
                 setLoading(false);
@@ -74,9 +71,8 @@ export default function CounselorReschedulePage() {
 
         fetchBooking();
     }, [bookingId, navigate]);
-    // --- Akhir Fetch Data ---
 
-    // --- Handle Submit Form ---
+    // 2. Handle Submit
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
@@ -89,10 +85,7 @@ export default function CounselorReschedulePage() {
         }
 
         try {
-            // Format jam ke H:i:s (e.g., "14:00:00")
             const jamFormatted = `${jam}:00`;
-
-            // Panggil API Reschedule baru yang sudah kita buat
             await apiClient.post(
                 `/api/counselor/booking/${bookingId}/reschedule`,
                 {
@@ -101,19 +94,20 @@ export default function CounselorReschedulePage() {
                 }
             );
 
-            alert("Jadwal berhasil diubah!");
-            // Kembali ke halaman detail jadwal
+            alert("Pengajuan jadwal ulang berhasil dikirim!");
             navigate(`/counselor/schedule/${bookingId}`);
         } catch (err) {
-            console.error("Gagal reschedule:", err);
+            console.error("Reschedule error:", err);
             const apiError =
                 err.response?.data?.message || "Gagal mengubah jadwal.";
-            if (err.response?.data?.errors) {
-                // Menampilkan error validasi (misal tanggal)
-                const errors = Object.values(err.response.data.errors).join(
-                    "\n"
+
+            if (err.response?.data?.conflict_with) {
+                setError(
+                    `Jadwal bentrok dengan sesi jam ${err.response.data.conflict_with}. Pilih waktu lain.`
                 );
-                setError(errors);
+            } else if (err.response?.data?.errors) {
+                const msgs = Object.values(err.response.data.errors).join("\n");
+                setError(msgs);
             } else {
                 setError(apiError);
             }
@@ -121,110 +115,218 @@ export default function CounselorReschedulePage() {
             setIsSubmitting(false);
         }
     };
-    // --- Akhir Handle Submit ---
 
-    // Mendapatkan tanggal hari ini (YYYY-MM-DD) untuk batas minimal input date
     const today = new Date().toISOString().split("T")[0];
 
     return (
         <MobileLayout>
-            <div className="flex flex-col h-full w-full bg-[#00D1FF] relative">
-                {/* HEADER */}
-                <header className="w-full pt-10 pb-16 px-4 relative bg-[#00D1FF] z-20">
+            {/* Header Modern */}
+            <header className="relative bg-gradient-to-br from-cyan-600 to-blue-600 pb-28 pt-8 px-6 rounded-b-[3rem] shadow-xl z-10 overflow-hidden">
+                {/* Dekorasi Background Header */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4"></div>
+
+                <div className="relative z-10 flex items-center justify-between mb-6">
                     <button
-                        className="absolute left-4 top-10 text-white"
                         onClick={() => navigate(-1)}
-                        aria-label="Kembali"
+                        className="p-2.5 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-md transition active:scale-95 border border-white/10"
                     >
-                        <BackArrowIcon />
+                        <ChevronLeft size={22} />
                     </button>
-                    <h1 className="text-center text-white font-bold text-xl">
-                        Ganti Jadwal
+                    <h1 className="text-lg font-bold text-white tracking-wide">
+                        Reschedule Sesi
                     </h1>
-                </header>
+                    <div className="w-10"></div> {/* Spacer */}
+                </div>
 
-                {/* BAGIAN PUTIH */}
-                <div className="flex-1 bg-white rounded-t-[2.5rem] -mt-6 z-30 relative p-6 pt-10 flex flex-col justify-between">
-                    {/* Tampilan Loading atau Error */}
-                    {loading && <p className="text-center">Memuat data...</p>}
-                    {!loading && error && !booking && (
-                        <p className="text-center text-red-500">{error}</p>
-                    )}
+                <div className="relative z-10 text-center text-white/90 max-w-xs mx-auto">
+                    <p className="text-sm font-medium">
+                        Ajukan perubahan waktu
+                    </p>
+                    <p className="text-xs opacity-70 mt-1">
+                        Status akan berubah menjadi menunggu konfirmasi customer
+                    </p>
+                </div>
+            </header>
 
-                    {/* Tampilkan form HANYA jika data booking sudah ada */}
-                    {booking && (
+            {/* Konten Utama */}
+            <div className="flex-1 px-5 -mt-20 pb-8 z-20">
+                <div className="bg-white rounded-[2rem] shadow-2xl shadow-blue-900/5 border border-gray-100 p-6 min-h-[450px] flex flex-col">
+                    {loading ? (
+                        <div className="flex-1 flex flex-col justify-center items-center">
+                            <Spinner />
+                            <p className="text-center text-gray-400 text-xs animate-pulse mt-4">
+                                Sedang memuat data...
+                            </p>
+                        </div>
+                    ) : !booking ? (
+                        <div className="flex-1 flex flex-col justify-center items-center text-center py-10">
+                            <Info size={40} className="text-gray-300 mb-2" />
+                            <p className="text-gray-500">
+                                Data sesi tidak ditemukan.
+                            </p>
+                        </div>
+                    ) : (
                         <>
-                            {/* === KONTEN UTAMA (SUDAH DIUBAH) === */}
-                            <div className="flex-grow">
-                                <h2 className="font-semibold text-gray-800 mb-2">
-                                    Jadwal Ulang untuk: {booking.customer.name}
-                                </h2>
-                                <p className="text-sm text-gray-500 mb-6">
-                                    Durasi Sesi:{" "}
-                                    {booking.durasi_konseling.durasi_menit}{" "}
-                                    Menit
-                                </p>
-
-                                {/* Hapus Scroller Hari (Senin, Selasa...) */}
-
-                                <form
-                                    onSubmit={handleSubmit}
-                                    className="space-y-6"
-                                >
-                                    {/* Input Tanggal Baru */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-800 mb-1">
-                                            Tanggal Konsultasi
-                                        </label>
-                                        <input
-                                            type="date"
-                                            value={tanggal}
-                                            onChange={(e) =>
-                                                setTanggal(e.target.value)
+                            {/* Section: Customer Info & Jadwal Lama */}
+                            <div className="mb-8">
+                                <div className="flex items-center gap-4 mb-5">
+                                    <div className="relative">
+                                        <div className="absolute -inset-0.5 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full opacity-70 blur-[2px]"></div>
+                                        <img
+                                            src={
+                                                booking.customer?.avatar ||
+                                                `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                                    booking.customer?.name
+                                                )}`
                                             }
-                                            min={today} // Tidak bisa pilih tanggal kemarin
-                                            className="w-full border border-black rounded-md p-2 text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                            disabled={isSubmitting}
+                                            alt="Customer"
+                                            className="w-14 h-14 rounded-full object-cover relative border-2 border-white"
                                         />
                                     </div>
-
-                                    {/* Input Jam Baru */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-800 mb-1">
-                                            Jam Mulai (WIB)
-                                        </label>
-                                        <input
-                                            type="time"
-                                            value={jam}
-                                            onChange={(e) =>
-                                                setJam(e.target.value)
-                                            }
-                                            className="w-full border border-black rounded-md p-2 text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                            disabled={isSubmitting}
-                                        />
+                                        <p className="text-[10px] text-cyan-600 font-bold uppercase tracking-wider mb-0.5">
+                                            Customer
+                                        </p>
+                                        <h3 className="text-lg font-bold text-gray-800 leading-tight">
+                                            {booking.customer?.name}
+                                        </h3>
+                                    </div>
+                                </div>
+
+                                {/* Current Schedule Card */}
+                                <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                                    <p className="text-xs text-gray-400 font-bold uppercase mb-3 flex items-center gap-1.5">
+                                        <span className="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
+                                        Jadwal Saat Ini
+                                    </p>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <p className="text-xs text-gray-500 mb-1">
+                                                Tanggal
+                                            </p>
+                                            <p className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                                <Calendar
+                                                    size={14}
+                                                    className="text-cyan-500"
+                                                />
+                                                {formatDate(
+                                                    booking.tanggal_konsultasi
+                                                )}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-gray-500 mb-1">
+                                                Jam
+                                            </p>
+                                            <p className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                                <Clock
+                                                    size={14}
+                                                    className="text-cyan-500"
+                                                />
+                                                {booking.jam_konsultasi.substring(
+                                                    0,
+                                                    5
+                                                )}{" "}
+                                                WIB
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Section: Form Jadwal Baru */}
+                            <form
+                                onSubmit={handleSubmit}
+                                className="flex-1 flex flex-col"
+                            >
+                                <div className="mb-2">
+                                    <p className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                        <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full"></span>
+                                        Pilih Jadwal Baru
+                                    </p>
+
+                                    <div className="space-y-4">
+                                        {/* Input Tanggal */}
+                                        <div className="relative group">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <CalendarDays
+                                                    size={18}
+                                                    className="text-gray-400 group-focus-within:text-cyan-600 transition-colors"
+                                                />
+                                            </div>
+                                            <input
+                                                type="date"
+                                                value={tanggal}
+                                                onChange={(e) =>
+                                                    setTanggal(e.target.value)
+                                                }
+                                                min={today}
+                                                className="w-full bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-xl pl-10 pr-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all shadow-sm"
+                                                disabled={isSubmitting}
+                                            />
+                                        </div>
+
+                                        {/* Input Jam */}
+                                        <div className="relative group">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <Clock
+                                                    size={18}
+                                                    className="text-gray-400 group-focus-within:text-cyan-600 transition-colors"
+                                                />
+                                            </div>
+                                            <input
+                                                type="time"
+                                                value={jam}
+                                                onChange={(e) =>
+                                                    setJam(e.target.value)
+                                                }
+                                                className="w-full bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-xl pl-10 pr-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all shadow-sm"
+                                                disabled={isSubmitting}
+                                            />
+                                        </div>
                                     </div>
 
-                                    {/* Tampilkan Error Submit */}
-                                    {error && (
-                                        <p className="text-center text-red-500 text-sm">
+                                    <p className="text-[10px] text-gray-400 mt-2 ml-1 flex items-center gap-1">
+                                        <Info size={10} />
+                                        Pastikan slot tersedia selama{" "}
+                                        {
+                                            booking.durasi_konseling
+                                                ?.durasi_menit
+                                        }{" "}
+                                        menit.
+                                    </p>
+                                </div>
+
+                                {/* Error Box */}
+                                {error && (
+                                    <div className="mt-4 bg-red-50 border border-red-100 rounded-xl p-3 flex items-start gap-3 animate-pulse">
+                                        <Info
+                                            size={16}
+                                            className="text-red-500 mt-0.5 shrink-0"
+                                        />
+                                        <p className="text-xs text-red-600 font-medium leading-relaxed">
                                             {error}
                                         </p>
-                                    )}
-                                </form>
-                            </div>
+                                    </div>
+                                )}
 
-                            {/* === TOMBOL FIXED DI BAWAH === */}
-                            <div className="w-full pb-4 pt-6">
+                                <div className="flex-1 min-h-[20px]"></div>
+
                                 <button
-                                    onClick={handleSubmit} // <-- Hubungkan ke submit
-                                    disabled={isSubmitting || loading}
-                                    className="w-full bg-[#00B2FF] text-white font-semibold py-3 rounded-lg hover:opacity-90 transition disabled:bg-gray-400"
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="w-full py-4 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold rounded-xl shadow-lg shadow-cyan-200 hover:shadow-cyan-300 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-4"
                                 >
-                                    {isSubmitting
-                                        ? "Menyimpan..."
-                                        : "Ganti Jadwal"}
+                                    {isSubmitting ? (
+                                        <span className="flex items-center justify-center gap-2">
+                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                            Mengirim Pengajuan...
+                                        </span>
+                                    ) : (
+                                        "Ajukan Perubahan"
+                                    )}
                                 </button>
-                            </div>
+                            </form>
                         </>
                     )}
                 </div>

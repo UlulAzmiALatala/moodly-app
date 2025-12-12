@@ -8,7 +8,7 @@ import Echo from "laravel-echo";
 import Pusher from "pusher-js";
 window.Pusher = Pusher;
 
-// --- Inisialisasi Echo ---
+// --- Inisialisasi Echo (Sesuaikan dengan .env Anda) ---
 const echo = new Echo({
     broadcaster: "reverb",
     key: import.meta.env.VITE_REVERB_APP_KEY,
@@ -17,6 +17,7 @@ const echo = new Echo({
     wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
     forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? "https") === "https",
     enabledTransports: ["ws", "wss"],
+    // Authorizer Custom untuk Sanctum
     authorizer: (channel, options) => {
         return {
             authorize: (socketId, callback) => {
@@ -32,20 +33,52 @@ const echo = new Echo({
     },
 });
 
-// --- Styles Animasi (Sama) ---
+// --- Styles Animasi CSS-in-JS ---
 const styles = `
-@keyframes coin-flow { 0% { transform: translate(-40px, -20px) scale(0.8); opacity: 0; } 20% { transform: translate(0px, 0px) scale(1); opacity: 1; } 80% { transform: translate(0px, 40px) scale(1); opacity: 1; } 100% { transform: translate(0px, 60px) scale(0.6); opacity: 0; } }
-@keyframes pulse-target { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-.coin-flow-animation { animation: coin-flow 1.5s cubic-bezier(0.5, 0, 0.5, 1) infinite; animation-delay: 0.2s; }
-.pulse-target-animation { animation: pulse-target 1s ease-in-out infinite; transform-origin: center bottom; }
-.money-animation-container { display: flex; justify-content: center; align-items: center; width: 150px; height: 150px; }
-@keyframes check-pop { 0% { transform: scale(0.5) rotate(-10deg); opacity: 0; } 60% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1) rotate(0deg); } }
-.check-pop-animation { animation: check-pop 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards; }
-@keyframes cross-pop { 0% { transform: scale(0.5); opacity: 0; } 60% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); } }
-.cross-pop-animation { animation: cross-pop 0.6s ease-out forwards; }
+@keyframes coin-flow {
+  0% { transform: translate(-40px, -20px) scale(0.8); opacity: 0; }
+  20% { transform: translate(0px, 0px) scale(1); opacity: 1; }
+  80% { transform: translate(0px, 40px) scale(1); opacity: 1; }
+  100% { transform: translate(0px, 60px) scale(0.6); opacity: 0; }
+}
+@keyframes pulse-target {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+.coin-flow-animation {
+  animation: coin-flow 1.5s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  animation-delay: 0.2s;
+}
+.pulse-target-animation {
+  animation: pulse-target 1s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+.money-animation-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 150px;
+  height: 150px;
+}
+@keyframes check-pop {
+  0% { transform: scale(0.5) rotate(-10deg); opacity: 0; }
+  60% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); }
+}
+.check-pop-animation {
+  animation: check-pop 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards;
+}
+@keyframes cross-pop {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.cross-pop-animation {
+  animation: cross-pop 0.6s ease-out forwards;
+}
 `;
 
-// --- Ikon SVG (Sama) ---
+// --- Ikon SVG Animasi Custom ---
 const SendingMoneyIcon = () => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -53,13 +86,12 @@ const SendingMoneyIcon = () => (
         className="w-full h-full relative"
         fill="none"
     >
-        {" "}
+        {/* Target (Admin) */}
         <g
             id="receiver-target"
             className="pulse-target-animation"
             transform="translate(0, 5)"
         >
-            {" "}
             <rect
                 x="20"
                 y="60"
@@ -69,14 +101,15 @@ const SendingMoneyIcon = () => (
                 fill="#4CAF50"
                 stroke="#388E3C"
                 strokeWidth="2"
-            />{" "}
-            <path d="M20 60 L50 55 L80 60 Z" fill="#388E3C" />{" "}
-            <rect x="40" y="56" width="20" height="3" fill="#2E7D32" rx="1.5" />{" "}
-            <circle cx="50" cy="70" r="5" fill="#FFFFFF" />{" "}
-            <path d="M40 75 C40 80, 60 80, 60 75 Z" fill="#FFFFFF" />{" "}
-        </g>{" "}
+            />
+            <path d="M20 60 L50 55 L80 60 Z" fill="#388E3C" />
+            <rect x="40" y="56" width="20" height="3" fill="#2E7D32" rx="1.5" />
+            <circle cx="50" cy="70" r="5" fill="#FFFFFF" />
+            <path d="M40 75 C40 80, 60 80, 60 75 Z" fill="#FFFFFF" />
+        </g>
+
+        {/* Koin Terbang */}
         <g id="animated-coin" className="coin-flow-animation">
-            {" "}
             <circle
                 cx="50"
                 cy="20"
@@ -84,7 +117,7 @@ const SendingMoneyIcon = () => (
                 fill="#FFD700"
                 stroke="#DAA520"
                 strokeWidth="2"
-            />{" "}
+            />
             <text
                 x="50"
                 y="24"
@@ -93,28 +126,28 @@ const SendingMoneyIcon = () => (
                 fill="#DAA520"
                 fontWeight="bold"
             >
-                {" "}
-                ${" "}
-            </text>{" "}
-        </g>{" "}
+                $
+            </text>
+        </g>
+
+        {/* Partikel Cahaya */}
         <g
             id="flow-particle-1"
             className="coin-flow-animation"
             style={{ animationDelay: "0.0s" }}
         >
-            {" "}
-            <circle cx="50" cy="20" r="3" fill="#FFD700" opacity="0.6" />{" "}
-        </g>{" "}
+            <circle cx="50" cy="20" r="3" fill="#FFD700" opacity="0.6" />
+        </g>
         <g
             id="flow-particle-2"
             className="coin-flow-animation"
             style={{ animationDelay: "0.4s" }}
         >
-            {" "}
-            <circle cx="50" cy="20" r="3" fill="#FFD700" opacity="0.6" />{" "}
-        </g>{" "}
+            <circle cx="50" cy="20" r="3" fill="#FFD700" opacity="0.6" />
+        </g>
     </svg>
 );
+
 const SuccessIcon = () => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -124,17 +157,17 @@ const SuccessIcon = () => (
         stroke="currentColor"
         strokeWidth={2}
     >
-        {" "}
         <circle
             cx="12"
             cy="12"
             r="10"
             stroke="currentColor"
             strokeOpacity="0.3"
-        />{" "}
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4" />{" "}
+        />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4" />
     </svg>
 );
+
 const RejectedIcon = () => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -144,26 +177,27 @@ const RejectedIcon = () => (
         stroke="currentColor"
         strokeWidth={2}
     >
-        {" "}
         <circle
             cx="12"
             cy="12"
             r="10"
             stroke="currentColor"
             strokeOpacity="0.3"
-        />{" "}
+        />
         <path
             strokeLinecap="round"
             strokeLinejoin="round"
             d="M6 18L18 6M6 6l12 12"
-        />{" "}
+        />
     </svg>
 );
+
 const LoadingSpinner = () => (
     <div className="flex items-center justify-center p-10">
         <div className="w-12 h-12 border-4 border-cyan-200 border-t-cyan-500 rounded-full animate-spin"></div>
     </div>
 );
+
 const MobileLayout = ({ children }) => (
     <div className="flex justify-center min-h-screen bg-[#FFF9F8]">
         <div className="w-full max-w-md min-h-screen bg-[#00B0FF] flex flex-col">
@@ -176,11 +210,11 @@ export default function LoadingPage() {
     const navigate = useNavigate();
     const { id: bookingId } = useParams();
     const { state } = useLocation();
-    const { user: authUser } = useAuth();
+    const { user: authUser } = useAuth(); // Ambil user ID untuk channel privat
 
     const bookingRef = useRef(state?.booking || null);
 
-    const [verificationStatus, setVerificationStatus] = useState("waiting");
+    const [verificationStatus, setVerificationStatus] = useState("waiting"); // waiting, success, rejected
     const [rejectionReason, setRejectionReason] = useState("");
     const [loading, setLoading] = useState(!state?.booking);
     const [error, setError] = useState(null);
@@ -194,44 +228,39 @@ export default function LoadingPage() {
                     const data = response.data;
                     bookingRef.current = data;
 
-                    // Update status jika sudah berubah di server
+                    // Update status jika sudah berubah di server saat halaman dimuat
                     if (data.status_pesanan === "Dijadwalkan") {
                         setVerificationStatus("success");
                     } else if (data.status_pesanan === "Pembayaran Ditolak") {
                         setRejectionReason(
-                            data.catatan_pembatalan || "Ditolak"
+                            data.catatan_pembatalan || "Ditolak oleh admin."
                         );
                         setVerificationStatus("rejected");
                     }
                 })
-                .catch((err) => console.error("Fetch error:", err))
+                .catch((err) => {
+                    console.error("Fetch error:", err);
+                    setError("Gagal memuat status pesanan.");
+                })
                 .finally(() => setLoading(false));
         }
     }, [bookingId]);
 
-    // --- 2. REAL-TIME LISTENER (PERBAIKAN UTAMA) ---
+    // --- 2. REAL-TIME LISTENER (Pusher/Reverb) ---
     useEffect(() => {
-        // Pastikan user dan bookingId ada
-        if (!authUser || !bookingId) return;
+        if (!authUser) return;
 
+        // Channel Private User
         const channelName = `customer.${authUser.id}`;
-        console.log(`🔌 [LoadingPage] Subscribe: ${channelName}`);
+        console.log(`🔌 Listening to channel: ${channelName}`);
 
-        const channel = echo.private(channelName);
+        echo.private(channelName).listen("PaymentVerified", (event) => {
+            console.log("🔔 Payment Event Received:", event);
 
-        channel.listen("PaymentVerified", (event) => {
-            console.log("🔔 [Event Masuk]", event);
+            // Pastikan event ini untuk booking yang sedang dibuka
+            if (String(event.booking.id) === String(bookingId)) {
+                bookingRef.current = event.booking;
 
-            // --- FIX: Konversi ke String agar aman ---
-            const eventBookingId = String(event.booking.id);
-            const currentBookingId = String(bookingId);
-
-            if (eventBookingId === currentBookingId) {
-                console.log("✅ ID Cocok! Update State...");
-
-                bookingRef.current = event.booking; // Update Ref
-
-                // Update State UI Langsung
                 if (event.booking.status_pesanan === "Dijadwalkan") {
                     setVerificationStatus("success");
                 } else if (
@@ -243,19 +272,13 @@ export default function LoadingPage() {
                     );
                     setVerificationStatus("rejected");
                 }
-            } else {
-                console.log(
-                    `⚠️ ID Beda: Event(${eventBookingId}) vs URL(${currentBookingId})`
-                );
             }
         });
 
         return () => {
-            console.log(`🔌 Unsubscribe: ${channelName}`);
-            channel.stopListening("PaymentVerified");
             echo.leave(channelName);
         };
-    }, [authUser, bookingId]); // Dependency array
+    }, [authUser, bookingId]);
 
     // --- 3. NAVIGASI OTOMATIS ---
     useEffect(() => {
@@ -265,12 +288,13 @@ export default function LoadingPage() {
                     state: { booking: bookingRef.current },
                     replace: true,
                 });
-            }, 2000);
+            }, 2000); // Delay 2 detik untuk lihat animasi sukses
             return () => clearTimeout(timer);
         }
 
         if (verificationStatus === "rejected") {
             const timer = setTimeout(() => {
+                // Arahkan kembali ke upload ulang
                 navigate(`/booking/upload-proof/${bookingId}`, {
                     replace: true,
                     state: {
@@ -283,7 +307,7 @@ export default function LoadingPage() {
         }
     }, [verificationStatus, bookingId, rejectionReason, navigate]);
 
-    // --- RENDER (Sama) ---
+    // --- RENDER CONTENT ---
     const renderContent = () => {
         if (loading)
             return (
@@ -334,7 +358,7 @@ export default function LoadingPage() {
                         </p>
                     </>
                 );
-            default:
+            default: // Waiting
                 return (
                     <>
                         <div className="money-animation-container mb-12">
@@ -345,9 +369,29 @@ export default function LoadingPage() {
                         </h1>
                         <p className="text-lg font-light mb-4 text-center px-4">
                             Admin sedang mengecek bukti pembayaran Anda.
+                            <br />
+                            <span className="text-sm opacity-80">
+                                (Biasanya memakan waktu 1-5 menit)
+                            </span>
                         </p>
+
+                        {/* Animasi Titik */}
                         <div className="text-4xl font-extrabold tracking-widest animate-pulse mt-4">
                             . . .
+                        </div>
+
+                        {/* Tombol Cek Nanti */}
+                        <div className="mt-12 w-full px-8">
+                            <button
+                                onClick={() => navigate("/home")}
+                                className="w-full py-3 bg-white/20 hover:bg-white/30 text-white border border-white/40 rounded-xl font-bold transition backdrop-blur-sm active:scale-95"
+                            >
+                                Tunggu di Beranda
+                            </button>
+                            <p className="text-xs text-center mt-3 text-white/70">
+                                Kami akan mengirimkan notifikasi saat pembayaran
+                                dikonfirmasi.
+                            </p>
                         </div>
                     </>
                 );
@@ -356,9 +400,17 @@ export default function LoadingPage() {
 
     return (
         <MobileLayout>
+            {/* Inject CSS Animasi */}
             <style>{styles}</style>
-            <div className="flex flex-col items-center justify-center flex-1 text-white p-8 bg-[#00B0FF] min-h-screen">
-                {renderContent()}
+
+            <div className="flex flex-col items-center justify-center flex-1 text-white p-8 bg-[#00B0FF] min-h-screen relative overflow-hidden">
+                {/* Background Decoration */}
+                <div className="absolute top-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
+                <div className="absolute bottom-0 right-0 w-64 h-64 bg-cyan-300/20 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
+
+                <div className="relative z-10 w-full flex flex-col items-center">
+                    {renderContent()}
+                </div>
             </div>
         </MobileLayout>
     );
