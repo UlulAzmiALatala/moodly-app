@@ -55,7 +55,7 @@
             <mxPoint x="355" y="720" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="jZ-QYYHuujH8RQ6wR3ZN-1" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlActor;size=80;" value="Customer" vertex="1">
+        <mxCell id="jZ-QYYHuujH8RQ6wR3ZN-1" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlActor;size=110;" value="Customer" vertex="1">
           <mxGeometry height="800" width="30" x="70" y="40" as="geometry" />
         </mxCell>
         <mxCell id="jZ-QYYHuujH8RQ6wR3ZN-3" parent="jZ-QYYHuujH8RQ6wR3ZN-1" style="html=1;points=[];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
