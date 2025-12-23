@@ -5,7 +5,7 @@
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
         <mxCell id="aM9ryv3xv72pqoxQDRHE-8" edge="1" parent="1" source="-1iUZWo6CQzFY0fvAmcl-21" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" target="-1iUZWo6CQzFY0fvAmcl-15" value="Return &lt;code data-path-to-node=&quot;8,5,0&quot; data-index-in-node=&quot;38&quot;&gt;User Data&lt;/code&gt;">
-          <mxGeometry relative="1" x="0.0044" as="geometry">
+          <mxGeometry relative="1" x="-0.0455" as="geometry">
             <mxPoint as="offset" />
             <Array as="points">
               <mxPoint x="630" y="360" />
@@ -81,7 +81,7 @@
             <mxPoint x="485" y="240" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="-1iUZWo6CQzFY0fvAmcl-20" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" value="&lt;code data-path-to-node=&quot;8,4,0&quot; data-index-in-node=&quot;30&quot;&gt;where(&#39;email&#39;, email)&lt;/code&gt;&amp;nbsp;&lt;div&gt;(Cek user di DB)&lt;/div&gt;">
+        <mxCell id="-1iUZWo6CQzFY0fvAmcl-20" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="-1iUZWo6CQzFY0fvAmcl-21" value="&lt;code data-path-to-node=&quot;8,4,0&quot; data-index-in-node=&quot;30&quot;&gt;where(&#39;email&#39;, email)&lt;/code&gt;&amp;nbsp;&lt;div&gt;(Cek user di DB)&lt;/div&gt;">
           <mxGeometry relative="1" width="80" as="geometry">
             <Array as="points">
               <mxPoint x="555" y="320" />
@@ -102,7 +102,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="-1iUZWo6CQzFY0fvAmcl-26" edge="1" parent="1" source="-1iUZWo6CQzFY0fvAmcl-15" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" target="-1iUZWo6CQzFY0fvAmcl-9" value="Return JSON (Token + Role)">
-          <mxGeometry relative="1" x="0.0044" as="geometry">
+          <mxGeometry relative="1" x="-0.0556" as="geometry">
             <mxPoint as="offset" />
             <Array as="points">
               <mxPoint x="370" y="480" />
