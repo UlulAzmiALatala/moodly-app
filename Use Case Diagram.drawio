@@ -187,7 +187,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="8PvDGE0g-mRPKC7vBR5b-30" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Mengelola Data Pengguna" vertex="1">
-          <mxGeometry height="80" width="120" x="-910" y="650" as="geometry" />
+          <mxGeometry height="80" width="120" x="-880" y="690" as="geometry" />
         </mxCell>
         <mxCell id="8PvDGE0g-mRPKC7vBR5b-32" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Mengelola Data Master" vertex="1">
           <mxGeometry height="80" width="120" x="-960" y="-690" as="geometry" />
