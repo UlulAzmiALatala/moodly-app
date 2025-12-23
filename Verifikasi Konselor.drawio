@@ -1,9 +1,156 @@
 <mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.2.9">
   <diagram name="Halaman-1" id="_fPs26vgqfrSPrqKhplR">
-    <mxGraphModel>
+    <mxGraphModel dx="1310" dy="828" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
+        <mxCell id="KGhRmTPU_D0xeVYAKFBv-21" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" value="sendEmail(to: Counselor,&amp;nbsp;&lt;div&gt;type: &#39;AccountActivated&#39;)&lt;/div&gt;">
+          <mxGeometry relative="1" width="80" x="-0.5128" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="436.5" y="520" as="sourcePoint" />
+            <mxPoint x="783.5" y="520" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="KGhRmTPU_D0xeVYAKFBv-1" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlActor;size=80;" value="Administrator" vertex="1">
+          <mxGeometry height="680" width="40" x="30" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="KGhRmTPU_D0xeVYAKFBv-2" parent="KGhRmTPU_D0xeVYAKFBv-1" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
+          <mxGeometry height="520" width="10" x="15" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="KGhRmTPU_D0xeVYAKFBv-3" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlBoundary;size=80;" value="&amp;nbsp; &amp;nbsp; &amp;nbsp; Halaman&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp;Verifikasi" vertex="1">
+          <mxGeometry height="680" width="80" x="200" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="KGhRmTPU_D0xeVYAKFBv-4" parent="KGhRmTPU_D0xeVYAKFBv-3" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
+          <mxGeometry height="520" width="10" x="35" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="KGhRmTPU_D0xeVYAKFBv-25" edge="1" parent="KGhRmTPU_D0xeVYAKFBv-3" source="KGhRmTPU_D0xeVYAKFBv-4" style="html=1;align=left;spacingLeft=2;endArrow=block;rounded=0;edgeStyle=orthogonalEdgeStyle;curved=0;rounded=0;" target="KGhRmTPU_D0xeVYAKFBv-4" value="Update UI&amp;nbsp;&lt;div&gt;(Remove Item)&lt;/div&gt;">
+          <mxGeometry relative="1" y="-90" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint y="560" />
+              <mxPoint y="600" />
+            </Array>
+            <mxPoint x="80" y="590" as="sourcePoint" />
+            <mxPoint x="85" y="620" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="KGhRmTPU_D0xeVYAKFBv-5" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlControl;size=80;" value="VerificationController" vertex="1">
+          <mxGeometry height="680" width="80" x="390" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="KGhRmTPU_D0xeVYAKFBv-6" parent="KGhRmTPU_D0xeVYAKFBv-5" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
+          <mxGeometry height="520" width="10" x="35" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="KGhRmTPU_D0xeVYAKFBv-7" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlEntity;size=80;" value="User Model" vertex="1">
+          <mxGeometry height="680" width="80" x="570" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="KGhRmTPU_D0xeVYAKFBv-9" parent="KGhRmTPU_D0xeVYAKFBv-7" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
+          <mxGeometry height="520" width="10" x="35" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="KGhRmTPU_D0xeVYAKFBv-8" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlBoundary;size=80;" value="&amp;nbsp; &amp;nbsp; Email&amp;nbsp;&lt;div&gt;&amp;nbsp; &amp;nbsp;Service&lt;/div&gt;" vertex="1">
+          <mxGeometry height="680" width="80" x="747" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="KGhRmTPU_D0xeVYAKFBv-10" parent="KGhRmTPU_D0xeVYAKFBv-8" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
+          <mxGeometry height="520" width="10" x="35" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="KGhRmTPU_D0xeVYAKFBv-11" edge="1" parent="1" source="KGhRmTPU_D0xeVYAKFBv-2" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="KGhRmTPU_D0xeVYAKFBv-4" value="Buka Menu &quot;Konselor Baru&quot;">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <Array as="points">
+              <mxPoint x="190" y="160" />
+            </Array>
+            <mxPoint x="70" y="160" as="sourcePoint" />
+            <mxPoint x="150" y="160" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="KGhRmTPU_D0xeVYAKFBv-12" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" value="GET /api/admin/verifications">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <mxPoint x="245" y="200" as="sourcePoint" />
+            <mxPoint x="435" y="200" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="KGhRmTPU_D0xeVYAKFBv-13" edge="1" parent="1" source="KGhRmTPU_D0xeVYAKFBv-6" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="KGhRmTPU_D0xeVYAKFBv-9" value="where(&#39;status&#39;, &#39;pending&#39;)">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <Array as="points">
+              <mxPoint x="570" y="240" />
+            </Array>
+            <mxPoint x="480" y="220" as="sourcePoint" />
+            <mxPoint x="560" y="220" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="KGhRmTPU_D0xeVYAKFBv-15" edge="1" parent="1" source="KGhRmTPU_D0xeVYAKFBv-9" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;curved=0;rounded=0;" target="KGhRmTPU_D0xeVYAKFBv-6" value="Return List User">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="490" y="280" />
+            </Array>
+            <mxPoint x="600" y="280" as="sourcePoint" />
+            <mxPoint x="520" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="KGhRmTPU_D0xeVYAKFBv-16" edge="1" parent="1" source="KGhRmTPU_D0xeVYAKFBv-6" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;curved=0;rounded=0;" target="KGhRmTPU_D0xeVYAKFBv-4" value="Return JSON List">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="330" y="320" />
+            </Array>
+            <mxPoint x="380" y="330" as="sourcePoint" />
+            <mxPoint x="300" y="330" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="KGhRmTPU_D0xeVYAKFBv-17" edge="1" parent="1" source="KGhRmTPU_D0xeVYAKFBv-2" style="html=1;verticalAlign=bottom;endArrow=none;curved=0;rounded=0;endFill=0;startArrow=classic;startFill=1;" target="KGhRmTPU_D0xeVYAKFBv-4" value="Tampilkan List (Status: Pending)">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <Array as="points">
+              <mxPoint x="140" y="360" />
+            </Array>
+            <mxPoint x="80" y="360" as="sourcePoint" />
+            <mxPoint x="160" y="360" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="KGhRmTPU_D0xeVYAKFBv-18" edge="1" parent="1" source="KGhRmTPU_D0xeVYAKFBv-2" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" value="Klik Tombol &quot;Terima&quot; (Approve)">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="65" y="400" as="sourcePoint" />
+            <mxPoint x="235" y="400" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="KGhRmTPU_D0xeVYAKFBv-19" edge="1" parent="1" source="KGhRmTPU_D0xeVYAKFBv-4" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="KGhRmTPU_D0xeVYAKFBv-6" value="POST /api/admin/verify/{id}">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <Array as="points">
+              <mxPoint x="320" y="440" />
+            </Array>
+            <mxPoint x="250" y="390" as="sourcePoint" />
+            <mxPoint x="330" y="390" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="KGhRmTPU_D0xeVYAKFBv-20" edge="1" parent="1" source="KGhRmTPU_D0xeVYAKFBv-6" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="KGhRmTPU_D0xeVYAKFBv-9" value="update([&#39;status&#39; =&amp;gt; &#39;active&#39;])">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <Array as="points">
+              <mxPoint x="560" y="480" />
+            </Array>
+            <mxPoint x="450" y="470" as="sourcePoint" />
+            <mxPoint x="530" y="470" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="KGhRmTPU_D0xeVYAKFBv-22" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;curved=0;rounded=0;" value="Return Sent Status">
+          <mxGeometry relative="1" x="-0.5187" as="geometry">
+            <mxPoint x="1" as="offset" />
+            <mxPoint x="783.5" y="560" as="sourcePoint" />
+            <mxPoint x="436.5" y="560" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="KGhRmTPU_D0xeVYAKFBv-23" edge="1" parent="1" source="KGhRmTPU_D0xeVYAKFBv-6" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;curved=0;rounded=0;" value="Return Success JSON">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="435" y="600" as="sourcePoint" />
+            <mxPoint x="245" y="600" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="KGhRmTPU_D0xeVYAKFBv-26" edge="1" parent="1" source="KGhRmTPU_D0xeVYAKFBv-2" style="html=1;verticalAlign=bottom;endArrow=none;curved=0;rounded=0;endFill=0;startArrow=classic;startFill=1;" target="KGhRmTPU_D0xeVYAKFBv-4" value="Tampilkan Notifikasi Sukses">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <Array as="points">
+              <mxPoint x="160" y="680" />
+            </Array>
+            <mxPoint x="70" y="680" as="sourcePoint" />
+            <mxPoint x="150" y="680" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
