@@ -122,13 +122,13 @@
             <mxPoint x="255" y="620" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="iSYTDI-pQ72JhvzFNiAF-24" edge="1" parent="1" source="iSYTDI-pQ72JhvzFNiAF-3" style="html=1;verticalAlign=bottom;endArrow=none;curved=0;rounded=0;endFill=0;startArrow=classic;startFill=1;" target="iSYTDI-pQ72JhvzFNiAF-5" value="Update UI (Hilangkan dari List)">
+        <mxCell id="iSYTDI-pQ72JhvzFNiAF-24" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=none;curved=0;rounded=0;endFill=0;startArrow=classic;startFill=1;" value="Update UI (Hilangkan dari List)">
           <mxGeometry relative="1" width="80" as="geometry">
             <Array as="points">
-              <mxPoint x="170" y="620" />
+              <mxPoint x="170" y="660" />
             </Array>
-            <mxPoint x="65" y="620" as="sourcePoint" />
-            <mxPoint x="245" y="620" as="targetPoint" />
+            <mxPoint x="65" y="660" as="sourcePoint" />
+            <mxPoint x="245" y="660" as="targetPoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="iSYTDI-pQ72JhvzFNiAF-28" edge="1" parent="1" source="iSYTDI-pQ72JhvzFNiAF-8" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="iSYTDI-pQ72JhvzFNiAF-10" value="update([&#39;payout_proof&#39; =&amp;gt; &#39;file.jpg&#39;,&amp;nbsp;&lt;div&gt;&#39;payout_status&#39; =&amp;gt; &#39;paid&#39;])&lt;/div&gt;">
