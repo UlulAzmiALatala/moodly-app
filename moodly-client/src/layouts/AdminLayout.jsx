@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import Sidebar from "../components/admin/Sidebar";
 import { useAuth } from "../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,12 +8,13 @@ import Pusher from "pusher-js";
 import apiClient from "../api/axios";
 import {
     Bell,
-    CheckCircle,
     X,
-    CreditCard,
-    Calendar,
     RefreshCw,
-} from "lucide-react"; // Tambah icon RefreshCw
+    FileText, // Ikon Refund
+    UserCheck, // Ikon Konselor Baru
+    CreditCard, // Ikon Payout/Gaji
+    AlertTriangle, // Ikon Warning (Gmeet)
+} from "lucide-react";
 
 window.Pusher = Pusher;
 
@@ -41,12 +42,13 @@ const echo = new Echo({
 });
 
 const NotificationToast = ({ notification, onClose }) => {
-    // Tentukan warna border dan icon berdasarkan tipe
+    // Default Style (Info)
     let borderColor = "border-[#00D1FF]";
     let iconBg = "bg-cyan-50";
     let IconComp = Bell;
     let iconColor = "text-[#00D1FF]";
 
+    // Logika Warna Berdasarkan Tipe
     if (notification?.type === "cancel") {
         borderColor = "border-red-500";
         iconBg = "bg-red-50";
@@ -57,6 +59,26 @@ const NotificationToast = ({ notification, onClose }) => {
         iconBg = "bg-yellow-50";
         IconComp = RefreshCw;
         iconColor = "text-yellow-600";
+    } else if (notification?.type === "refund_request") {
+        borderColor = "border-purple-500";
+        iconBg = "bg-purple-50";
+        IconComp = FileText;
+        iconColor = "text-purple-600";
+    } else if (notification?.type === "new_counselor") {
+        borderColor = "border-blue-600";
+        iconBg = "bg-blue-50";
+        IconComp = UserCheck;
+        iconColor = "text-blue-600";
+    } else if (notification?.type === "payout_request") {
+        borderColor = "border-emerald-500";
+        iconBg = "bg-emerald-50";
+        IconComp = CreditCard;
+        iconColor = "text-emerald-600";
+    } else if (notification?.type === "missing_link") {
+        borderColor = "border-orange-500";
+        iconBg = "bg-orange-50";
+        IconComp = AlertTriangle;
+        iconColor = "text-orange-600 animate-pulse";
     }
 
     return (
@@ -70,14 +92,17 @@ const NotificationToast = ({ notification, onClose }) => {
                     className="fixed top-6 right-6 z-[9999] w-full max-w-sm"
                 >
                     <div
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            // Jika user klik toast, jalankan aksi tutup (atau bisa navigasi juga jika mau)
+                            onClose();
+                        }}
                         className={`bg-white/90 backdrop-blur-md border-l-4 ${borderColor} rounded-lg shadow-2xl p-4 flex items-start gap-3 cursor-pointer hover:bg-white transition`}
                     >
                         <div
                             className={`flex-shrink-0 p-2 ${iconBg} rounded-full`}
                         >
-                            <IconComp
-                                className={`w-5 h-5 ${iconColor} animate-pulse`}
-                            />
+                            <IconComp className={`w-5 h-5 ${iconColor}`} />
                         </div>
                         <div className="flex-1 pt-1">
                             <h4 className="text-gray-900 font-bold text-sm">
@@ -126,7 +151,7 @@ export default function AdminLayout() {
                 created_at: n.created_at,
                 title: n.data.title || "Info Sistem",
                 message: n.data.message || "Notifikasi baru diterima",
-                link: n.data.url || "#",
+                link: n.data.link || n.data.url || "#", // Support 'link' atau 'url'
             }));
             setNotifications(formatted);
             setUnreadCount(formatted.filter((n) => !n.read_at).length);
@@ -139,70 +164,10 @@ export default function AdminLayout() {
         if (user) fetchNotifications();
     }, [user]);
 
-    useEffect(() => {
-        if (user?.role === "admin" || user?.role === "super-admin") {
-            const channelName = "admin-notifications";
-            console.log(`📡 Admin: Listening to ${channelName}...`);
-            const channel = echo.private(channelName);
-
-            // Helper Notif
-            const handleNewNotification = (newNotif) => {
-                setToastData(newNotif);
-                setTimeout(() => setToastData(null), 8000);
-                setNotifications((prev) => [newNotif, ...prev]);
-                setUnreadCount((prev) => prev + 1);
-            };
-
-            // 1. Pembayaran
-            channel.listen(".PaymentProofUploaded", (e) => {
-                handleNewNotification({
-                    id: Date.now(),
-                    title: "Pembayaran Masuk",
-                    message: `${e.booking.customer.name} mengunggah bukti bayar #${e.booking.id}`,
-                    link: `/admin/booking-management/${e.booking.id}`,
-                    read_at: null,
-                    created_at: new Date().toISOString(),
-                    isRealTime: true,
-                    type: "payment",
-                });
-            });
-
-            // 2. Pembatalan
-            channel.listen(".BookingCancelled", (e) => {
-                handleNewNotification({
-                    id: Date.now() + 1,
-                    title: "Pesanan Dibatalkan",
-                    message: `${e.booking.customer.name} membatalkan pesanan #${e.booking.id}`,
-                    link: `/admin/booking-management/${e.booking.id}`,
-                    read_at: null,
-                    created_at: new Date().toISOString(),
-                    isRealTime: true,
-                    type: "cancel",
-                });
-            });
-
-            // 3. Reschedule (BARU)
-            channel.listen(".RescheduleRequested", (e) => {
-                handleNewNotification({
-                    id: Date.now() + 2,
-                    title: "Pengajuan Reschedule",
-                    message: `${e.booking.customer.name} meminta jadwal baru untuk #${e.booking.id}`,
-                    link: `/admin/jadwal-konsultasi/${e.booking.id}`, // Arahkan ke detail jadwal
-                    read_at: null,
-                    created_at: new Date().toISOString(),
-                    isRealTime: true,
-                    type: "reschedule",
-                });
-            });
-
-            return () => {
-                echo.leave(channelName);
-            };
-        }
-    }, [user]);
-
+    // --- FUNGSI KLIK NOTIFIKASI (NAVIGASI) ---
     const handleNotificationClick = async (notif) => {
-        if (!notif.isRealTime) {
+        // 1. Tandai sudah dibaca di backend
+        if (!notif.isRealTime && !notif.read_at) {
             try {
                 await apiClient.post("/api/notifications/mark-read", {
                     id: notif.id,
@@ -211,6 +176,8 @@ export default function AdminLayout() {
                 console.error(error);
             }
         }
+
+        // 2. Update state lokal
         setNotifications((prev) =>
             prev.map((n) =>
                 n.id === notif.id
@@ -221,11 +188,151 @@ export default function AdminLayout() {
         setUnreadCount((prev) => Math.max(0, prev - 1));
         setIsDropdownOpen(false);
 
-        if (notif.link && notif.link !== "#") navigate(notif.link);
-        else if (notif.data?.booking_id)
+        // 3. LOGIKA NAVIGASI (PRIORITASKAN LINK LANGSUNG)
+        if (notif.link && notif.link !== "#") {
+            navigate(notif.link);
+        } else if (notif.data?.booking_id) {
             navigate(`/admin/booking-management/${notif.data.booking_id}`);
+        }
     };
 
+    // --- LISTENER WEBSOCKET REAL-TIME ---
+    useEffect(() => {
+        if (user?.role === "admin" || user?.role === "super-admin") {
+            const channelName = "admin-notifications";
+            console.log(`📡 Admin: Listening to ${channelName}...`);
+            const channel = echo.private(channelName);
+
+            // Fungsi Helper untuk Mencegah Duplikat
+            const handleNewNotification = (newNotif) => {
+                setNotifications((prev) => {
+                    // Cek jika ID sudah ada di list
+                    const exists = prev.some((n) => n.id === newNotif.id);
+                    if (exists) return prev; // Jangan tambah jika sudah ada
+                    return [newNotif, ...prev];
+                });
+
+                // Update badge & Toast
+                setUnreadCount((prev) => prev + 1);
+                setToastData(newNotif);
+
+                // Bunyi notifikasi (opsional)
+                // const audio = new Audio('/sounds/notification.mp3');
+                // audio.play().catch(e => console.log("Audio play failed"));
+
+                setTimeout(() => setToastData(null), 8000);
+            };
+
+            // 1. Pembayaran Masuk
+            channel.listen(".PaymentProofUploaded", (e) => {
+                handleNewNotification({
+                    id: `pay-${e.booking.id}-${Date.now()}`,
+                    title: "Pembayaran Masuk",
+                    message: `${e.booking.customer.name} mengunggah bukti bayar #${e.booking.id}`,
+                    link: `/admin/booking-management/${e.booking.id}`,
+                    read_at: null,
+                    created_at: new Date().toISOString(),
+                    isRealTime: true,
+                    type: "payment",
+                });
+            });
+
+            // 2. Pembatalan Booking
+            channel.listen(".BookingCancelled", (e) => {
+                handleNewNotification({
+                    id: `cancel-${e.booking.id}-${Date.now()}`,
+                    title: "Pesanan Dibatalkan",
+                    message: `${e.booking.customer.name} membatalkan pesanan #${e.booking.id}`,
+                    link: `/admin/booking-management/${e.booking.id}`,
+                    read_at: null,
+                    created_at: new Date().toISOString(),
+                    isRealTime: true,
+                    type: "cancel",
+                });
+            });
+
+            // 3. Reschedule Request
+            channel.listen(".RescheduleRequested", (e) => {
+                handleNewNotification({
+                    id: `resched-${e.booking.id}-${Date.now()}`,
+                    title: "Pengajuan Reschedule",
+                    message: `${e.booking.customer.name} meminta jadwal baru untuk #${e.booking.id}`,
+                    link: `/admin/jadwal-konsultasi/${e.booking.id}`,
+                    read_at: null,
+                    created_at: new Date().toISOString(),
+                    isRealTime: true,
+                    type: "reschedule",
+                });
+            });
+
+            // 4. Refund Request
+            channel.listen(".RefundRequested", (e) => {
+                handleNewNotification({
+                    id: `refund-${e.refund.id}-${Date.now()}`,
+                    title: "Pengajuan Refund",
+                    message:
+                        "Ada pengajuan refund baru dari Customer. Harap tinjau.",
+                    link: "/super-admin/refund-management",
+                    read_at: null,
+                    created_at: new Date().toISOString(),
+                    isRealTime: true,
+                    type: "refund_request",
+                });
+            });
+
+            // 5. Konselor Baru
+            channel.listen(".NewCounselorRegistered", (e) => {
+                handleNewNotification({
+                    id: `counselor-${e.user.id}-${Date.now()}`,
+                    title: "Pendaftaran Konselor",
+                    message: `${e.user.name} mendaftar sebagai konselor.`,
+                    link: `/admin/verifikasi-konselor`,
+                    read_at: null,
+                    created_at: new Date().toISOString(),
+                    isRealTime: true,
+                    type: "new_counselor",
+                });
+            });
+
+            // 6. Payout / Gaji Konselor
+            channel.listen(".PayoutActionRequired", (e) => {
+                handleNewNotification({
+                    id: `payout-${e.booking.id}-${Date.now()}`,
+                    title: "Pembayaran Gaji Diperlukan",
+                    message: `Sesi #${e.booking.id} selesai. Harap proses gaji.`,
+                    link: `/super-admin/keuangan`,
+                    read_at: null,
+                    created_at: new Date().toISOString(),
+                    isRealTime: true,
+                    type: "payout_request",
+                });
+            });
+
+            // 7. Missing Gmeet Link (Opsional jika via broadcast)
+            // Jika Notification class tidak membroadcast ke 'admin-notifications'
+            // maka block ini mungkin tidak terpanggil lewat pusher, tapi akan muncul
+            // saat admin refresh page (karena masuk DB).
+            channel.listen(".MissingGmeetLinkNotification", (e) => {
+                handleNewNotification({
+                    id: `missing-${Date.now()}`,
+                    title: "Link GMeet Belum Ada!",
+                    message:
+                        "Segera isi link meeting untuk sesi yang akan mulai!",
+                    link: `/admin/booking-management/${e.booking_id}`, // Sesuaikan data dari event
+                    read_at: null,
+                    created_at: new Date().toISOString(),
+                    isRealTime: true,
+                    type: "missing_link",
+                });
+            });
+
+            return () => {
+                echo.leave(channelName);
+            };
+        }
+    }, [user]);
+
+    // Listener klik luar dropdown
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (
@@ -239,9 +346,7 @@ export default function AdminLayout() {
             document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    const roleDisplay = user?.role
-        ? user.role.replace("-", " ").toUpperCase()
-        : "ADMIN PANEL";
+    const roleDisplay = "ADMINISTRATOR";
     const avatarFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(
         user?.name || "A"
     )}&background=EBF4FF&color=00D1FF&bold=true&size=128`;

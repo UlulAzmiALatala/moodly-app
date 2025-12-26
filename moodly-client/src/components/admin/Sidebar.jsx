@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 // --- IMPORT IKON DARI LUCIDE ---
@@ -136,65 +136,30 @@ const SidebarMenu = ({ role }) => {
         );
     };
 
-    // --- MENU SUPER ADMIN ---
+    // --- MENU SUPER ADMIN (Eksklusif Super Admin) ---
     const superAdminStructure = [
         {
             section: "Utama",
             items: [
                 {
-                    label: "Dashboard",
+                    label: "Dashboard Utama",
                     path: "/super-admin/dashboard",
                     icon: LayoutDashboard,
                 },
             ],
         },
         {
-            section: "Laporan",
+            section: "Laporan & Keuangan",
             items: [
                 {
                     label: "Laporan Keuangan",
                     path: "/super-admin/keuangan",
                     icon: Wallet,
                 },
-            ],
-        },
-        {
-            section: "Transaksi",
-            items: [
-                {
-                    label: "Pesanan Booking",
-                    path: "/admin/booking-management",
-                    icon: ShoppingCart,
-                },
                 {
                     label: "Manajemen Refund",
                     path: "/super-admin/refund-management",
                     icon: Receipt,
-                },
-                {
-                    label: "Metode Pembayaran",
-                    path: "/admin/payment-methods",
-                    icon: CreditCard,
-                },
-            ],
-        },
-        {
-            section: "Pengguna",
-            items: [
-                {
-                    label: "Konselor",
-                    path: "/admin/konselor-management",
-                    icon: UserCog,
-                },
-                {
-                    label: "Customer",
-                    path: "/admin/customer-management",
-                    icon: Users,
-                },
-                {
-                    label: "Admin",
-                    path: "/admin/admin-management",
-                    icon: UserCheck,
                 },
             ],
         },
@@ -220,54 +185,58 @@ const SidebarMenu = ({ role }) => {
                             path: "/admin/tempat-konseling",
                             icon: MapPin,
                         },
+                        {
+                            label: "Metode Pembayaran",
+                            path: "/admin/payment-methods",
+                            icon: CreditCard,
+                        },
                     ],
                 },
             ],
         },
         {
-            section: "Dukungan",
+            section: "Manajemen User",
             items: [
                 {
-                    label: "Pusat Bantuan",
-                    path: "/super-admin/help-center",
-                    icon: MessageCircleQuestion,
+                    label: "Data Admin",
+                    path: "/admin/admin-management",
+                    icon: UserCheck,
+                },
+                {
+                    label: "Data Konselor",
+                    path: "/admin/konselor-management",
+                    icon: UserCog,
+                },
+                {
+                    label: "Data Customer",
+                    path: "/admin/customer-management",
+                    icon: Users,
                 },
             ],
         },
     ];
 
-    // --- MENU ADMIN (YANG SUDAH DIGABUNG) ---
-    // [PERBAIKAN] Menambahkan Menu Keuangan di sini juga
+    // --- MENU ADMIN (Operasional Harian) ---
     const adminStructure = [
-        {
-            section: "Utama",
-            items: [
-                {
-                    label: "Dashboard",
-                    path: "/admin/dashboard",
-                    icon: LayoutDashboard,
-                },
-            ],
-        },
-        // [BARU] Agar Role ADMIN juga bisa akses Keuangan
-        {
-            section: "Laporan",
-            items: [
-                {
-                    label: "Laporan Keuangan",
-                    // Kita arahkan ke route super-admin dulu karena logic page ada disana
-                    path: "/super-admin/keuangan",
-                    icon: Wallet,
-                },
-            ],
-        },
         {
             section: "Operasional",
             items: [
                 {
+                    label: "Dashboard Admin",
+                    path: "/admin/dashboard",
+                    icon: LayoutDashboard,
+                    // Sembunyikan dashboard admin jika user adalah super admin
+                    hideForSuper: true,
+                },
+                {
                     label: "Jadwal Konsultasi",
                     path: "/admin/jadwal-konsultasi",
                     icon: CalendarRange,
+                },
+                {
+                    label: "Semua Pesanan",
+                    path: "/admin/booking-management",
+                    icon: ShoppingCart,
                 },
             ],
         },
@@ -302,17 +271,50 @@ const SidebarMenu = ({ role }) => {
         },
     ];
 
-    const menuStructure =
-        role === "super-admin" ? superAdminStructure : adminStructure;
+    // --- LOGIKA PENGGABUNGAN MENU ---
+    let finalMenu = [];
+
+    if (role === "super-admin") {
+        // Super Admin melihat menunya sendiri + menu operasional admin
+        finalMenu = [...superAdminStructure, ...adminStructure];
+    } else {
+        // Admin biasa hanya melihat menu operasional + menu keuangan (terbatas)
+        // Kita tambahkan menu Laporan Keuangan untuk Admin agar mereka bisa melihatnya juga
+        const financeMenuForAdmin = [
+            {
+                section: "Laporan",
+                items: [
+                    {
+                        label: "Laporan Keuangan",
+                        path: "/super-admin/keuangan", // Admin bisa akses, tapi read-only (diatur di backend/frontend page)
+                        icon: Wallet,
+                    },
+                ],
+            },
+        ];
+
+        // Urutan: Dashboard Admin -> Laporan -> Operasional -> Verifikasi -> Dukungan
+        // Kita modifikasi adminStructure agar dashboard ada di paling atas
+        const dashboardSection = adminStructure.shift(); // Ambil section pertama (Dashboard)
+        finalMenu = [
+            dashboardSection,
+            ...financeMenuForAdmin,
+            ...adminStructure,
+        ];
+    }
 
     return (
         <div className="pb-4">
-            {menuStructure.map((group, index) => (
+            {finalMenu.map((group, index) => (
                 <div key={index}>
                     <SectionHeader label={group.section} />
                     <div className="space-y-1">
-                        {group.items.map((item) =>
-                            item.children ? (
+                        {group.items.map((item) => {
+                            // Logic untuk menyembunyikan item tertentu bagi super admin
+                            if (role === "super-admin" && item.hideForSuper)
+                                return null;
+
+                            return item.children ? (
                                 <NavDropdown
                                     key={item.label}
                                     item={item}
@@ -320,8 +322,8 @@ const SidebarMenu = ({ role }) => {
                                 />
                             ) : (
                                 <NavItem key={item.path} item={item} />
-                            )
-                        )}
+                            );
+                        })}
                     </div>
                 </div>
             ))}
@@ -332,6 +334,14 @@ const SidebarMenu = ({ role }) => {
 // === SIDEBAR UTAMA ===
 export default function Sidebar() {
     const { user, logout } = useAuth();
+    const navigate = useNavigate(); // Tambahkan hook navigate
+
+    const handleLogout = async () => {
+        if (window.confirm("Apakah Anda yakin ingin keluar?")) {
+            await logout();
+            navigate("/admin/login");
+        }
+    };
 
     return (
         <aside className="fixed top-0 left-0 h-screen w-64 bg-gray-900 text-white flex flex-col z-50 shadow-2xl">
@@ -352,7 +362,7 @@ export default function Sidebar() {
 
             <div className="p-4 border-t border-gray-800 bg-gray-900">
                 <button
-                    onClick={logout}
+                    onClick={handleLogout}
                     className="flex items-center gap-3 w-full px-4 py-2.5 rounded-lg text-gray-400 hover:bg-red-500/10 hover:text-red-400 transition-all duration-200 group"
                 >
                     <LogOut

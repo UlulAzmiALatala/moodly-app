@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "start-dev": "concurrently \"php artisan serve\" \"php artisan queue:work\" \"php artisan reverb:start\" --names=\"SERVER,QUEUE,REVERB\" --prefix-colors=\"green,yellow,magenta\""
+    "start-dev": "concurrently \"php artisan serve\" \"php artisan queue:work\" \"php artisan reverb:start\" \"php artisan schedule:work\" --names=\"SERVER,QUEUE,REVERB,SCHEDULER\" --prefix-colors=\"green,yellow,magenta,cyan\""
   },
   "devDependencies": {
     "axios": "^1.7.4",

@@ -7,45 +7,37 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Notification;
 use App\Models\Booking;
 use App\Models\Refund;
-use Illuminate\Support\Facades\Validator;
+use App\Models\User;
 
-// --- IMPORT EVENTS ---
 use App\Events\BookingCancelled;
 use App\Events\RescheduleRequested as RescheduleRequestedEvent;
 
-// --- IMPORT NOTIFICATIONS ---
 use App\Notifications\BookingStatusUpdated;
 use App\Notifications\RescheduleRequested;
 use App\Notifications\NewRatingReceived;
 use App\Notifications\RescheduleResponse;
+use App\Notifications\RefundRequested;
 
 class HistoryController extends Controller
 {
-    // Konstanta potongan admin 20%
     private const ADMIN_FEE_PERCENTAGE = 0.20;
 
-    /**
-     * Menampilkan daftar riwayat booking.
-     */
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-
-        // 1. Ambil Parameter
         $statusFilter = $request->query('status', 'upcoming');
         $search = $request->query('search');
 
-        // 2. Query Dasar
         $query = Booking::where('customer_id', $user->id);
 
-        // 3. LOGIKA PENCARIAN
         if ($search) {
             $query->where('id', 'like', "%{$search}%");
         }
 
-        // 4. Filter Status
         $query->when($statusFilter == 'upcoming', function ($q) {
             $q->whereIn('status_pesanan', ['Dijadwalkan', 'DISETUJUI', 'Menunggu Konfirmasi Customer', 'MENUNGGU_KONFIRMASI_JADWAL']);
         });
@@ -68,11 +60,8 @@ class HistoryController extends Controller
             $q->whereIn('status_pesanan', ['SELESAI', 'Selesai']);
         });
 
-        // 5. Load Relasi & Urutkan
-        // Perhatikan kita load 'konselor' full atau select kolom penting, 
-        // tapi nanti kita transform manual agar accessor jalan.
         $bookings = $query->with([
-            'konselor', // Load full user model agar accessor jalan
+            'konselor',
             'jenisKonseling:id,jenis_konseling,image',
             'durasiKonseling:id,durasi_menit',
             'tempatKonseling:id,nama_tempat,image'
@@ -81,13 +70,9 @@ class HistoryController extends Controller
             ->orderBy('jam_konsultasi', 'desc')
             ->paginate(10);
 
-        // [MODIFIKASI] Transformasi Data untuk Spesialisasi Teks
         $bookings->getCollection()->transform(function ($booking) {
             if ($booking->konselor) {
-                // Tambahkan properti custom ke object konselor di response JSON
                 $booking->konselor->setAttribute('spesialisasi_teks', $booking->konselor->spesialisasi_label);
-
-                // Atau override properti asli jika frontend pakai 'spesialisasi'
                 $booking->konselor->spesialisasi = $booking->konselor->spesialisasi_label;
             }
             return $booking;
@@ -96,9 +81,6 @@ class HistoryController extends Controller
         return response()->json($bookings);
     }
 
-    /**
-     * Detail Booking.
-     */
     public function show(Booking $booking): JsonResponse
     {
         if (Auth::id() !== $booking->customer_id) {
@@ -106,7 +88,7 @@ class HistoryController extends Controller
         }
 
         $booking->load([
-            'konselor', // Load full agar accessor jalan
+            'konselor',
             'customer',
             'jenisKonseling',
             'durasiKonseling',
@@ -114,7 +96,6 @@ class HistoryController extends Controller
             'refund'
         ]);
 
-        // [MODIFIKASI] Override spesialisasi dengan label teks
         if ($booking->konselor) {
             $booking->konselor->spesialisasi = $booking->konselor->spesialisasi_label;
         }
@@ -122,9 +103,6 @@ class HistoryController extends Controller
         return response()->json($booking);
     }
 
-    /**
-     * Membatalkan booking & Hitung Refund.
-     */
     public function cancel(Request $request, Booking $booking): JsonResponse
     {
         if (Auth::id() !== $booking->customer_id) {
@@ -166,7 +144,6 @@ class HistoryController extends Controller
                 'refund_amount' => $refund_amount,
             ]);
 
-            // --- KIRIM NOTIFIKASI ---
             try {
                 $booking->customer->notify(new BookingStatusUpdated($booking));
 
@@ -190,9 +167,6 @@ class HistoryController extends Controller
         }
     }
 
-    /**
-     * Menjadwal ulang booking (Inisiatif Customer).
-     */
     public function reschedule(Request $request, Booking $booking): JsonResponse
     {
         if (Auth::id() !== $booking->customer_id) {
@@ -214,7 +188,6 @@ class HistoryController extends Controller
             $booking->status_pesanan = 'MENUNGGU_KONFIRMASI_JADWAL';
             $booking->save();
 
-            // --- KIRIM NOTIFIKASI ---
             try {
                 $booking->customer->notify(new BookingStatusUpdated($booking));
 
@@ -238,9 +211,6 @@ class HistoryController extends Controller
         }
     }
 
-    /**
-     * Simpan Rating dan Kirim Notifikasi ke Konselor.
-     */
     public function storeRating(Request $request, Booking $booking): JsonResponse
     {
         if (Auth::id() !== $booking->customer_id) {
@@ -359,10 +329,16 @@ class HistoryController extends Controller
     public function storeRefundRequest(Request $request, Booking $booking): JsonResponse
     {
         $user = Auth::user();
-        if ($user->id !== $booking->customer_id) return response()->json(['message' => 'Tidak diizinkan.'], 403);
-        if ($booking->status_pesanan !== 'Dibatalkan' || $booking->refund_amount <= 0) return response()->json(['message' => 'Invalid refund request'], 422);
+        if ($user->id !== $booking->customer_id) {
+            return response()->json(['message' => 'Tidak diizinkan.'], 403);
+        }
+        if ($booking->status_pesanan !== 'Dibatalkan' || $booking->refund_amount <= 0) {
+            return response()->json(['message' => 'Invalid refund request'], 422);
+        }
 
-        if (Refund::where('booking_id', $booking->id)->exists()) return response()->json(['message' => 'Refund sudah diajukan'], 409);
+        if (Refund::where('booking_id', $booking->id)->exists()) {
+            return response()->json(['message' => 'Refund sudah diajukan'], 409);
+        }
 
         $validator = Validator::make($request->all(), [
             'nama_pemilik_rekening' => 'required|string|max:255',
@@ -372,25 +348,36 @@ class HistoryController extends Controller
             'bukti_refund_customer' => 'nullable|image|max:2048',
         ]);
 
-        if ($validator->fails()) return response()->json(['errors' => $validator->errors()], 422);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
         $validated = $validator->validated();
 
         $imagePath = $request->hasFile('bukti_refund_customer') ? $request->file('bukti_refund_customer')->store('refund_proofs_customer', 'public') : null;
 
-        $refund = Refund::create([
-            'booking_id' => $booking->id,
-            'customer_id' => $user->id,
-            'nama_pemilik_rekening' => $validated['nama_pemilik_rekening'],
-            'nama_bank' => $validated['nama_bank'],
-            'nomor_rekening' => $validated['nomor_rekening'],
-            'keterangan_customer' => $validated['keterangan_customer'] ?? null,
-            'bukti_refund_customer' => $imagePath,
-            'total_bayar' => $booking->total_harga,
-            'potongan_admin' => $booking->admin_fee,
-            'jumlah_refund' => $booking->refund_amount,
-            'status' => 'Menunggu Proses',
-        ]);
+        try {
+            $refund = Refund::create([
+                'booking_id' => $booking->id,
+                'customer_id' => $user->id,
+                'nama_pemilik_rekening' => $validated['nama_pemilik_rekening'],
+                'nama_bank' => $validated['nama_bank'],
+                'nomor_rekening' => $validated['nomor_rekening'],
+                'keterangan_customer' => $validated['keterangan_customer'] ?? null,
+                'bukti_refund_customer' => $imagePath,
+                'total_bayar' => $booking->total_harga,
+                'potongan_admin' => $booking->admin_fee,
+                'jumlah_refund' => $booking->refund_amount,
+                'status' => 'Menunggu Proses',
+            ]);
 
-        return response()->json(['message' => 'Refund diajukan.', 'refund' => $refund], 201);
+            // Kirim Notifikasi ke Admin (Database & Broadcast)
+            $admins = User::whereIn('role', ['admin', 'super-admin'])->get();
+            Notification::send($admins, new RefundRequested($refund));
+
+            return response()->json(['message' => 'Refund diajukan.', 'refund' => $refund], 201);
+        } catch (\Exception $e) {
+            Log::error('Gagal submit refund:', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Gagal mengajukan refund.'], 500);
+        }
     }
 }

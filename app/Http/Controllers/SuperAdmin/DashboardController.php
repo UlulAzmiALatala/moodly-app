@@ -13,23 +13,26 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        // 1. Statistik Utama (Cards)
+        // 1. Ambil Tahun dari Request (Default: Tahun Sekarang)
+        $year = $request->query('year', Carbon::now()->year);
+
+        // 2. Statistik Utama (Cards)
+        // Customer & Konselor tetap Total Keseluruhan (Akumulasi)
         $totalCustomer = User::where('role', 'customer')->count();
         $totalKonselor = User::where('role', 'konselor')->count();
 
-        // Total Pesanan (Semua status kecuali batal/ditolak jika mau spesifik, tapi biasanya total semua)
-        $totalPesanan = Booking::count();
+        // Pesanan & Pendapatan DI-FILTER berdasarkan Tahun yang dipilih
+        // Agar angka di Card sinkron dengan grafik
+        $totalPesanan = Booking::whereYear('created_at', $year)->count();
 
-        // Total Pendapatan (Hanya yang statusnya Selesai atau Dijadwalkan/Lunas)
-        // Asumsi: 'Selesai', 'Dijadwalkan' dianggap sudah bayar.
         $totalPendapatan = Booking::whereIn('status_pesanan', ['Selesai', 'SELESAI', 'Dijadwalkan'])
+            ->whereYear('created_at', $year) // Filter Tahun
             ->sum('total_harga');
 
-        // 2. Data Grafik (Booking per Minggu/Bulan & Metode)
-        // Kita ambil data 4 minggu terakhir
-        $chartData = $this->getChartData();
+        // 3. Data Grafik (Bulanan dalam Tahun Terpilih)
+        $chartData = $this->getChartData($year);
 
-        // 3. Tabel Transaksi Terbaru (5 Terakhir)
+        // 4. Tabel Transaksi Terbaru (5 Terakhir, tidak perlu filter tahun biar tetap update)
         $recentTransactions = Booking::with(['customer:id,name,phone', 'konselor:id,name'])
             ->select('id', 'customer_id', 'konselor_id', 'tanggal_konsultasi', 'metode_konsultasi', 'status_pesanan', 'total_harga')
             ->latest()
@@ -39,47 +42,64 @@ class DashboardController extends Controller
         return response()->json([
             'stats' => [
                 'total_customer' => $totalCustomer,
-                'total_pesanan' => $totalPesanan,
+                'total_pesanan' => $totalPesanan, // Pesanan tahun ini
                 'total_konselor' => $totalKonselor,
-                'total_pendapatan' => $totalPendapatan,
+                'total_pendapatan' => $totalPendapatan, // Pendapatan tahun ini
             ],
             'chart_data' => $chartData,
             'recent_transactions' => $recentTransactions,
+            'year' => $year // Kirim balik tahunnya untuk konfirmasi
         ]);
     }
 
     /**
-     * Helper untuk generate data grafik
+     * Helper untuk generate data grafik BULANAN berdasarkan TAHUN
      */
-    private function getChartData()
+    private function getChartData($year)
     {
-        // Ambil 3 periode (misal 3 minggu terakhir)
-        $ranges = [
-            'Minggu Ini' => [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()],
-            'Minggu Lalu' => [Carbon::now()->subWeek()->startOfWeek(), Carbon::now()->subWeek()->endOfWeek()],
-            '2 Minggu Lalu' => [Carbon::now()->subWeeks(2)->startOfWeek(), Carbon::now()->subWeeks(2)->endOfWeek()],
+        // Definisi Bulan
+        $months = [
+            1 => 'Jan',
+            2 => 'Feb',
+            3 => 'Mar',
+            4 => 'Apr',
+            5 => 'Mei',
+            6 => 'Jun',
+            7 => 'Jul',
+            8 => 'Agu',
+            9 => 'Sep',
+            10 => 'Okt',
+            11 => 'Nov',
+            12 => 'Des'
         ];
 
         $data = [];
 
-        foreach ($ranges as $label => $dates) {
-            // Hitung jumlah booking per metode di rentang tanggal ini
-            $stats = Booking::whereBetween('created_at', $dates)
+        // Loop 12 Bulan
+        foreach ($months as $monthNum => $monthName) {
+            // Hitung booking di bulan & tahun tersebut, dikelompokkan per metode
+            $stats = Booking::whereYear('created_at', $year)
+                ->whereMonth('created_at', $monthNum)
                 ->select('metode_konsultasi', DB::raw('count(*) as total'))
                 ->groupBy('metode_konsultasi')
                 ->pluck('total', 'metode_konsultasi')
                 ->toArray();
 
+            // Susun data agar jika 0 tetap muncul angka 0 (penting buat grafik)
             $data[] = [
-                'name' => $label,
+                'name' => $monthName,
                 'Chat' => $stats['Chat'] ?? 0,
                 'Video Call' => $stats['Video Call'] ?? 0,
                 'Voice Call' => $stats['Voice Call'] ?? 0,
                 'Tatap Muka' => $stats['Tatap Muka'] ?? 0,
+
+                // Tambahan: Total Value untuk grafik Area (Pendapatan)
+                // Ini estimasi kasar atau hitung real query lagi jika mau akurat per transaksi
+                // Disini kita pakai logic sederhana: Total Pesanan bulan itu
+                'value' => array_sum($stats)
             ];
         }
 
-        // Balik urutan agar yang lama di kiri
-        return array_reverse($data);
+        return $data;
     }
 }

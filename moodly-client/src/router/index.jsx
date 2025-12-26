@@ -623,6 +623,11 @@ const AppRouter = () => {
                         element={<VerifikasiCustomerDetailPage />}
                     />
 
+                    <Route
+                        path="/admin/help/conversations"
+                        element={<SuperAdminHelpChatPage />}
+                    />
+
                     {/* Super Admin Exclusive */}
                     <Route
                         path="/super-admin/refund-management"

@@ -3,8 +3,6 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-// --- IMPORT CONTROLLERS ---
-
 // Super Admin
 use App\Http\Controllers\SuperAdmin\JenisKonselingController;
 use App\Http\Controllers\SuperAdmin\DurasiKonselingController;
@@ -30,7 +28,7 @@ use App\Http\Controllers\Customer\BerandaController;
 use App\Http\Controllers\Customer\HistoryController;
 use App\Http\Controllers\Customer\BookingFlowController;
 use App\Http\Controllers\Customer\ProfileController;
-use App\Http\Controllers\HelpChatController; // Controller Chat Customer
+use App\Http\Controllers\HelpChatController;
 
 // Konselor
 use App\Http\Controllers\Counselor\DashboardController as CounselorDashboardController;
@@ -121,7 +119,6 @@ Route::group(['middleware' => [
         Route::get('/help/messages', [HelpChatController::class, 'index']);
         Route::post('/help/messages', [HelpChatController::class, 'store']);
 
-
         // =================================================================
         // ROLE: KONSELOR
         // =================================================================
@@ -155,7 +152,6 @@ Route::group(['middleware' => [
                 Route::delete('/{availability}', [KonselorManagementController::class, 'destroyAvailability']);
             });
         });
-
 
         // =================================================================
         // ROLE: ADMIN & SUPER ADMIN (SHARED)
