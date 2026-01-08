@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.2.9">
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.2.10">
   <diagram name="Halaman-1" id="_fPs26vgqfrSPrqKhplR">
-    <mxGraphModel dx="925" dy="585" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="786" dy="497" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -12,16 +12,16 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="KGhRmTPU_D0xeVYAKFBv-1" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlActor;size=80;" value="Administrator" vertex="1">
-          <mxGeometry height="680" width="40" x="30" y="40" as="geometry" />
+          <mxGeometry height="720" width="40" x="30" y="40" as="geometry" />
         </mxCell>
         <mxCell id="KGhRmTPU_D0xeVYAKFBv-2" parent="KGhRmTPU_D0xeVYAKFBv-1" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
-          <mxGeometry height="520" width="10" x="15" y="120" as="geometry" />
+          <mxGeometry height="560" width="10" x="15" y="120" as="geometry" />
         </mxCell>
         <mxCell id="KGhRmTPU_D0xeVYAKFBv-3" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlBoundary;size=80;" value="&amp;nbsp; &amp;nbsp; &amp;nbsp; Halaman&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp;Verifikasi" vertex="1">
-          <mxGeometry height="680" width="80" x="200" y="40" as="geometry" />
+          <mxGeometry height="720" width="80" x="200" y="40" as="geometry" />
         </mxCell>
         <mxCell id="KGhRmTPU_D0xeVYAKFBv-4" parent="KGhRmTPU_D0xeVYAKFBv-3" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
-          <mxGeometry height="520" width="10" x="35" y="120" as="geometry" />
+          <mxGeometry height="560" width="10" x="35" y="120" as="geometry" />
         </mxCell>
         <mxCell id="KGhRmTPU_D0xeVYAKFBv-25" edge="1" parent="KGhRmTPU_D0xeVYAKFBv-3" source="KGhRmTPU_D0xeVYAKFBv-4" style="html=1;align=left;spacingLeft=2;endArrow=block;rounded=0;edgeStyle=orthogonalEdgeStyle;curved=0;rounded=0;" target="KGhRmTPU_D0xeVYAKFBv-4" value="Update UI&amp;nbsp;&lt;div&gt;(Remove Item)&lt;/div&gt;">
           <mxGeometry relative="1" y="-90" as="geometry">
@@ -35,22 +35,22 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="KGhRmTPU_D0xeVYAKFBv-5" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlControl;size=80;" value="VerificationController" vertex="1">
-          <mxGeometry height="680" width="80" x="390" y="40" as="geometry" />
+          <mxGeometry height="720" width="80" x="390" y="40" as="geometry" />
         </mxCell>
         <mxCell id="KGhRmTPU_D0xeVYAKFBv-6" parent="KGhRmTPU_D0xeVYAKFBv-5" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
-          <mxGeometry height="520" width="10" x="35" y="120" as="geometry" />
+          <mxGeometry height="560" width="10" x="35" y="120" as="geometry" />
         </mxCell>
         <mxCell id="KGhRmTPU_D0xeVYAKFBv-7" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlEntity;size=80;" value="User Model" vertex="1">
-          <mxGeometry height="680" width="80" x="570" y="40" as="geometry" />
+          <mxGeometry height="720" width="80" x="570" y="40" as="geometry" />
         </mxCell>
         <mxCell id="KGhRmTPU_D0xeVYAKFBv-9" parent="KGhRmTPU_D0xeVYAKFBv-7" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
-          <mxGeometry height="520" width="10" x="35" y="120" as="geometry" />
+          <mxGeometry height="560" width="10" x="35" y="120" as="geometry" />
         </mxCell>
         <mxCell id="KGhRmTPU_D0xeVYAKFBv-8" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlBoundary;size=80;" value="&amp;nbsp; &amp;nbsp; Email&amp;nbsp;&lt;div&gt;&amp;nbsp; &amp;nbsp;Service&lt;/div&gt;" vertex="1">
-          <mxGeometry height="680" width="80" x="747" y="40" as="geometry" />
+          <mxGeometry height="720" width="80" x="747" y="40" as="geometry" />
         </mxCell>
         <mxCell id="KGhRmTPU_D0xeVYAKFBv-10" parent="KGhRmTPU_D0xeVYAKFBv-8" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
-          <mxGeometry height="520" width="10" x="35" y="120" as="geometry" />
+          <mxGeometry height="560" width="10" x="35" y="120" as="geometry" />
         </mxCell>
         <mxCell id="KGhRmTPU_D0xeVYAKFBv-11" edge="1" parent="1" source="KGhRmTPU_D0xeVYAKFBv-2" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="KGhRmTPU_D0xeVYAKFBv-4" value="Buka Menu &quot;Konselor Baru&quot;">
           <mxGeometry relative="1" width="80" as="geometry">
