@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.2.9">
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.2.10">
   <diagram name="Halaman-1" id="gelqQXjZf6FcYrJNTz0c">
-    <mxGraphModel dx="925" dy="585" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="786" dy="497" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -32,16 +32,16 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="1idNyF2aJIWgW4z3xh4s-26" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlActor;size=80;" value="Administrator" vertex="1">
-          <mxGeometry height="560" width="40" x="40" y="40" as="geometry" />
+          <mxGeometry height="520" width="40" x="40" y="40" as="geometry" />
         </mxCell>
         <mxCell id="1idNyF2aJIWgW4z3xh4s-27" parent="1idNyF2aJIWgW4z3xh4s-26" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
-          <mxGeometry height="400" width="10" x="15" y="120" as="geometry" />
+          <mxGeometry height="360" width="10" x="15" y="120" as="geometry" />
         </mxCell>
         <mxCell id="1idNyF2aJIWgW4z3xh4s-28" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlBoundary;size=80;" value="&amp;nbsp; &amp;nbsp; &amp;nbsp; Halaman&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp;Chat" vertex="1">
-          <mxGeometry height="560" width="80" x="200" y="40" as="geometry" />
+          <mxGeometry height="520" width="80" x="200" y="40" as="geometry" />
         </mxCell>
         <mxCell id="1idNyF2aJIWgW4z3xh4s-29" parent="1idNyF2aJIWgW4z3xh4s-28" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
-          <mxGeometry height="400" width="10" x="35" y="120" as="geometry" />
+          <mxGeometry height="360" width="10" x="35" y="120" as="geometry" />
         </mxCell>
         <mxCell id="1idNyF2aJIWgW4z3xh4s-52" edge="1" parent="1idNyF2aJIWgW4z3xh4s-28" source="1idNyF2aJIWgW4z3xh4s-29" style="html=1;align=left;spacingLeft=2;endArrow=block;rounded=0;edgeStyle=orthogonalEdgeStyle;curved=0;rounded=0;" target="1idNyF2aJIWgW4z3xh4s-29" value="Pesan langsung muncul&amp;nbsp;&lt;div&gt;di layar sendiri&amp;nbsp;&lt;/div&gt;&lt;div&gt;biar terasa cepat,&amp;nbsp;&lt;/div&gt;&lt;div&gt;walau belum masuk server&lt;/div&gt;">
           <mxGeometry relative="1" as="geometry">
@@ -54,16 +54,16 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="1idNyF2aJIWgW4z3xh4s-31" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlControl;size=80;" value="ChatController" vertex="1">
-          <mxGeometry height="560" width="80" x="400" y="40" as="geometry" />
+          <mxGeometry height="520" width="80" x="400" y="40" as="geometry" />
         </mxCell>
         <mxCell id="1idNyF2aJIWgW4z3xh4s-32" parent="1idNyF2aJIWgW4z3xh4s-31" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
-          <mxGeometry height="400" width="10" x="35" y="120" as="geometry" />
+          <mxGeometry height="360" width="10" x="35" y="120" as="geometry" />
         </mxCell>
         <mxCell id="1idNyF2aJIWgW4z3xh4s-33" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlEntity;size=80;" value="Message Model" vertex="1">
-          <mxGeometry height="560" width="80" x="600" y="40" as="geometry" />
+          <mxGeometry height="520" width="80" x="600" y="40" as="geometry" />
         </mxCell>
         <mxCell id="1idNyF2aJIWgW4z3xh4s-34" parent="1idNyF2aJIWgW4z3xh4s-33" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
-          <mxGeometry height="400" width="10" x="35" y="120" as="geometry" />
+          <mxGeometry height="360" width="10" x="35" y="120" as="geometry" />
         </mxCell>
         <mxCell id="1idNyF2aJIWgW4z3xh4s-37" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" value="Ketik Pesan &amp;amp; Klik &quot;Kirim&quot;">
           <mxGeometry relative="1" width="80" as="geometry">
@@ -110,10 +110,10 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="1idNyF2aJIWgW4z3xh4s-49" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};size=80;" value="Broadcasting Service (Reverb)" vertex="1">
-          <mxGeometry height="560" width="80" x="790" y="40" as="geometry" />
+          <mxGeometry height="520" width="80" x="790" y="40" as="geometry" />
         </mxCell>
         <mxCell id="1idNyF2aJIWgW4z3xh4s-50" parent="1idNyF2aJIWgW4z3xh4s-49" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
-          <mxGeometry height="400" width="10" x="35" y="120" as="geometry" />
+          <mxGeometry height="360" width="10" x="35" y="120" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
