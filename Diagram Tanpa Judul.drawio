@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.2.9">
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.2.10">
   <diagram name="Page-1" id="2YBvvXClWsGukQMizWep">
     <mxGraphModel dx="786" dy="497" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
@@ -16,16 +16,16 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="-1iUZWo6CQzFY0fvAmcl-5" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlActor;size=80;" value="User" vertex="1">
-          <mxGeometry height="650" width="30" x="80" y="40" as="geometry" />
+          <mxGeometry height="600" width="30" x="80" y="40" as="geometry" />
         </mxCell>
         <mxCell id="-1iUZWo6CQzFY0fvAmcl-6" parent="-1iUZWo6CQzFY0fvAmcl-5" style="html=1;points=[];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
-          <mxGeometry height="480" width="10" x="10" y="120" as="geometry" />
+          <mxGeometry height="440" width="10" x="10" y="120" as="geometry" />
         </mxCell>
         <mxCell id="-1iUZWo6CQzFY0fvAmcl-7" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlBoundary;size=80;" value="&amp;nbsp; &amp;nbsp; &amp;nbsp;Halaman&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp;Login&lt;/span&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="640" width="100" x="250" y="40" as="geometry" />
+          <mxGeometry height="600" width="100" x="250" y="40" as="geometry" />
         </mxCell>
         <mxCell id="-1iUZWo6CQzFY0fvAmcl-9" parent="-1iUZWo6CQzFY0fvAmcl-7" style="html=1;points=[];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
-          <mxGeometry height="480" width="10" x="45" y="120" as="geometry" />
+          <mxGeometry height="440" width="10" x="45" y="120" as="geometry" />
         </mxCell>
         <mxCell id="-1iUZWo6CQzFY0fvAmcl-27" edge="1" parent="-1iUZWo6CQzFY0fvAmcl-7" style="html=1;align=left;spacingLeft=2;endArrow=block;rounded=0;edgeStyle=orthogonalEdgeStyle;curved=0;rounded=0;" value="Save Token &amp;amp; Redirect">
           <mxGeometry relative="1" x="-0.0011" y="-120" as="geometry">
@@ -39,10 +39,10 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="-1iUZWo6CQzFY0fvAmcl-11" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlControl;size=80;" value="AuthController" vertex="1">
-          <mxGeometry height="640" width="80" x="450" y="40" as="geometry" />
+          <mxGeometry height="600" width="80" x="450" y="40" as="geometry" />
         </mxCell>
         <mxCell id="-1iUZWo6CQzFY0fvAmcl-15" parent="-1iUZWo6CQzFY0fvAmcl-11" style="html=1;points=[];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
-          <mxGeometry height="480" width="10" x="35" y="120" as="geometry" />
+          <mxGeometry height="440" width="10" x="35" y="120" as="geometry" />
         </mxCell>
         <mxCell id="-1iUZWo6CQzFY0fvAmcl-18" edge="1" parent="-1iUZWo6CQzFY0fvAmcl-11" style="html=1;align=left;spacingLeft=2;endArrow=block;rounded=0;edgeStyle=orthogonalEdgeStyle;curved=0;rounded=0;" value="&lt;code data-path-to-node=&quot;8,3,0&quot; data-index-in-node=&quot;34&quot;&gt;validate(request)&lt;/code&gt;&amp;nbsp;&lt;div&gt;(Validasi input)&lt;/div&gt;">
           <mxGeometry relative="1" x="0.0043" as="geometry">
@@ -67,10 +67,10 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="-1iUZWo6CQzFY0fvAmcl-12" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlEntity;size=80;" value="User Model" vertex="1">
-          <mxGeometry height="640" width="80" x="680" y="40" as="geometry" />
+          <mxGeometry height="600" width="80" x="680" y="40" as="geometry" />
         </mxCell>
         <mxCell id="-1iUZWo6CQzFY0fvAmcl-21" parent="-1iUZWo6CQzFY0fvAmcl-12" style="html=1;points=[];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
-          <mxGeometry height="480" width="10" x="35" y="120" as="geometry" />
+          <mxGeometry height="440" width="10" x="35" y="120" as="geometry" />
         </mxCell>
         <mxCell id="-1iUZWo6CQzFY0fvAmcl-16" edge="1" parent="1" source="-1iUZWo6CQzFY0fvAmcl-9" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="-1iUZWo6CQzFY0fvAmcl-15" value="POST /api/login(email, password)">
           <mxGeometry relative="1" width="80" as="geometry">
