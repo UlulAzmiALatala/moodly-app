@@ -1,9 +1,187 @@
 <mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.3.0">
   <diagram name="Halaman-1" id="vWZ_AhHzlp28wYlfH6ht">
-    <mxGraphModel>
+    <mxGraphModel dx="786" dy="463" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
+        <mxCell id="XoE_f8ey5sz5FZYnsxvl-1" edge="1" parent="1" source="XoE_f8ey5sz5FZYnsxvl-5" style="html=1;verticalAlign=bottom;endArrow=none;curved=0;rounded=0;endFill=0;startArrow=classic;startFill=1;" target="XoE_f8ey5sz5FZYnsxvl-9" value="Tampilkan Notifikasi &quot;Link Tersimpan&quot;">
+          <mxGeometry relative="1" width="80" x="0.4844" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="135" y="780" />
+            </Array>
+            <mxPoint x="50" y="780" as="sourcePoint" />
+            <mxPoint x="225" y="780" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="XoE_f8ey5sz5FZYnsxvl-2" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" value="send(new BookingStatusUpdated($user))">
+          <mxGeometry relative="1" width="80" x="-0.3333" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="546" y="740" />
+            </Array>
+            <mxPoint x="440" y="740" as="sourcePoint" />
+            <mxPoint x="863" y="740" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="XoE_f8ey5sz5FZYnsxvl-3" edge="1" parent="1" source="XoE_f8ey5sz5FZYnsxvl-9" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="XoE_f8ey5sz5FZYnsxvl-22" value="send(new PaymentVerified($user))">
+          <mxGeometry relative="1" width="80" x="-0.3333" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="545" y="500" />
+            </Array>
+            <mxPoint x="420" y="500" as="sourcePoint" />
+            <mxPoint x="590" y="500" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="XoE_f8ey5sz5FZYnsxvl-4" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlActor;size=80;" value="Administrator" vertex="1">
+          <mxGeometry height="840" width="40" x="20" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="XoE_f8ey5sz5FZYnsxvl-5" parent="XoE_f8ey5sz5FZYnsxvl-4" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
+          <mxGeometry height="680" width="10" x="15" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="XoE_f8ey5sz5FZYnsxvl-6" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlBoundary;size=80;" value="&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp;Halaman&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; Kelola&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; Pesanan" vertex="1">
+          <mxGeometry height="840" width="90" x="180" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="XoE_f8ey5sz5FZYnsxvl-7" parent="XoE_f8ey5sz5FZYnsxvl-6" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
+          <mxGeometry height="680" width="10" x="40" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="XoE_f8ey5sz5FZYnsxvl-8" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlControl;size=80;" value="BookingManagementController" vertex="1">
+          <mxGeometry height="840" width="80" x="394" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="XoE_f8ey5sz5FZYnsxvl-9" parent="XoE_f8ey5sz5FZYnsxvl-8" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
+          <mxGeometry height="680" width="10" x="35" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="XoE_f8ey5sz5FZYnsxvl-10" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlEntity;size=80;" value="Booking" vertex="1">
+          <mxGeometry height="840" width="80" x="680" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="XoE_f8ey5sz5FZYnsxvl-11" parent="XoE_f8ey5sz5FZYnsxvl-10" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
+          <mxGeometry height="680" width="10" x="35" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="XoE_f8ey5sz5FZYnsxvl-12" edge="1" parent="1" source="XoE_f8ey5sz5FZYnsxvl-5" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="XoE_f8ey5sz5FZYnsxvl-7" value="Buka Detail Pesanan">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="180" y="140" />
+            </Array>
+            <mxPoint x="60" y="140" as="sourcePoint" />
+            <mxPoint x="140" y="140" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="XoE_f8ey5sz5FZYnsxvl-13" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="XoE_f8ey5sz5FZYnsxvl-9" value="GET /admin/bookings/{id}">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="235" y="180" as="sourcePoint" />
+            <mxPoint x="425" y="180" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="XoE_f8ey5sz5FZYnsxvl-14" edge="1" parent="1" source="XoE_f8ey5sz5FZYnsxvl-9" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="XoE_f8ey5sz5FZYnsxvl-11" value="find($id)">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <Array as="points">
+              <mxPoint x="560" y="220" />
+            </Array>
+            <mxPoint x="470" y="200" as="sourcePoint" />
+            <mxPoint x="550" y="200" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="XoE_f8ey5sz5FZYnsxvl-15" edge="1" parent="1" source="XoE_f8ey5sz5FZYnsxvl-11" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;curved=0;rounded=0;" target="XoE_f8ey5sz5FZYnsxvl-9" value="Return Data Booking">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="480" y="260" />
+            </Array>
+            <mxPoint x="590" y="260" as="sourcePoint" />
+            <mxPoint x="510" y="260" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="XoE_f8ey5sz5FZYnsxvl-16" edge="1" parent="1" source="XoE_f8ey5sz5FZYnsxvl-9" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;curved=0;rounded=0;" target="XoE_f8ey5sz5FZYnsxvl-7" value="Return JSON List">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="320" y="300" />
+            </Array>
+            <mxPoint x="370" y="310" as="sourcePoint" />
+            <mxPoint x="290" y="310" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="XoE_f8ey5sz5FZYnsxvl-17" edge="1" parent="1" source="XoE_f8ey5sz5FZYnsxvl-5" style="html=1;verticalAlign=bottom;endArrow=none;curved=0;rounded=0;endFill=0;startArrow=classic;startFill=1;" target="XoE_f8ey5sz5FZYnsxvl-7" value="Tampilkan Bukti Bayar">
+          <mxGeometry relative="1" width="80" x="0.0065" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="130" y="340" />
+            </Array>
+            <mxPoint x="70" y="340" as="sourcePoint" />
+            <mxPoint x="150" y="340" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="XoE_f8ey5sz5FZYnsxvl-18" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="XoE_f8ey5sz5FZYnsxvl-7" value="Klik &quot;Terima Pembayaran&quot;">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="45" y="379.5" as="sourcePoint" />
+            <mxPoint x="215" y="379.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="XoE_f8ey5sz5FZYnsxvl-19" edge="1" parent="1" source="XoE_f8ey5sz5FZYnsxvl-7" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="XoE_f8ey5sz5FZYnsxvl-9" value="POST /admin/bookings/{id}/verify">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <Array as="points">
+              <mxPoint x="310" y="420" />
+            </Array>
+            <mxPoint x="240" y="370" as="sourcePoint" />
+            <mxPoint x="320" y="370" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="XoE_f8ey5sz5FZYnsxvl-20" edge="1" parent="1" source="XoE_f8ey5sz5FZYnsxvl-9" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="XoE_f8ey5sz5FZYnsxvl-11" value="update([&#39;status_pesanan&#39; =&amp;gt; &#39;Paid&#39;])">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <Array as="points">
+              <mxPoint x="550" y="460" />
+            </Array>
+            <mxPoint x="440" y="450" as="sourcePoint" />
+            <mxPoint x="520" y="450" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="XoE_f8ey5sz5FZYnsxvl-21" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlEntity;size=80;" value="Notification" vertex="1">
+          <mxGeometry height="840" width="80" x="827" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="XoE_f8ey5sz5FZYnsxvl-22" parent="XoE_f8ey5sz5FZYnsxvl-21" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
+          <mxGeometry height="680" width="10" x="35" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="XoE_f8ey5sz5FZYnsxvl-23" edge="1" parent="1" source="XoE_f8ey5sz5FZYnsxvl-7" style="html=1;verticalAlign=bottom;endArrow=none;curved=0;rounded=0;endFill=0;startArrow=classic;startFill=1;dashed=1;" target="XoE_f8ey5sz5FZYnsxvl-9" value="Return Success Message">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <Array as="points">
+              <mxPoint x="295" y="540" />
+            </Array>
+            <mxPoint x="210" y="540" as="sourcePoint" />
+            <mxPoint x="414" y="540" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="XoE_f8ey5sz5FZYnsxvl-24" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="XoE_f8ey5sz5FZYnsxvl-7" value="Input Link GMeet &amp;amp; Klik &quot;Simpan&quot;">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="45" y="580" as="sourcePoint" />
+            <mxPoint x="215" y="580" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="XoE_f8ey5sz5FZYnsxvl-25" edge="1" parent="1" source="XoE_f8ey5sz5FZYnsxvl-7" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" value="PATCH /admin/bookings/{id}/link">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="224.5" y="620" as="sourcePoint" />
+            <mxPoint x="429" y="620" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="XoE_f8ey5sz5FZYnsxvl-26" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" value="update([&#39;gmeet_link&#39; =&amp;gt; $url])">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="439" y="660" as="sourcePoint" />
+            <mxPoint x="715" y="660" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="XoE_f8ey5sz5FZYnsxvl-27" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;curved=0;rounded=0;" value="Return Success">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="481" y="700" />
+            </Array>
+            <mxPoint x="715" y="700" as="sourcePoint" />
+            <mxPoint x="439" y="700" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
