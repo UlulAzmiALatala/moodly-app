@@ -1,62 +1,98 @@
-import React from "react";
+import React, { useState } from "react";
+import { createPortal } from "react-dom";
+import { Trash2, AlertTriangle, X, Loader2 } from "lucide-react";
 
-// --- Komponen Ikon Tong Sampah ---
-// Dibuat sebagai komponen internal agar mandiri
-const TrashIcon = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="56" // Ukuran besar seperti di gambar
-        height="56"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        className="text-red-500 mx-auto" // Warna merah dan di tengah
-    >
-        {/* Path untuk ikon tong sampah yang solid */}
-        <path d="M15 4V3C15 2.44772 14.5523 2 14 2H10C9.44772 2 9 2.44772 9 3V4H4V6H20V4H15Z" />
-        <path d="M19 21H5C4.44772 21 4 20.5523 4 20V7H20V20C20 20.5523 19.5523 21 19 21Z" />
-    </svg>
-);
-
-const DeleteModal = ({ isOpen, onClose, onConfirm, itemName }) => {
+export default function DeleteModal({ isOpen, onClose, onConfirm, itemName }) {
     if (!isOpen) return null;
 
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            {/* --- Perbarui styling modal --- */}
-            <div className="bg-white rounded-lg p-8 w-full max-w-sm text-center">
-                {/* --- 1. Ikon ditambahkan --- */}
-                <TrashIcon />
+    const [loading, setLoading] = useState(false);
 
-                {/* --- 2. Judul diubah --- */}
-                <h2 className="text-2xl font-bold my-4">Hapus Data</h2>
+    const handleDelete = async () => {
+        setLoading(true);
+        try {
+            await onConfirm();
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-                {/* --- 3. Teks disesuaikan --- */}
-                <p className="text-gray-600 mb-6">
-                    Apakah Anda yakin akan menghapus data
-                    <br />
-                    <span className="font-semibold">"{itemName}"</span>?
-                </p>
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-200 p-4">
+            {/* Overlay Close */}
+            <div
+                className="absolute inset-0"
+                onClick={!loading ? onClose : undefined}
+            ></div>
 
-                <div className="flex justify-center gap-4">
-                    {/* --- 4. Styling Tombol Batal Diubah --- */}
-                    <button
-                        onClick={onClose}
-                        className="px-6 py-2 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-colors"
-                    >
-                        Batal
-                    </button>
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden transform transition-all scale-100">
+                {/* Close Button */}
+                <button
+                    onClick={onClose}
+                    disabled={loading}
+                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
+                >
+                    <X size={20} />
+                </button>
 
-                    {/* --- 5. Styling Tombol Hapus Diubah --- */}
-                    <button
-                        onClick={onConfirm}
-                        className="px-6 py-2 bg-red-100 text-red-600 font-semibold rounded-lg hover:bg-red-200 transition-colors"
-                    >
-                        Hapus
-                    </button>
+                <div className="p-8 text-center">
+                    {/* Big Icon */}
+                    <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-red-50 mb-6 animate-in zoom-in duration-300 border-4 border-red-100">
+                        <Trash2 className="h-10 w-10 text-red-600" />
+                    </div>
+
+                    {/* Title & Description */}
+                    <h3 className="text-2xl font-extrabold text-gray-900 mb-2">
+                        Hapus Jenis Konseling?
+                    </h3>
+
+                    <p className="text-gray-500 mb-6 leading-relaxed">
+                        Apakah Anda yakin ingin menghapus jenis konseling <br />
+                        <span className="font-bold text-gray-800 bg-gray-100 px-2 py-0.5 rounded mx-1">
+                            {itemName}
+                        </span>
+                        secara permanen?
+                    </p>
+
+                    {/* Warning Box */}
+                    <div className="bg-red-50 border border-red-100 rounded-xl p-4 mb-8 text-left flex gap-3">
+                        <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                        <p className="text-sm text-red-800">
+                            <span className="font-bold">Peringatan:</span> Data
+                            yang dihapus tidak dapat dikembalikan. Pastikan
+                            tidak ada transaksi aktif yang menggunakan jenis
+                            ini.
+                        </p>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-3">
+                        <button
+                            onClick={onClose}
+                            disabled={loading}
+                            className="flex-1 px-5 py-3 bg-white border border-gray-300 text-gray-700 font-bold rounded-xl hover:bg-gray-50 transition-colors outline-none disabled:opacity-50"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            onClick={handleDelete}
+                            disabled={loading}
+                            className="flex-1 px-5 py-3 bg-red-600 text-white font-bold rounded-xl shadow-lg shadow-red-200 hover:bg-red-700 transition-all outline-none disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                            {loading ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <span>Menghapus...</span>
+                                </>
+                            ) : (
+                                "Ya, Hapus"
+                            )}
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
-};
-
-export default DeleteModal;
+}

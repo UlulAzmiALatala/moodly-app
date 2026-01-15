@@ -13,11 +13,12 @@ class DurasiKonselingSeeder extends Seeder
      */
     public function run(): void
     {
+        // Update: durasi_menit sekarang menggunakan integer (angka), bukan string.
         $durasiKonselings = [
-            ['durasi_menit' => '60 Menit', 'harga' => 100000],
-            ['durasi_menit' => '120 Menit', 'harga' => 200000],
-            ['durasi_menit' => '180 Menit', 'harga' => 230000],
-            ['durasi_menit' => '240 Menit', 'harga' => 300000],
+            ['durasi_menit' => 60, 'harga' => 100000],
+            ['durasi_menit' => 120, 'harga' => 200000],
+            ['durasi_menit' => 180, 'harga' => 230000],
+            ['durasi_menit' => 240, 'harga' => 300000],
         ];
 
         foreach ($durasiKonselings as $durasi) {

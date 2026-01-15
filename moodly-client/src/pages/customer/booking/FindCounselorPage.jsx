@@ -118,13 +118,17 @@ export default function FindCounselorPage() {
         const fetchCounselors = async () => {
             try {
                 setLoading(true);
-                // Tambahkan query parameter serviceId jika ada (untuk filter di masa depan)
+
+                // --- PERBAIKAN: Aktifkan params ---
                 const response = await apiClient.get(
                     `/api/booking/counselors`,
                     {
-                        // params: { serviceId } // Uncomment jika backend sudah bisa filter
+                        // serviceId diambil dari location.state
+                        params: { serviceId },
                     }
                 );
+                // --- AKHIR PERBAIKAN ---
+
                 // Pastikan response.data adalah array
                 setCounselors(
                     Array.isArray(response.data) ? response.data : []
@@ -137,9 +141,9 @@ export default function FindCounselorPage() {
                 setLoading(false);
             }
         };
-        // Hapus cek serviceId, selalu fetch konselor
+
         fetchCounselors();
-    }, []); // Hanya fetch sekali saat mount
+    }, [serviceId]); // <-- PERBAIKAN: Tambahkan serviceId sebagai dependency
 
     // --- PERUBAHAN: Handle saat kartu psikolog diklik ---
     const handleSelectCounselor = (counselorId, counselorName) => {
@@ -216,7 +220,7 @@ export default function FindCounselorPage() {
                         ))
                     ) : (
                         <p className="text-center text-gray-500 py-10">
-                            Tidak ada konselor yang tersedia saat ini.
+                            Tidak ada konselor yang tersedia untuk layanan ini.
                         </p>
                     ))}
             </main>

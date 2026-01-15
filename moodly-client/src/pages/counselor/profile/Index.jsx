@@ -1,6 +1,5 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-// --- PERBAIKAN: Path nunjuk ke file AuthContext.jsx (naik 3 level) ---
 import { useAuth } from "../../../context/AuthContext.jsx";
 
 // --- Komponen Ikon ---
@@ -56,7 +55,8 @@ const LockIcon = () => (
     </svg>
 );
 
-const CloudCogIcon = () => (
+// --- PERBAIKAN: Ikon Bantuan Baru (Tanda Tanya) ---
+const HelpIcon = () => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
         width="20"
@@ -69,16 +69,9 @@ const CloudCogIcon = () => (
         strokeLinejoin="round"
         className="text-gray-500"
     >
-        <path d="M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9" />
-        <circle cx="12" cy="17" r="2.5" />
-        <path d="m12 14.5-1-1" />
-        <path d="m15 17.5 1 1" />
-        <path d="m12 19.5 1 1" />
-        <path d="m9 16.5-1-1" />
-        <path d="m16 17 1.5 0" />
-        <path d="m6.5 17-1.5 0" />
-        <path d="m14.2 19.2.8-1.7" />
-        <path d="m9.8 14.8-.8 1.7" />
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+        <line x1="12" y1="17" x2="12.01" y2="17"></line>
     </svg>
 );
 
@@ -101,7 +94,6 @@ const CalendarIcon = () => (
         <line x1="3" y1="10" x2="21" y2="10"></line>
     </svg>
 );
-
 const HomeIcon = () => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -119,7 +111,6 @@ const HomeIcon = () => (
         <polyline points="9 22 9 12 15 12 15 22"></polyline>
     </svg>
 );
-
 const BankIcon = () => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -140,7 +131,6 @@ const BankIcon = () => (
         <line x1="7" y1="13" x2="17" y2="13" />
     </svg>
 );
-
 const LogOutIcon = () => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -203,7 +193,7 @@ const MenuItem = ({ icon, label, onClick, isLogout = false }) => (
     </button>
 );
 
-export default function ProfilePage() {
+export default function CounselorProfilePage() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
 
@@ -212,8 +202,6 @@ export default function ProfilePage() {
             if (logout) {
                 await logout();
             }
-            console.log("Logout successful");
-            navigate("/login");
         } catch (error) {
             console.error("Logout failed:", error);
         }
@@ -221,42 +209,46 @@ export default function ProfilePage() {
 
     // --- FUNGSI NAVIGASI ---
     const handleEditProfileClick = () => navigate("/counselor/profile/edit");
-    const handleHelpClick = () => navigate("/counselor/help"); // Pastikan rute ini ada
-    const handleScheduleClick = () => navigate("/counselor/schedule/edit"); // Diarahkan ke edit
-    const handlePracticeLocationClick = () => navigate("/counselor/location"); // Pastikan rute ini ada
-    const handleBankClick = () => navigate("/counselor/bank-account"); // Pastikan rute ini ada
-
-    // --- [BARU] FUNGSI NAVIGASI UNTUK EMAIL & PASSWORD ---
     const handleChangeEmailClick = () =>
         navigate("/counselor/profile/change-email");
     const handleChangePasswordClick = () =>
         navigate("/counselor/profile/change-password");
+
+    const handleScheduleClick = () =>
+        navigate("/counselor/profile/change-schedule");
+    const handlePracticeLocationClick = () =>
+        navigate("/counselor/profile/change-location");
+    const handleBankClick = () => navigate("/counselor/profile/change-bank");
+
+    const handleHelpClick = () => navigate("/counselor/help");
+
+    // Avatar URL
+    const avatarUrl =
+        user?.avatar_url ||
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+            user?.name || "K"
+        )}&background=EBF4FF&color=3B82F6&bold=true`;
 
     return (
         <div className="bg-white min-h-full font-sans pt-8 pb-4 px-4">
             {/* Info Profil Atas */}
             <div className="flex flex-col items-center text-center mb-8">
                 <img
-                    src={
-                        user?.avatar ||
-                        `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                            user?.name || "U"
-                        )}&background=EBF4FF&color=3B82F6&bold=true`
-                    }
+                    src={avatarUrl}
                     alt="Profile Avatar"
                     className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-lg mb-3"
                     onError={(e) => {
                         e.target.onerror = null;
                         e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                            user?.name || "U"
+                            user?.name || "K"
                         )}&background=EBF4FF&color=3B82F6&bold=true`;
                     }}
                 />
                 <h2 className="text-xl font-bold text-gray-800">
-                    {user?.name || "Nama Pengguna"}
+                    {user?.name || "Nama Konselor"}
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
-                    {user?.email || "email@example.com"}
+                    {user?.email || "email@konselor.com"}
                 </p>
             </div>
 
@@ -268,7 +260,6 @@ export default function ProfilePage() {
                     onClick={handleEditProfileClick}
                 />
 
-                {/* --- [BARU] MENU EMAIL & PASSWORD DITAMBAHKAN --- */}
                 <MenuItem
                     icon={<MailIcon />}
                     label="Email"
@@ -279,7 +270,6 @@ export default function ProfilePage() {
                     label="Ubah Kata sandi"
                     onClick={handleChangePasswordClick}
                 />
-                {/* --- AKHIR TAMBAHAN --- */}
 
                 <MenuItem
                     icon={<CalendarIcon />}
@@ -296,11 +286,14 @@ export default function ProfilePage() {
                     label="Daftar Rekening"
                     onClick={handleBankClick}
                 />
+
+                {/* Menggunakan HelpIcon yang baru */}
                 <MenuItem
-                    icon={<CloudCogIcon />}
+                    icon={<HelpIcon />}
                     label="Bantuan"
                     onClick={handleHelpClick}
                 />
+
                 <MenuItem
                     icon={<LogOutIcon />}
                     label="Log Out"

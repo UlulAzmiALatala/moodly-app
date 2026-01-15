@@ -5,16 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany; // <-- TAMBAHKAN Import HasMany
-
-// --- TAMBAHAN BARU ---
-use Illuminate\Database\Eloquent\Casts\Attribute; // Untuk Accessor
-use Illuminate\Support\Facades\Storage; // Untuk URL Storage
-// --- AKHIR TAMBAHAN BARU ---
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class Booking extends Model
 {
-    // ... (kode $fillable, $appends, relasi tidak berubah) ...
     use HasFactory;
 
     protected $fillable = [
@@ -28,62 +24,92 @@ class Booking extends Model
         'metode_konsultasi',
         'status_pesanan',
         'total_harga',
-        'alasan_pembatalan', // <-- Pastikan ada dari migrasi sebelumnya
-        'catatan_pembatalan', // <-- Pastikan ada dari migrasi sebelumnya
-
-        // --- TAMBAHAN DARI MIGRARI BARU ---
+        'admin_fee',
+        'counselor_net',
+        'counselor_payment_status',
+        'counselor_payment_proof',
+        'counselor_paid_at',
+        'alasan_pembatalan',
+        'catatan_pembatalan',
         'payment_proof_image',
         'payment_proof_notes',
-        // --- AKHIR TAMBAHAN ---
+        'gmeet_link',
+        'refund_amount',
+        'rating',
+        'ulasan_customer',
+        'proposed_date',
+        'proposed_time',
     ];
 
-    // --- TAMBAHAN BARU: Appends ---
-    /**
-     * The accessors to append to the model's array form.
-     *
-     * @var array
-     */
     protected $appends = [
-        'payment_proof_image_url' // <-- Kita ingin URL ini selalu ada di JSON
+        'payment_proof_image_url',
+        'counselor_payment_proof_url'
     ];
-    // --- AKHIR TAMBAHAN BARU ---
 
+    protected $visible = [
+        'id',
+        'customer_id',
+        'konselor_id',
+        'jenis_konseling_id',
+        'durasi_konseling_id',
+        'tempat_konseling_id',
+        'tanggal_konsultasi',
+        'jam_konsultasi',
+        'metode_konsultasi',
+        'status_pesanan',
+        'total_harga',
+        'alasan_pembatalan',
+        'catatan_pembatalan',
+        'payment_proof_image',
+        'payment_proof_notes',
+        'admin_fee',
+        'counselor_net',
+        'counselor_payment_status',
+        'counselor_payment_proof',
+        'counselor_paid_at',
+        'refund_amount',
+        'gmeet_link',
+        'rating',
+        'ulasan_customer',
+        'proposed_date',
+        'proposed_time',
+        'created_at',
+        'updated_at',
 
-    /**
-     * Get the customer that owns the booking.
-     */
+        // Relasi
+        'customer',
+        'konselor',
+        'jenisKonseling',
+        'durasiKonseling',
+        'tempatKonseling',
+        'chatMessages',
+        'refund',
+
+        // Accessor
+        'payment_proof_image_url',
+        'counselor_payment_proof_url'
+    ];
+
     public function customer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'customer_id');
     }
 
-    /**
-     * Get the konselor associated with the booking.
-     */
     public function konselor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'konselor_id');
     }
 
-    /**
-     * Get the jenis konseling associated with the booking.
-     */
     public function jenisKonseling(): BelongsTo
     {
         return $this->belongsTo(JenisKonseling::class);
     }
 
-    // --- RELASI BARU ---
-    /**
-     * Get all of the chat messages for the booking.
-     */
     public function chatMessages(): HasMany
     {
         return $this->hasMany(ChatMessage::class);
     }
-    // --- AKHIR RELASI BARU ---
 
-    // Tambahkan relasi lain jika perlu (Durasi, Tempat)
     public function durasiKonseling(): BelongsTo
     {
         return $this->belongsTo(DurasiKonseling::class);
@@ -94,24 +120,28 @@ class Booking extends Model
         return $this->belongsTo(TempatKonseling::class);
     }
 
-    // --- TAMBAHAN BARU: Accessor untuk Bukti Pembayaran ---
-    /**
-     * Dapatkan URL lengkap untuk gambar bukti pembayaran.
-     *
-     * @return \Illuminate\Database\Eloquent\Casts\Attribute
-     */
+    public function refund(): HasOne
+    {
+        return $this->hasOne(Refund::class);
+    }
+
+    // Accessor Bukti Bayar Customer
     protected function paymentProofImageUrl(): Attribute
     {
         return Attribute::make(
-            // --- PERBAIKAN: Panggil Rute API Proxy ---
-            // Alih-alih memanggil Storage::url() (yang menyebabkan error CORS
-            // di php artisan serve), kita panggil rute API proxy yang sudah
-            // kita daftarkan di routes/api.php
             get: fn() => $this->payment_proof_image
-                ? url('/api/super-admin/booking-management/' . $this->id . '/payment-proof-image')
+                ? url('storage/' . $this->payment_proof_image)
                 : null,
-            // --- AKHIR PERBAIKAN ---
         );
     }
-    // --- AKHIR TAMBAHAN BARU & PERBAIKAN ---
+
+    // [BARU] Accessor Bukti Bayar Admin ke Konselor
+    protected function counselorPaymentProofUrl(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => $this->counselor_payment_proof
+                ? url('storage/' . $this->counselor_payment_proof)
+                : null,
+        );
+    }
 }

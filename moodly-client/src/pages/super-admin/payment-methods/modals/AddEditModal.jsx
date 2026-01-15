@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-// --- PERBAIKAN: Path relatif tanpa ekstensi ---
+import { createPortal } from "react-dom";
 import apiClient from "../../../../api/axios";
-// --- AKHIR PERBAIKAN ---
+import { X, Upload, Image as ImageIcon, Loader2 } from "lucide-react";
 
 export default function AddEditModal({
     isOpen,
@@ -9,6 +9,9 @@ export default function AddEditModal({
     onSuccess,
     methodToEdit,
 }) {
+    // Jika tidak open, jangan render apa-apa (hemat resource)
+    if (!isOpen) return null;
+
     const isEditMode = Boolean(methodToEdit);
     const [name, setName] = useState("");
     const [accountDetails, setAccountDetails] = useState("");
@@ -35,7 +38,7 @@ export default function AddEditModal({
             setImage(null);
             setImagePreview(null);
         }
-    }, [isOpen, isEditMode, methodToEdit]);
+    }, [isEditMode, methodToEdit]);
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
@@ -56,17 +59,17 @@ export default function AddEditModal({
         formData.append("status", status);
 
         if (image) {
-            // Hanya kirim gambar jika ada file baru
             formData.append("image", image);
         }
 
         // Tentukan URL dan method API
         let url = "/api/super-admin/payment-methods";
-        let method = "POST";
+        // Method POST digunakan untuk kedua kasus, tapi untuk update kita spoofing method PUT
+        // karena handling file upload dengan PUT murni terkadang bermasalah di beberapa server setup.
 
         if (isEditMode) {
             url = `/api/super-admin/payment-methods/${methodToEdit.id}`;
-            formData.append("_method", "PUT"); // Laravel butuh ini untuk update file
+            formData.append("_method", "PUT");
         }
 
         try {
@@ -75,16 +78,18 @@ export default function AddEditModal({
                     "Content-Type": "multipart/form-data",
                 },
             });
-            onSuccess(); // Panggil refresh data di parent
+            onSuccess(); // Refresh data parent
         } catch (err) {
             console.error("Save error:", err);
             let errorMessage = "Gagal menyimpan data.";
-            if (err.response && err.response.data && err.response.data.errors) {
+            if (err.response?.data?.errors) {
                 // Ambil error validasi pertama
                 const firstError = Object.values(
                     err.response.data.errors
                 )[0][0];
                 errorMessage = firstError || errorMessage;
+            } else if (err.response?.data?.message) {
+                errorMessage = err.response.data.message;
             }
             setError(errorMessage);
         } finally {
@@ -92,181 +97,196 @@ export default function AddEditModal({
         }
     };
 
-    if (!isOpen) return null;
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 transition-opacity">
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-200 p-4">
+            {/* Overlay Close */}
             <div
-                className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col transition-transform transform scale-100"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <div className="flex justify-between items-center p-4 border-b">
-                    <h3 className="text-lg font-semibold">
+                className="absolute inset-0"
+                onClick={!loading ? onClose : undefined}
+            ></div>
+
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col relative z-10 max-h-[90vh]">
+                {/* Header */}
+                <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
+                    <h3 className="text-xl font-bold text-gray-800">
                         {isEditMode
                             ? "Edit Metode Pembayaran"
-                            : "Tambah Metode Pembayaran"}
+                            : "Tambah Metode Baru"}
                     </h3>
                     <button
                         onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600"
-                        aria-label="Tutup"
+                        disabled={loading}
+                        className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
                     >
-                        {/* Ikon X */}
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-6 w-6"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M6 18L18 6M6 6l12 12"
-                            />
-                        </svg>
+                        <X size={20} />
                     </button>
                 </div>
 
+                {/* Form Body */}
                 <form
                     onSubmit={handleSubmit}
-                    className="flex-grow overflow-y-auto"
+                    className="flex-grow overflow-y-auto p-6 space-y-5"
                 >
-                    <div className="p-6 space-y-4">
-                        {error && (
-                            <div className="p-3 bg-red-100 text-red-700 rounded-md text-sm">
-                                {error}
-                            </div>
-                        )}
-
-                        <div>
-                            <label
-                                htmlFor="name"
-                                className="block text-sm font-medium text-gray-700 mb-1"
-                            >
-                                Nama Metode (Contoh: QRIS - BCA) *
-                            </label>
-                            <input
-                                type="text"
-                                id="name"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                required
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 text-sm"
-                            />
+                    {error && (
+                        <div className="p-4 bg-red-50 border border-red-100 text-red-700 rounded-xl text-sm flex items-start gap-2">
+                            <span className="mt-0.5 font-bold">Error:</span>{" "}
+                            {error}
                         </div>
+                    )}
 
-                        <div>
-                            <label
-                                htmlFor="account_details"
-                                className="block text-sm font-medium text-gray-700 mb-1"
-                            >
-                                Detail Akun (Contoh: 123456789 a/n Moodly)
-                            </label>
-                            <input
-                                type="text"
-                                id="account_details"
-                                value={accountDetails}
-                                onChange={(e) =>
-                                    setAccountDetails(e.target.value)
-                                }
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 text-sm"
-                            />
-                        </div>
+                    {/* Nama Metode */}
+                    <div>
+                        <label
+                            htmlFor="name"
+                            className="block text-sm font-bold text-gray-700 mb-1.5"
+                        >
+                            Nama Metode <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="name"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            required
+                            placeholder="Contoh: QRIS - BCA"
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all outline-none text-sm"
+                        />
+                    </div>
 
-                        <div>
-                            <label
-                                htmlFor="status"
-                                className="block text-sm font-medium text-gray-700 mb-1"
-                            >
-                                Status *
-                            </label>
+                    {/* Detail Akun */}
+                    <div>
+                        <label
+                            htmlFor="account_details"
+                            className="block text-sm font-bold text-gray-700 mb-1.5"
+                        >
+                            Detail Akun / Nomor Rekening
+                        </label>
+                        <input
+                            type="text"
+                            id="account_details"
+                            value={accountDetails}
+                            onChange={(e) => setAccountDetails(e.target.value)}
+                            placeholder="Contoh: 123456789 a/n Moodly"
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all outline-none text-sm"
+                        />
+                    </div>
+
+                    {/* Status */}
+                    <div>
+                        <label
+                            htmlFor="status"
+                            className="block text-sm font-bold text-gray-700 mb-1.5"
+                        >
+                            Status <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
                             <select
                                 id="status"
                                 value={status}
                                 onChange={(e) => setStatus(e.target.value)}
                                 required
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 text-sm"
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all outline-none text-sm appearance-none bg-white"
                             >
                                 <option value="Aktif">Aktif</option>
                                 <option value="Tidak Aktif">Tidak Aktif</option>
                             </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Gambar QRIS
-                            </label>
-                            <div className="flex items-center gap-4">
-                                {imagePreview ? (
-                                    <img
-                                        src={imagePreview}
-                                        alt="Preview"
-                                        className="w-24 h-24 object-cover rounded-md border"
-                                    />
-                                ) : (
-                                    <div className="w-24 h-24 bg-gray-100 rounded-md flex items-center justify-center text-gray-400 text-xs">
-                                        No Image
-                                    </div>
-                                )}
-                                <div>
-                                    <input
-                                        type="file"
-                                        accept="image/png, image/jpeg, image/jpg"
-                                        onChange={handleImageChange}
-                                        className="hidden" // Sembunyikan input asli
-                                        ref={fileInputRef}
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            fileInputRef.current &&
-                                            fileInputRef.current.click()
-                                        }
-                                        className="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
-                                    >
-                                        {isEditMode
-                                            ? "Ganti Gambar"
-                                            : "Upload Gambar"}
-                                    </button>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        Max 2MB (JPG, PNG)
-                                    </p>
-                                    {isEditMode && !image && (
-                                        <p className="text-xs text-gray-500 mt-1">
-                                            Kosongkan jika tidak ingin ganti
-                                            gambar.
-                                        </p>
-                                    )}
-                                </div>
+                            <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none">
+                                <svg
+                                    className="w-4 h-4 text-gray-500"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M19 9l-7 7-7-7"
+                                    ></path>
+                                </svg>
                             </div>
                         </div>
                     </div>
 
-                    <div className="p-4 bg-gray-50 border-t flex justify-end gap-3">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            disabled={loading}
-                            className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50"
-                        >
-                            Batal
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="px-4 py-2 bg-cyan-600 text-white rounded-md text-sm font-medium hover:bg-cyan-700 disabled:bg-gray-400"
-                        >
-                            {loading
-                                ? "Menyimpan..."
-                                : isEditMode
-                                ? "Simpan Perubahan"
-                                : "Simpan"}
-                        </button>
+                    {/* Upload Gambar */}
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">
+                            Logo / Gambar QRIS
+                        </label>
+
+                        <div className="flex items-start gap-4">
+                            {/* Preview Box */}
+                            <div className="shrink-0 w-24 h-24 bg-gray-100 rounded-xl border border-gray-200 overflow-hidden flex items-center justify-center relative group">
+                                {imagePreview ? (
+                                    <img
+                                        src={imagePreview}
+                                        alt="Preview"
+                                        className="w-full h-full object-contain"
+                                    />
+                                ) : (
+                                    <ImageIcon className="text-gray-400 w-8 h-8" />
+                                )}
+                            </div>
+
+                            {/* Input Area */}
+                            <div className="flex-1">
+                                <input
+                                    type="file"
+                                    accept="image/png, image/jpeg, image/jpg"
+                                    onChange={handleImageChange}
+                                    className="hidden"
+                                    ref={fileInputRef}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        fileInputRef.current?.click()
+                                    }
+                                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all text-sm font-medium shadow-sm"
+                                >
+                                    <Upload size={16} />
+                                    {isEditMode
+                                        ? "Ganti Gambar"
+                                        : "Pilih Gambar"}
+                                </button>
+                                <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+                                    Format: JPG, PNG. Maks: 2MB.
+                                    <br />
+                                    {isEditMode &&
+                                        "Biarkan kosong jika tidak ingin mengubah gambar."}
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </form>
+
+                {/* Footer Actions */}
+                <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3 rounded-b-2xl">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        disabled={loading}
+                        className="px-5 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition-colors font-medium text-sm disabled:opacity-50"
+                    >
+                        Batal
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={loading}
+                        className="px-5 py-2.5 bg-cyan-600 text-white rounded-xl hover:bg-cyan-700 transition-all shadow-lg shadow-cyan-200 font-bold text-sm disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                        {loading ? (
+                            <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Menyimpan...
+                            </>
+                        ) : (
+                            "Simpan Data"
+                        )}
+                    </button>
+                </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

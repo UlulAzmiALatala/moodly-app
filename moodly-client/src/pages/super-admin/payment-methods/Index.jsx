@@ -1,110 +1,178 @@
 import React, { useState, useEffect } from "react";
-// --- PERBAIKAN: Path relatif tanpa ekstensi ---
 import apiClient from "../../../api/axios";
-// AdminLayout tidak diimpor di sini, karena sudah di-handle oleh Router
+import {
+    Plus,
+    Edit2,
+    Trash2,
+    Search,
+    ChevronLeft,
+    ChevronRight,
+} from "lucide-react";
+
 import AddEditModal from "./modals/AddEditModal";
 import DeleteModal from "./modals/DeleteModal";
-// --- AKHIR PERBAIKAN ---
 
-// --- Komponen Ikon ---
-const PlusIcon = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-5 w-5"
-        viewBox="0 0 20 20"
-        fill="currentColor"
-    >
-        <path
-            fillRule="evenodd"
-            d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-            clipRule="evenodd"
-        />
-    </svg>
-);
+// 1. Import Hook Toast
+import { useToast } from "../../../context/ToastContext";
 
-const EditIcon = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-5 w-5"
-        viewBox="0 0 20 20"
-        fill="currentColor"
-    >
-        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-    </svg>
-);
-
-const TrashIcon = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-5 w-5"
-        viewBox="0 0 20 20"
-        fill="currentColor"
-    >
-        <path
-            fillRule="evenodd"
-            d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-            clipRule="evenodd"
-        />
-    </svg>
-);
-// --- Akhir Komponen Ikon ---
-
-// Komponen Badge Status
+// --- Komponen Badge Status (Tetap sesuai aslinya) ---
 const StatusBadge = ({ status }) => {
     const isActive = status === "Aktif";
     return (
         <span
-            className={`px-3 py-1 text-xs font-medium rounded-full ${
+            className={`px-3 py-1 text-xs font-bold rounded-full border ${
                 isActive
-                    ? "bg-green-100 text-green-700"
-                    : "bg-gray-100 text-gray-700"
+                    ? "bg-green-50 text-green-700 border-green-200"
+                    : "bg-gray-50 text-gray-600 border-gray-200"
             }`}
         >
-            {status}
+            {isActive ? "Aktif" : "Non-Aktif"}
         </span>
     );
 };
 
+// --- KOMPONEN PAGINASI (Gaya Moodly - Cyan) ---
+const Pagination = ({ meta, onPageChange }) => {
+    if (!meta || meta.total === 0) return null;
+
+    const { current_page, last_page, from, to, total } = meta;
+
+    const getPageNumbers = () => {
+        let pages = [];
+        let startPage = Math.max(1, current_page - 2);
+        let endPage = Math.min(last_page, startPage + 4);
+
+        if (endPage - startPage < 4) {
+            startPage = Math.max(1, endPage - 4);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            pages.push(i);
+        }
+        return pages;
+    };
+
+    const pageNumbers = getPageNumbers();
+
+    return (
+        <div className="px-6 py-4 border-t border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4 bg-white">
+            <p className="text-sm text-gray-500">
+                Menampilkan{" "}
+                <span className="font-bold text-gray-900">{from || 0}</span>{" "}
+                sampai{" "}
+                <span className="font-bold text-gray-900">{to || 0}</span> dari{" "}
+                <span className="font-bold text-gray-900">{total}</span> data
+            </p>
+
+            <div className="flex items-center gap-2">
+                <button
+                    onClick={() => onPageChange(current_page - 1)}
+                    disabled={current_page === 1}
+                    className="p-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    <ChevronLeft size={18} />
+                </button>
+
+                {pageNumbers.map((page) => (
+                    <button
+                        key={page}
+                        onClick={() => onPageChange(page)}
+                        className={`w-9 h-9 rounded-xl text-sm font-bold transition-all shadow-sm border ${
+                            current_page === page
+                                ? "bg-cyan-400 text-white border-cyan-400 shadow-cyan-200"
+                                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                        }`}
+                    >
+                        {page}
+                    </button>
+                ))}
+
+                <button
+                    onClick={() => onPageChange(current_page + 1)}
+                    disabled={current_page === last_page}
+                    className="p-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    <ChevronRight size={18} />
+                </button>
+            </div>
+        </div>
+    );
+};
+
 export default function PaymentMethodsPage() {
+    // --- State Data ---
     const [paymentMethods, setPaymentMethods] = useState([]);
+    const [pagination, setPagination] = useState({});
+    const [currentPage, setCurrentPage] = useState(1);
+
+    // --- State UI ---
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [searchTerm, setSearchTerm] = useState("");
 
-    // State untuk Modal
+    // --- 2. Panggil Hook Toast ---
+    const { addToast } = useToast();
+
+    // --- State Modal ---
     const [isAddEditModalOpen, setIsAddEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [selectedMethod, setSelectedMethod] = useState(null); // Untuk edit atau delete
+    const [selectedMethod, setSelectedMethod] = useState(null);
 
-    // Fungsi Fetch Data
-    const fetchPaymentMethods = async () => {
+    // --- 1. Fetch Data (Dengan Page & Search) ---
+    const fetchPaymentMethods = async (page = 1, search = "") => {
         setLoading(true);
         try {
             const response = await apiClient.get(
-                "/api/super-admin/payment-methods"
+                `/api/super-admin/payment-methods?page=${page}&search=${search}`
             );
-            setPaymentMethods(response.data);
+
+            if (response.data.data) {
+                setPaymentMethods(response.data.data);
+                setPagination({
+                    current_page: response.data.current_page,
+                    last_page: response.data.last_page,
+                    total: response.data.total,
+                    from: response.data.from,
+                    to: response.data.to,
+                });
+            } else {
+                setPaymentMethods(response.data);
+                setPagination({});
+            }
             setError(null);
         } catch (err) {
-            setError("Gagal mengambil data metode pembayaran.");
+            const errorMsg = "Gagal mengambil data metode pembayaran.";
+            setError(errorMsg);
+            // Tambahkan Toast Error
+            addToast(errorMsg, "error");
             console.error("Fetch error:", err);
         } finally {
             setLoading(false);
         }
     };
 
-    // Fetch data saat komponen dimuat
+    // Effect: Debounce Search
     useEffect(() => {
-        fetchPaymentMethods();
-    }, []);
+        const timer = setTimeout(() => {
+            fetchPaymentMethods(currentPage, searchTerm);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [currentPage, searchTerm]);
 
-    // Handler Modal
+    // --- 2. Handlers ---
+    const handlePageChange = (newPage) => {
+        if (newPage >= 1 && newPage <= (pagination.last_page || 1)) {
+            setCurrentPage(newPage);
+        }
+    };
+
     const handleOpenAddModal = () => {
-        setSelectedMethod(null); // Pastikan null (mode Tambah)
+        setSelectedMethod(null);
         setIsAddEditModalOpen(true);
     };
 
     const handleOpenEditModal = (method) => {
-        setSelectedMethod(method); // Set data (mode Edit)
+        setSelectedMethod(method);
         setIsAddEditModalOpen(true);
     };
 
@@ -119,171 +187,202 @@ export default function PaymentMethodsPage() {
         setSelectedMethod(null);
     };
 
-    // Handler Sukses (refresh data)
     const handleSuccess = () => {
         handleCloseModals();
-        fetchPaymentMethods(); // Ambil data terbaru
+        fetchPaymentMethods(currentPage, searchTerm); // Refresh data
+        // Catatan: Toast sukses biasanya dipanggil di dalam modal setelah aksi berhasil,
+        // atau bisa ditambahkan di sini jika modal mengembalikan status sukses.
     };
 
-    // --- PERBAIKAN: Bungkus dengan Fragment (<>) ---
     return (
-        <>
-            <div className="p-6 bg-gray-50 min-h-screen">
-                {/* Header */}
-                <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl font-bold text-gray-800">
-                        Metode Pembayaran (QRIS)
+        <div className="space-y-6 p-2 pb-20">
+            {/* --- Header Section --- */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">
+                        Metode Pembayaran
                     </h1>
-                    <button
-                        onClick={handleOpenAddModal}
-                        className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors duration-150 text-sm font-medium"
-                    >
-                        <PlusIcon />
-                        Tambah Metode
-                    </button>
+                    <p className="text-sm text-gray-500 mt-1">
+                        Atur opsi pembayaran (QRIS/Bank Transfer) untuk
+                        aplikasi.
+                    </p>
                 </div>
 
-                {/* Loading & Error Handling */}
-                {loading && (
-                    <p className="text-center text-gray-500">Memuat data...</p>
-                )}
-                {error && <p className="text-center text-red-500">{error}</p>}
+                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                    {/* Search Bar */}
+                    <div className="relative flex-1 md:w-64">
+                        <input
+                            type="text"
+                            placeholder="Cari metode..."
+                            value={searchTerm}
+                            onChange={(e) => {
+                                setSearchTerm(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100 transition-all text-sm shadow-sm"
+                        />
+                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    </div>
 
-                {/* Tabel Data */}
-                {!loading && !error && (
-                    <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th
-                                        scope="col"
-                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                    >
-                                        Gambar (QRIS)
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                    >
-                                        Nama
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                    >
-                                        Detail Akun
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                    >
-                                        Status
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                    >
-                                        Aksi
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                                {paymentMethods.length === 0 ? (
+                    {/* Add Button */}
+                    <button
+                        onClick={handleOpenAddModal}
+                        className="flex items-center justify-center gap-2 px-5 py-2.5 bg-cyan-600 text-white rounded-xl hover:bg-cyan-700 transition-all shadow-lg shadow-cyan-200 text-sm font-bold"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Tambah Baru
+                    </button>
+                </div>
+            </div>
+
+            {/* --- Konten Utama --- */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                {loading ? (
+                    <div className="p-12 text-center">
+                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-cyan-500 border-t-transparent"></div>
+                        <p className="mt-3 text-gray-500 text-sm">
+                            Memuat data...
+                        </p>
+                    </div>
+                ) : error ? (
+                    <div className="p-12 text-center text-red-500 bg-red-50">
+                        <p>{error}</p>
+                    </div>
+                ) : (
+                    <>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm text-gray-600">
+                                <thead className="bg-gray-50/50 border-b border-gray-100 text-xs uppercase text-gray-500 font-semibold">
                                     <tr>
-                                        <td
-                                            colSpan="5"
-                                            className="px-6 py-4 text-center text-sm text-gray-500"
-                                        >
-                                            Belum ada data metode pembayaran.
-                                        </td>
+                                        <th className="px-6 py-4">Logo / QR</th>
+                                        <th className="px-6 py-4">
+                                            Nama Metode
+                                        </th>
+                                        <th className="px-6 py-4">
+                                            Detail Akun
+                                        </th>
+                                        <th className="px-6 py-4">Status</th>
+                                        <th className="px-6 py-4 text-right">
+                                            Aksi
+                                        </th>
                                     </tr>
-                                ) : (
-                                    paymentMethods.map((method) => (
-                                        <tr
-                                            key={method.id}
-                                            className="hover:bg-gray-50"
-                                        >
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <img
-                                                    src={method.image_url} // Gunakan accessor dari model
-                                                    alt={method.name}
-                                                    className="w-16 h-16 object-cover rounded-md border"
-                                                    onError={(e) => {
-                                                        e.target.onerror = null;
-                                                        e.target.src =
-                                                            "https://placehold.co/100x100/EBF8FF/3B82F6?text=QRIS";
-                                                    }}
-                                                />
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-gray-900">
-                                                    {method.name}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-600">
-                                                    {method.account_details ||
-                                                        "-"}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <StatusBadge
-                                                    status={method.status}
-                                                />
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <button
-                                                    onClick={() =>
-                                                        handleOpenEditModal(
-                                                            method
-                                                        )
-                                                    }
-                                                    className="text-blue-600 hover:text-blue-800 transition-colors duration-150 mr-3"
-                                                    aria-label={`Edit ${method.name}`}
-                                                >
-                                                    <EditIcon />
-                                                </button>
-                                                <button
-                                                    onClick={() =>
-                                                        handleOpenDeleteModal(
-                                                            method
-                                                        )
-                                                    }
-                                                    className="text-red-600 hover:text-red-800 transition-colors duration-150"
-                                                    aria-label={`Hapus ${method.name}`}
-                                                >
-                                                    <TrashIcon />
-                                                </button>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50">
+                                    {paymentMethods.length === 0 ? (
+                                        <tr>
+                                            <td
+                                                colSpan="5"
+                                                className="px-6 py-12 text-center text-gray-400 italic"
+                                            >
+                                                Tidak ada metode pembayaran
+                                                ditemukan.
                                             </td>
                                         </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                    ) : (
+                                        paymentMethods.map((method) => (
+                                            <tr
+                                                key={method.id}
+                                                className="hover:bg-cyan-50/30 transition-colors group"
+                                            >
+                                                <td className="px-6 py-4">
+                                                    <div className="w-16 h-16 rounded-lg border border-gray-200 bg-white p-1 flex items-center justify-center overflow-hidden">
+                                                        <img
+                                                            src={
+                                                                method.image_url
+                                                            }
+                                                            alt={method.name}
+                                                            className="w-full h-full object-contain rounded-md"
+                                                            onError={(e) => {
+                                                                e.target.onerror =
+                                                                    null;
+                                                                e.target.src =
+                                                                    "https://placehold.co/100x100/f3f4f6/9ca3af?text=No+Img";
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="font-bold text-gray-900 text-base">
+                                                        {method.name}
+                                                    </div>
+                                                    <div className="text-xs text-gray-400 mt-0.5">
+                                                        ID: {method.id}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    {method.account_details ? (
+                                                        <div className="font-mono text-xs bg-gray-100 px-2 py-1 rounded inline-block text-gray-700">
+                                                            {
+                                                                method.account_details
+                                                            }
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-gray-400 italic text-xs">
+                                                            -
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <StatusBadge
+                                                        status={method.status}
+                                                    />
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                                                        <button
+                                                            onClick={() =>
+                                                                handleOpenEditModal(
+                                                                    method
+                                                                )
+                                                            }
+                                                            className="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                                                            title="Edit"
+                                                        >
+                                                            <Edit2 className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() =>
+                                                                handleOpenDeleteModal(
+                                                                    method
+                                                                )
+                                                            }
+                                                            className="p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                                                            title="Hapus"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* --- Footer Paginasi (Menggunakan Komponen Baru) --- */}
+                        <Pagination
+                            meta={pagination}
+                            onPageChange={handlePageChange}
+                        />
+                    </>
                 )}
             </div>
 
-            {/* Modal Tambah/Edit */}
-            {isAddEditModalOpen && (
-                <AddEditModal
-                    isOpen={isAddEditModalOpen}
-                    onClose={handleCloseModals}
-                    onSuccess={handleSuccess}
-                    methodToEdit={selectedMethod} // Kirim data jika mode edit, null jika mode tambah
-                />
-            )}
+            {/* --- Modals --- */}
+            <AddEditModal
+                isOpen={isAddEditModalOpen}
+                onClose={handleCloseModals}
+                onSuccess={handleSuccess}
+                methodToEdit={selectedMethod}
+            />
 
-            {/* Modal Delete */}
-            {isDeleteModalOpen && (
-                <DeleteModal
-                    isOpen={isDeleteModalOpen}
-                    onClose={handleCloseModals}
-                    onSuccess={handleSuccess}
-                    methodToDelete={selectedMethod}
-                />
-            )}
-        </>
-        // --- AKHIR PERBAIKAN (Fragment) ---
+            <DeleteModal
+                isOpen={isDeleteModalOpen}
+                onClose={handleCloseModals}
+                onSuccess={handleSuccess}
+                methodToDelete={selectedMethod}
+            />
+        </div>
     );
 }

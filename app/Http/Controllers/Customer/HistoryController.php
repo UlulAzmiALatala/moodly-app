@@ -3,133 +3,394 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Booking; // <-- TAMBAHKAN IMPORT
+use App\Models\Booking;
+use App\Models\Refund;
+use Illuminate\Support\Facades\Validator;
+
+// --- IMPORT EVENTS ---
+use App\Events\BookingCancelled;
+use App\Events\RescheduleRequested as RescheduleRequestedEvent;
+
+// --- IMPORT NOTIFICATIONS ---
+use App\Notifications\BookingStatusUpdated;
+use App\Notifications\RescheduleRequested;
+use App\Notifications\NewRatingReceived;
+use App\Notifications\RescheduleResponse;
 
 class HistoryController extends Controller
 {
+    // Konstanta potongan admin 20%
+    private const ADMIN_FEE_PERCENTAGE = 0.20;
+
     /**
-     * Mengambil semua data riwayat booking untuk customer yang sedang login.
-     * GET /api/history
+     * Menampilkan daftar riwayat booking.
      */
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
-        /** @var \App\Models\User $user */ // <-- INI DIA PERBAIKANNYA
-        $user = Auth::user();
+        $user = $request->user();
 
-        try {
-            // Ambil semua booking milik user
-            // 'bookings()' sekarang akan dikenali oleh linter
-            $bookings = $user->bookings()
-                // Eager load data konselor, tapi HANYA field yang kita perlukan
-                ->with('konselor:id,name,avatar,spesialisasi')
-                // Urutkan berdasarkan tanggal terbaru
-                ->latest('tanggal_konsultasi')
-                ->get();
+        // 1. Ambil Parameter
+        $statusFilter = $request->query('status', 'upcoming');
+        $search = $request->query('search');
 
-            return response()->json($bookings);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Gagal mengambil data riwayat.',
-                'error' => $e->getMessage()
-            ], 500);
+        // 2. Query Dasar
+        $query = Booking::where('customer_id', $user->id);
+
+        // 3. LOGIKA PENCARIAN
+        if ($search) {
+            $query->where('id', 'like', "%{$search}%");
         }
+
+        // 4. Filter Status
+        $query->when($statusFilter == 'upcoming', function ($q) {
+            $q->whereIn('status_pesanan', ['Dijadwalkan', 'DISETUJUI', 'Menunggu Konfirmasi Customer', 'MENUNGGU_KONFIRMASI_JADWAL']);
+        });
+
+        $query->when($statusFilter == 'canceled', function ($q) {
+            $q->whereIn('status_pesanan', ['DIBATALKAN', 'DITOLAK', 'Dibatalkan']);
+        });
+
+        $query->when($statusFilter == 'unpaid', function ($q) {
+            $q->whereIn('status_pesanan', [
+                'Menunggu Pembayaran',
+                'Menunggu Verifikasi',
+                'MENUNGGU_PEMBAYARAN',
+                'MENUNGGU_VERIFIKASI_PEMBAYARAN',
+                'Pembayaran Ditolak'
+            ]);
+        });
+
+        $query->when($statusFilter == 'completed', function ($q) {
+            $q->whereIn('status_pesanan', ['SELESAI', 'Selesai']);
+        });
+
+        // 5. Load Relasi & Urutkan
+        // Perhatikan kita load 'konselor' full atau select kolom penting, 
+        // tapi nanti kita transform manual agar accessor jalan.
+        $bookings = $query->with([
+            'konselor', // Load full user model agar accessor jalan
+            'jenisKonseling:id,jenis_konseling,image',
+            'durasiKonseling:id,durasi_menit',
+            'tempatKonseling:id,nama_tempat,image'
+        ])
+            ->orderBy('tanggal_konsultasi', 'desc')
+            ->orderBy('jam_konsultasi', 'desc')
+            ->paginate(10);
+
+        // [MODIFIKASI] Transformasi Data untuk Spesialisasi Teks
+        $bookings->getCollection()->transform(function ($booking) {
+            if ($booking->konselor) {
+                // Tambahkan properti custom ke object konselor di response JSON
+                $booking->konselor->setAttribute('spesialisasi_teks', $booking->konselor->spesialisasi_label);
+
+                // Atau override properti asli jika frontend pakai 'spesialisasi'
+                $booking->konselor->spesialisasi = $booking->konselor->spesialisasi_label;
+            }
+            return $booking;
+        });
+
+        return response()->json($bookings);
     }
 
     /**
-     * METHOD BARU: Menampilkan satu detail booking.
-     * GET /api/history/{booking}
+     * Detail Booking.
      */
-    public function show(Booking $booking)
+    public function show(Booking $booking): JsonResponse
     {
-        // Pastikan customer ini pemilik booking
         if (Auth::id() !== $booking->customer_id) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['message' => 'Tidak diizinkan mengakses sumber daya ini.'], 403);
         }
 
-        // Load data konselor
-        $booking->load('konselor:id,name,avatar,spesialisasi');
+        $booking->load([
+            'konselor', // Load full agar accessor jalan
+            'customer',
+            'jenisKonseling',
+            'durasiKonseling',
+            'tempatKonseling',
+            'refund'
+        ]);
+
+        // [MODIFIKASI] Override spesialisasi dengan label teks
+        if ($booking->konselor) {
+            $booking->konselor->spesialisasi = $booking->konselor->spesialisasi_label;
+        }
 
         return response()->json($booking);
     }
 
     /**
-     * METHOD BARU: Membatalkan booking.
-     * PATCH /api/history/{booking}/cancel
+     * Membatalkan booking & Hitung Refund.
      */
-    public function cancel(Request $request, Booking $booking)
+    public function cancel(Request $request, Booking $booking): JsonResponse
     {
-        // Pastikan customer ini pemilik booking
         if (Auth::id() !== $booking->customer_id) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['message' => 'Tidak diizinkan.'], 403);
         }
 
-        // Validasi input
-        $validated = $request->validate([
+        $nonCancelableStatuses = ['Selesai', 'SELESAI', 'Dibatalkan', 'DIBATALKAN', 'DITOLAK'];
+        if (in_array($booking->status_pesanan, $nonCancelableStatuses)) {
+            return response()->json(['message' => 'Booking dengan status ini tidak dapat dibatalkan.'], 422);
+        }
+
+        $nonRefundableStatuses = ['Menunggu Pembayaran', 'Menunggu Verifikasi', 'MENUNGGU_PEMBAYARAN', 'MENUNGGU_VERIFIKASI_PEMBAYARAN', 'Pembayaran Ditolak'];
+        $isRefundable = !in_array($booking->status_pesanan, $nonRefundableStatuses);
+
+        $validator = Validator::make($request->all(), [
             'alasan' => 'required|string|max:255',
-            'catatan' => 'nullable|string',
+            'catatan' => 'nullable|string|max:1000',
         ]);
 
-        // Update booking
+        if ($validator->fails()) {
+            return response()->json(['message' => 'Alasan pembatalan wajib diisi.', 'errors' => $validator->errors()], 422);
+        }
+        $validated = $validator->validated();
+
+        $admin_fee = 0;
+        $refund_amount = 0;
+
+        if ($isRefundable) {
+            $admin_fee = $booking->total_harga * self::ADMIN_FEE_PERCENTAGE;
+            $refund_amount = $booking->total_harga - $admin_fee;
+        }
+
         try {
             $booking->update([
-                'status_pesanan' => 'Batal',
+                'status_pesanan' => 'Dibatalkan',
                 'alasan_pembatalan' => $validated['alasan'],
-                'catatan_pembatalan' => $validated['catatan'],
+                'catatan_pembatalan' => $validated['catatan'] ?? null,
+                'admin_fee' => $admin_fee,
+                'refund_amount' => $refund_amount,
             ]);
 
-            return response()->json(['message' => 'Booking berhasil dibatalkan.']);
-        } catch (\Exception $e) {
+            // --- KIRIM NOTIFIKASI ---
+            try {
+                $booking->customer->notify(new BookingStatusUpdated($booking));
+
+                if ($booking->konselor) {
+                    $booking->konselor->notify(new BookingStatusUpdated($booking));
+                }
+
+                Log::info("Mengirim event pembatalan untuk booking ID: " . $booking->id);
+                broadcast(new BookingCancelled($booking));
+            } catch (\Exception $e) {
+                Log::error("Gagal broadcast/notify cancel: " . $e->getMessage());
+            }
+
             return response()->json([
-                'message' => 'Gagal membatalkan booking.',
-                'error' => $e->getMessage()
-            ], 500);
+                'message' => 'Booking telah berhasil dibatalkan.',
+                'booking' => $booking->fresh()
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Gagal membatalkan booking:', ['booking_id' => $booking->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Terjadi kesalahan saat membatalkan booking.'], 500);
         }
     }
 
-    public function reschedule(Request $request, Booking $booking)
+    /**
+     * Menjadwal ulang booking (Inisiatif Customer).
+     */
+    public function reschedule(Request $request, Booking $booking): JsonResponse
     {
-        // Pastikan customer ini pemilik booking
         if (Auth::id() !== $booking->customer_id) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['message' => 'Tidak diizinkan.'], 403);
         }
 
-        // Pastikan status booking memungkinkan untuk reschedule (misal: bukan 'Selesai' atau 'Batal')
-        if (!in_array($booking->status_pesanan, ['Dijadwalkan', 'Proses', 'Menunggu Konfirmasi'])) {
-            return response()->json(['message' => 'Status booking tidak memungkinkan untuk ganti jadwal.'], 400);
+        if (in_array($booking->status_pesanan, ['SELESAI', 'DIBATALKAN', 'Selesai', 'Dibatalkan'])) {
+            return response()->json(['message' => 'Booking dengan status ini tidak dapat dijadwal ulang.'], 422);
         }
 
-        // Validasi input
         $validated = $request->validate([
-            'alasan' => 'required|string|max:255',
-            'tanggalBaru' => 'required|date|after_or_equal:today', // Tanggal baru harus hari ini atau setelahnya
-            'catatan' => 'nullable|string',
-            // Kita mungkin perlu validasi jam baru juga di masa depan
+            'tanggal_konsultasi' => 'required|date|after_or_equal:today',
+            'jam_konsultasi' => 'required|date_format:H:i',
         ]);
 
-        // Update booking
+        try {
+            $booking->tanggal_konsultasi = $validated['tanggal_konsultasi'];
+            $booking->jam_konsultasi = $validated['jam_konsultasi'];
+            $booking->status_pesanan = 'MENUNGGU_KONFIRMASI_JADWAL';
+            $booking->save();
+
+            // --- KIRIM NOTIFIKASI ---
+            try {
+                $booking->customer->notify(new BookingStatusUpdated($booking));
+
+                if ($booking->konselor) {
+                    $booking->konselor->notify(new RescheduleRequested($booking));
+                }
+
+                Log::info("Mengirim notifikasi reschedule untuk booking ID: " . $booking->id);
+                broadcast(new RescheduleRequestedEvent($booking));
+            } catch (\Exception $e) {
+                Log::error("Gagal broadcast reschedule: " . $e->getMessage());
+            }
+
+            return response()->json([
+                'message' => 'Booking telah berhasil dijadwal ulang. Menunggu konfirmasi dari admin/konselor.',
+                'booking' => $booking->fresh()
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Gagal reschedule:', ['booking_id' => $booking->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Gagal menjadwal ulang.'], 500);
+        }
+    }
+
+    /**
+     * Simpan Rating dan Kirim Notifikasi ke Konselor.
+     */
+    public function storeRating(Request $request, Booking $booking): JsonResponse
+    {
+        if (Auth::id() !== $booking->customer_id) {
+            return response()->json(['message' => 'Tidak diizinkan.'], 403);
+        }
+
+        if (!in_array($booking->status_pesanan, ['Selesai', 'SELESAI'])) {
+            return response()->json(['message' => 'Hanya sesi yang sudah selesai yang bisa diberi ulasan.'], 403);
+        }
+
+        if ($booking->rating !== null) {
+            return response()->json(['message' => 'Sesi ini sudah pernah Anda beri ulasan.'], 409);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'rating' => 'required|integer|min:1|max:5',
+            'review' => 'required|string|max:1000',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+        $validated = $validator->validated();
+
         try {
             $booking->update([
-                // Set status kembali agar Admin bisa approve ulang
-                'status_pesanan' => 'Menunggu Konfirmasi',
-                'tanggal_konsultasi' => $validated['tanggalBaru'],
-                // Kosongkan alasan pembatalan jika sebelumnya ada
-                'alasan_pembatalan' => null,
-                'catatan_pembatalan' => null,
-                // TODO: Simpan alasan reschedule jika perlu (butuh kolom baru)
-                // 'alasan_reschedule' => $validated['alasan'],
-                // 'catatan_reschedule' => $validated['catatan'],
+                'rating' => $validated['rating'],
+                'ulasan_customer' => $validated['review'],
             ]);
 
-            // TODO: Kirim notifikasi ke Admin?
+            try {
+                if ($booking->konselor) {
+                    $booking->konselor->notify(new NewRatingReceived($booking));
+                    Log::info("Notifikasi rating terkirim ke Konselor ID: " . $booking->konselor_id);
+                }
+            } catch (\Exception $notifError) {
+                Log::error("Gagal kirim notif rating: " . $notifError->getMessage());
+            }
 
-            return response()->json(['message' => 'Permintaan ganti jadwal berhasil dikirim. Menunggu konfirmasi Admin.']);
-        } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Gagal mengajukan ganti jadwal.',
-                'error' => $e->getMessage()
-            ], 500);
+                'message' => 'Ulasan Anda berhasil disimpan. Terima kasih!',
+                'booking' => $booking->fresh()
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Gagal menyimpan rating:', ['booking_id' => $booking->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Gagal menyimpan ulasan.'], 500);
         }
+    }
+
+    public function approveReschedule(Request $request, Booking $booking): JsonResponse
+    {
+        if (Auth::id() !== $booking->customer_id) {
+            return response()->json(['message' => 'Tidak diizinkan.'], 403);
+        }
+
+        if ($booking->status_pesanan !== 'Menunggu Konfirmasi Customer') {
+            return response()->json(['message' => 'Tidak ada pengajuan jadwal ulang yang valid.'], 422);
+        }
+
+        try {
+            $booking->update([
+                'tanggal_konsultasi' => $booking->proposed_date,
+                'jam_konsultasi' => $booking->proposed_time,
+                'status_pesanan' => 'Dijadwalkan',
+                'proposed_date' => null,
+                'proposed_time' => null,
+            ]);
+
+            if ($booking->konselor) {
+                $booking->konselor->notify(new RescheduleResponse($booking, 'approved'));
+                Log::info("Notifikasi Reschedule Approved dikirim ke Konselor ID: " . $booking->konselor_id);
+            }
+
+            return response()->json([
+                'message' => 'Jadwal baru berhasil dikonfirmasi!',
+                'booking' => $booking->fresh(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Gagal approve reschedule:', ['booking_id' => $booking->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Terjadi kesalahan saat konfirmasi jadwal.'], 500);
+        }
+    }
+
+    public function rejectReschedule(Request $request, Booking $booking): JsonResponse
+    {
+        if (Auth::id() !== $booking->customer_id) {
+            return response()->json(['message' => 'Tidak diizinkan.'], 403);
+        }
+
+        if ($booking->status_pesanan !== 'Menunggu Konfirmasi Customer') {
+            return response()->json(['message' => 'Tidak ada pengajuan jadwal ulang.'], 422);
+        }
+
+        try {
+            $booking->update([
+                'status_pesanan' => 'Dijadwalkan',
+                'proposed_date' => null,
+                'proposed_time' => null,
+            ]);
+
+            if ($booking->konselor) {
+                $booking->konselor->notify(new RescheduleResponse($booking, 'rejected'));
+                Log::info("Notifikasi Reschedule Rejected dikirim ke Konselor ID: " . $booking->konselor_id);
+            }
+
+            return response()->json([
+                'message' => 'Pengajuan jadwal ulang telah ditolak. Jadwal kembali seperti semula.',
+                'booking' => $booking->fresh(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Gagal reject reschedule:', ['booking_id' => $booking->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Terjadi kesalahan saat menolak jadwal.'], 500);
+        }
+    }
+
+    public function storeRefundRequest(Request $request, Booking $booking): JsonResponse
+    {
+        $user = Auth::user();
+        if ($user->id !== $booking->customer_id) return response()->json(['message' => 'Tidak diizinkan.'], 403);
+        if ($booking->status_pesanan !== 'Dibatalkan' || $booking->refund_amount <= 0) return response()->json(['message' => 'Invalid refund request'], 422);
+
+        if (Refund::where('booking_id', $booking->id)->exists()) return response()->json(['message' => 'Refund sudah diajukan'], 409);
+
+        $validator = Validator::make($request->all(), [
+            'nama_pemilik_rekening' => 'required|string|max:255',
+            'nama_bank' => 'required|string|max:255',
+            'nomor_rekening' => 'required|string|max:50',
+            'keterangan_customer' => 'nullable|string|max:1000',
+            'bukti_refund_customer' => 'nullable|image|max:2048',
+        ]);
+
+        if ($validator->fails()) return response()->json(['errors' => $validator->errors()], 422);
+        $validated = $validator->validated();
+
+        $imagePath = $request->hasFile('bukti_refund_customer') ? $request->file('bukti_refund_customer')->store('refund_proofs_customer', 'public') : null;
+
+        $refund = Refund::create([
+            'booking_id' => $booking->id,
+            'customer_id' => $user->id,
+            'nama_pemilik_rekening' => $validated['nama_pemilik_rekening'],
+            'nama_bank' => $validated['nama_bank'],
+            'nomor_rekening' => $validated['nomor_rekening'],
+            'keterangan_customer' => $validated['keterangan_customer'] ?? null,
+            'bukti_refund_customer' => $imagePath,
+            'total_bayar' => $booking->total_harga,
+            'potongan_admin' => $booking->admin_fee,
+            'jumlah_refund' => $booking->refund_amount,
+            'status' => 'Menunggu Proses',
+        ]);
+
+        return response()->json(['message' => 'Refund diajukan.', 'refund' => $refund], 201);
     }
 }

@@ -1,322 +1,485 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import apiClient from "../../../api/axios";
+import {
+    Search,
+    Plus,
+    MoreHorizontal,
+    Shield,
+    ShieldOff,
+    Trash2,
+    ChevronLeft,
+    ChevronRight,
+    User,
+    MapPin,
+    Phone,
+    Mail,
+    Edit2,
+    Loader2,
+} from "lucide-react";
 
-// Impor semua modal
+// Impor Modals
 import AddModal from "./modals/AddModal";
 import BlockModal from "./modals/BlockModal";
 import UnblockModal from "./modals/UnblockModal";
 import DeleteModal from "./modals/DeleteModal";
 
-// --- Komponen Ikon ---
-const DetailIcon = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-gray-500 hover:text-gray-700"
-    >
-        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-        <circle cx="12" cy="12" r="3"></circle>
-    </svg>
-);
-const BlockIcon = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-orange-500 hover:text-orange-700"
-    >
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
-    </svg>
-);
-const UnblockIcon = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-green-500 hover:text-green-700"
-    >
-        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-        <polyline points="22 4 12 14.01 9 11.01"></polyline>
-    </svg>
-);
-const DeleteIcon = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-red-500 hover:text-red-700"
-    >
-        <polyline points="3 6 5 6 21 6" />
-        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-        <line x1="10" y1="11" x2="10" y2="17" />
-        <line x1="14" y1="11" x2="14" y2="17" />
-    </svg>
-);
-const PlusIcon = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-    >
-        <line x1="12" y1="5" x2="12" y2="19" />
-        <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-);
+// 1. Import Toast
+import { useToast } from "../../../context/ToastContext";
 
 // --- Komponen Badge Status ---
 const StatusBadge = ({ status }) => {
     const styles = {
-        Online: "bg-green-100 text-green-700",
-        Offline: "bg-gray-100 text-gray-700",
-        Banned: "bg-red-100 text-red-700",
+        Active: "bg-green-50 text-green-700 border-green-200",
+        Online: "bg-green-50 text-green-700 border-green-200",
+        Offline: "bg-gray-50 text-gray-600 border-gray-200",
+        Banned: "bg-red-50 text-red-700 border-red-200 font-bold",
     };
+    const currentStyle = styles[status] || styles.Offline;
+
     return (
         <span
-            className={`px-3 py-1 text-sm font-medium rounded-full ${
-                styles[status] || styles.Offline
-            }`}
+            className={`px-2.5 py-0.5 text-xs font-bold rounded-full border ${currentStyle}`}
         >
-            {status}
+            {status || "Offline"}
         </span>
+    );
+};
+
+// --- KOMPONEN PAGINASI (Gaya Moodly - Cyan) ---
+const Pagination = ({ meta, onPageChange }) => {
+    if (!meta || meta.total === 0) return null;
+
+    const { current_page, last_page, from, to, total } = meta;
+
+    const getPageNumbers = () => {
+        let pages = [];
+        let startPage = Math.max(1, current_page - 2);
+        let endPage = Math.min(last_page, startPage + 4);
+
+        if (endPage - startPage < 4) {
+            startPage = Math.max(1, endPage - 4);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            pages.push(i);
+        }
+        return pages;
+    };
+
+    const pageNumbers = getPageNumbers();
+
+    return (
+        <div className="px-6 py-4 border-t border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4 bg-white">
+            <p className="text-sm text-gray-500">
+                Menampilkan{" "}
+                <span className="font-bold text-gray-900">{from || 0}</span>{" "}
+                sampai{" "}
+                <span className="font-bold text-gray-900">{to || 0}</span> dari{" "}
+                <span className="font-bold text-gray-900">{total}</span> data
+            </p>
+
+            <div className="flex items-center gap-2">
+                <button
+                    onClick={() => onPageChange(current_page - 1)}
+                    disabled={current_page === 1}
+                    className="p-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    <ChevronLeft size={18} />
+                </button>
+
+                {pageNumbers.map((page) => (
+                    <button
+                        key={page}
+                        onClick={() => onPageChange(page)}
+                        className={`w-9 h-9 rounded-xl text-sm font-bold transition-all shadow-sm border ${
+                            current_page === page
+                                ? "bg-cyan-400 text-white border-cyan-400 shadow-cyan-200"
+                                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                        }`}
+                    >
+                        {page}
+                    </button>
+                ))}
+
+                <button
+                    onClick={() => onPageChange(current_page + 1)}
+                    disabled={current_page === last_page}
+                    className="p-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    <ChevronRight size={18} />
+                </button>
+            </div>
+        </div>
     );
 };
 
 const AdminManagementPage = () => {
     const [admins, setAdmins] = useState([]);
+    const [pagination, setPagination] = useState({});
+    const [currentPage, setCurrentPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState("");
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
 
-    // State untuk semua modal
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [isBlockModalOpen, setBlockModalOpen] = useState(false);
     const [isUnblockModalOpen, setUnblockModalOpen] = useState(false);
     const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
     const [selectedAdmin, setSelectedAdmin] = useState(null);
 
-    // --- Logika Fetch Data ---
-    const fetchData = async () => {
+    // --- 2. Panggil Hook Toast ---
+    const { addToast } = useToast();
+
+    // --- Fetch Data ---
+    const fetchData = async (page = 1, search = "") => {
+        setLoading(true);
         try {
-            setLoading(true);
             const response = await apiClient.get(
-                "/api/super-admin/admin-management"
+                `/api/super-admin/admin-management?page=${page}&search=${search}`
             );
-            setAdmins(response.data);
-            setError(null);
+
+            if (response.data.data) {
+                setAdmins(response.data.data);
+                setPagination({
+                    current_page: response.data.current_page,
+                    last_page: response.data.last_page,
+                    total: response.data.total,
+                    from: response.data.from,
+                    to: response.data.to,
+                });
+            } else {
+                setAdmins(response.data);
+            }
         } catch (err) {
-            setError("Gagal memuat data admin. Silakan coba lagi.");
             console.error(err);
+            addToast("Gagal memuat data admin.", "error");
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchData();
-    }, []);
+        const timer = setTimeout(() => {
+            fetchData(currentPage, searchTerm);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [currentPage, searchTerm]);
 
-    // --- Handler untuk Aksi CRUD ---
+    const handlePageChange = (page) => {
+        if (page >= 1 && page <= (pagination.last_page || 1)) {
+            setCurrentPage(page);
+        }
+    };
+
+    // --- 3. Logic Save (Toast) ---
     const handleSave = async (data, setErrors) => {
-        // Terima fungsi setErrors
+        const formData = new FormData();
+        Object.keys(data).forEach((key) => {
+            if (data[key] !== null) formData.append(key, data[key]);
+        });
+
+        if (selectedAdmin) {
+            formData.append("_method", "PUT");
+        }
+
         try {
-            await apiClient.post("/api/super-admin/admin-management", data);
+            const url = selectedAdmin
+                ? `/api/super-admin/admin-management/${selectedAdmin.id}`
+                : "/api/super-admin/admin-management";
+
+            await apiClient.post(url, formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+
             setAddModalOpen(false);
-            fetchData();
+            setSelectedAdmin(null);
+            fetchData(currentPage, searchTerm);
+
+            addToast(
+                selectedAdmin
+                    ? "Data admin diperbarui!"
+                    : "Admin baru ditambahkan!",
+                "success"
+            );
         } catch (err) {
-            // PERBAIKAN: Jika error adalah 422, teruskan pesan error ke modal
-            if (err.response && err.response.status === 422) {
+            if (err.response?.status === 422) {
                 setErrors(err.response.data.errors);
+                addToast("Cek inputan form.", "warning");
             } else {
-                console.error("Gagal menambah admin:", err);
-                // Di sini Anda bisa mengatur state error global untuk ditampilkan di halaman
+                addToast("Gagal menyimpan data admin.", "error");
             }
         }
     };
 
-    const handleBlock = async () => {
+    // --- 4. Logic Action (Toast) ---
+    const executeAction = async (actionType) => {
+        if (!selectedAdmin) return;
         try {
-            await apiClient.post(
-                `/api/super-admin/admin-management/${selectedAdmin.id}/block`
-            );
+            let url = `/api/super-admin/admin-management/${selectedAdmin.id}`;
+            let msg = "";
+
+            if (actionType === "block") {
+                url += "/block";
+                msg = "Admin berhasil diblokir.";
+            } else if (actionType === "unblock") {
+                url += "/unblock";
+                msg = "Blokir admin dibuka.";
+            } else if (actionType === "delete") {
+                await apiClient.delete(url);
+                msg = "Admin dihapus permanen.";
+            } else {
+                await apiClient.post(url);
+            }
+
+            if (actionType !== "delete") await apiClient.post(url);
+
             setBlockModalOpen(false);
-            fetchData();
-        } catch (err) {
-            console.error("Gagal memblokir admin:", err);
-            // TODO: Tampilkan notifikasi error ke pengguna
-        }
-    };
-
-    const handleUnblock = async () => {
-        try {
-            await apiClient.post(
-                `/api/super-admin/admin-management/${selectedAdmin.id}/unblock`
-            );
             setUnblockModalOpen(false);
-            fetchData();
-        } catch (err) {
-            console.error("Gagal membuka blokir admin:", err);
-        }
-    };
-
-    const handleDelete = async () => {
-        try {
-            await apiClient.delete(
-                `/api/super-admin/admin-management/${selectedAdmin.id}`
-            );
             setDeleteModalOpen(false);
-            fetchData();
+            fetchData(currentPage, searchTerm);
+
+            addToast(msg, "success");
         } catch (err) {
-            console.error("Gagal menghapus admin:", err);
+            addToast("Gagal melakukan aksi.", "error");
         }
     };
 
-    // --- Handler untuk membuka modal ---
     const openModal = (setter, admin = null) => {
         setSelectedAdmin(admin);
         setter(true);
     };
 
-    if (loading) return <div className="p-6">Memuat data...</div>;
-    if (error) return <div className="p-6 text-red-500">{error}</div>;
-
     return (
-        <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">Admin</h1>
-                <button
-                    onClick={() => openModal(setAddModalOpen)}
-                    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center gap-2"
-                >
-                    <PlusIcon />
-                    Tambah Admin
-                </button>
+        <div className="space-y-6 p-6 pb-20 font-sans text-gray-600">
+            {/* Header & Search */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">
+                        Data Admin
+                    </h1>
+                    <p className="text-sm text-gray-500 mt-1">
+                        Kelola akun administrator sistem.
+                    </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                    <div className="relative flex-1 md:w-72">
+                        <input
+                            type="text"
+                            placeholder="Cari nama, email, kota..."
+                            value={searchTerm}
+                            onChange={(e) => {
+                                setSearchTerm(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100 transition-all text-sm shadow-sm"
+                        />
+                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    </div>
+                    <button
+                        onClick={() => openModal(setAddModalOpen)}
+                        className="flex items-center justify-center gap-2 px-5 py-2.5 bg-cyan-600 text-white rounded-xl hover:bg-cyan-700 transition-all shadow-lg shadow-cyan-200 text-sm font-bold whitespace-nowrap"
+                    >
+                        <Plus className="w-4 h-4" /> Tambah Admin
+                    </button>
+                </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                <table className="w-full text-left">
-                    <thead className="bg-blue-100">
-                        <tr>
-                            <th className="p-4">No</th>
-                            <th className="p-4">ID Admin</th>
-                            <th className="p-4">Nama Admin</th>
-                            <th className="p-4">No Telepon</th>
-                            <th className="p-4">Kota</th>
-                            <th className="p-4">Status</th>
-                            <th className="p-4">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {admins.map((admin, index) => (
-                            <tr key={admin.id} className="border-t">
-                                <td className="p-4">{index + 1}</td>
-                                <td className="p-4">{`#${String(
-                                    admin.id
-                                ).padStart(5, "0")}`}</td>
-                                <td className="p-4 font-medium">
-                                    {admin.name}
-                                </td>
-                                <td className="p-4">{admin.phone || "-"}</td>
-                                <td className="p-4">{admin.city || "-"}</td>
-                                <td className="p-4">
-                                    <StatusBadge status={admin.status} />
-                                </td>
-                                <td className="p-4 flex gap-3 items-center">
-                                    <Link
-                                        to={`/admin/admin-management/${admin.id}`}
-                                    >
-                                        <DetailIcon />
-                                    </Link>
-                                    {admin.status === "Banned" ? (
-                                        <button
-                                            onClick={() =>
-                                                openModal(
-                                                    setUnblockModalOpen,
-                                                    admin
-                                                )
-                                            }
-                                        >
-                                            <UnblockIcon />
-                                        </button>
-                                    ) : (
-                                        <button
-                                            onClick={() =>
-                                                openModal(
-                                                    setBlockModalOpen,
-                                                    admin
-                                                )
-                                            }
-                                        >
-                                            <BlockIcon />
-                                        </button>
-                                    )}
-                                    <button
-                                        onClick={() =>
-                                            openModal(setDeleteModalOpen, admin)
-                                        }
-                                    >
-                                        <DeleteIcon />
-                                    </button>
-                                </td>
+            {/* Table Content */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm text-gray-600 whitespace-nowrap">
+                        <thead className="bg-gray-50/50 border-b border-gray-100 text-xs uppercase text-gray-500 font-semibold">
+                            <tr>
+                                <th className="px-6 py-4">Profil</th>
+                                <th className="px-6 py-4">Kontak</th>
+                                <th className="px-6 py-4">Lokasi</th>
+                                <th className="px-6 py-4 text-center">
+                                    Status
+                                </th>
+                                <th className="px-6 py-4 text-right">Aksi</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                            {loading ? (
+                                <tr>
+                                    <td
+                                        colSpan="5"
+                                        className="px-6 py-12 text-center"
+                                    >
+                                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-cyan-500 border-t-transparent"></div>
+                                        <p className="mt-3 text-gray-500 text-sm">
+                                            Memuat data admin...
+                                        </p>
+                                    </td>
+                                </tr>
+                            ) : admins.length === 0 ? (
+                                <tr>
+                                    <td
+                                        colSpan="5"
+                                        className="px-6 py-12 text-center text-gray-400 italic"
+                                    >
+                                        Tidak ada data admin ditemukan.
+                                    </td>
+                                </tr>
+                            ) : (
+                                admins.map((admin) => (
+                                    <tr
+                                        key={admin.id}
+                                        className="hover:bg-cyan-50/30 transition-colors group"
+                                    >
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <img
+                                                    src={
+                                                        admin.avatar ||
+                                                        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                                            admin.name
+                                                        )}&background=ECFEFF&color=0891b2&bold=true`
+                                                    }
+                                                    alt={admin.name}
+                                                    className="w-10 h-10 rounded-full object-cover border border-gray-200 bg-gray-50"
+                                                    onError={(e) => {
+                                                        e.target.onerror = null;
+                                                        e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                                            admin.name
+                                                        )}&background=ECFEFF&color=0891b2&bold=true`;
+                                                    }}
+                                                />
+                                                <div>
+                                                    <div className="font-bold text-gray-900">
+                                                        {admin.name}
+                                                    </div>
+                                                    <div className="text-xs text-gray-400 font-mono">
+                                                        ID: #{admin.id}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-gray-900 font-medium">
+                                                {admin.email}
+                                            </div>
+                                            <div className="text-xs text-gray-500 mt-0.5">
+                                                {admin.phone || "-"}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-1.5 text-gray-700">
+                                                <MapPin className="w-3.5 h-3.5 text-gray-400" />
+                                                <span className="text-sm font-medium">
+                                                    {admin.city || "-"}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <StatusBadge
+                                                status={admin.status}
+                                            />
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex justify-end items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                                                <Link
+                                                    to={`/admin/admin-management/${admin.id}`}
+                                                    className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                                                    title="Detail"
+                                                >
+                                                    <MoreHorizontal className="w-4 h-4" />
+                                                </Link>
+
+                                                <button
+                                                    onClick={() =>
+                                                        openModal(
+                                                            setAddModalOpen,
+                                                            admin
+                                                        )
+                                                    }
+                                                    className="p-2 text-cyan-600 hover:bg-cyan-50 rounded-lg transition-colors"
+                                                    title="Edit"
+                                                >
+                                                    <Edit2 className="w-4 h-4" />
+                                                </button>
+
+                                                {admin.status === "Banned" ? (
+                                                    <button
+                                                        onClick={() =>
+                                                            openModal(
+                                                                setUnblockModalOpen,
+                                                                admin
+                                                            )
+                                                        }
+                                                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                                        title="Buka Blokir"
+                                                    >
+                                                        <Shield className="w-4 h-4" />
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={() =>
+                                                            openModal(
+                                                                setBlockModalOpen,
+                                                                admin
+                                                            )
+                                                        }
+                                                        className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                                                        title="Blokir"
+                                                    >
+                                                        <ShieldOff className="w-4 h-4" />
+                                                    </button>
+                                                )}
+
+                                                <button
+                                                    onClick={() =>
+                                                        openModal(
+                                                            setDeleteModalOpen,
+                                                            admin
+                                                        )
+                                                    }
+                                                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                    title="Hapus"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Pagination Footer */}
+                <Pagination meta={pagination} onPageChange={handlePageChange} />
             </div>
 
-            {/* Render semua modal */}
+            {/* Modals */}
             <AddModal
                 isOpen={isAddModalOpen}
-                onClose={() => setAddModalOpen(false)}
+                onClose={() => {
+                    setAddModalOpen(false);
+                    setSelectedAdmin(null);
+                }}
                 onSave={handleSave}
+                initialData={selectedAdmin}
+                isEditMode={!!selectedAdmin}
             />
             <BlockModal
                 isOpen={isBlockModalOpen}
                 onClose={() => setBlockModalOpen(false)}
-                onConfirm={handleBlock}
-                admin={selectedAdmin}
+                onConfirm={() => executeAction("block")}
+                adminName={selectedAdmin?.name}
             />
             <UnblockModal
                 isOpen={isUnblockModalOpen}
                 onClose={() => setUnblockModalOpen(false)}
-                onConfirm={handleUnblock}
-                admin={selectedAdmin}
+                onConfirm={() => executeAction("unblock")}
+                adminName={selectedAdmin?.name}
             />
             <DeleteModal
                 isOpen={isDeleteModalOpen}
                 onClose={() => setDeleteModalOpen(false)}
-                onConfirm={handleDelete}
+                onConfirm={() => executeAction("delete")}
                 adminName={selectedAdmin?.name}
             />
         </div>

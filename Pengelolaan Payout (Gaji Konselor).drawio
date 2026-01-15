@@ -1,0 +1,147 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.2.9">
+  <diagram name="Halaman-1" id="FArkY4IPe-31itE6qVxJ">
+    <mxGraphModel dx="786" dy="497" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" background="none" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="iSYTDI-pQ72JhvzFNiAF-2" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlActor;size=80;" value="Administrator" vertex="1">
+          <mxGeometry height="680" width="40" x="40" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="iSYTDI-pQ72JhvzFNiAF-3" parent="iSYTDI-pQ72JhvzFNiAF-2" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
+          <mxGeometry height="520" width="10" x="15" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="iSYTDI-pQ72JhvzFNiAF-4" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlBoundary;size=80;" value="&amp;nbsp; &amp;nbsp; &amp;nbsp; Halaman&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp;Laporan&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; Keuangan" vertex="1">
+          <mxGeometry height="680" width="80" x="210" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="iSYTDI-pQ72JhvzFNiAF-5" parent="iSYTDI-pQ72JhvzFNiAF-4" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
+          <mxGeometry height="520" width="10" x="35" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="iSYTDI-pQ72JhvzFNiAF-7" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlControl;size=80;" value="PayoutController" vertex="1">
+          <mxGeometry height="680" width="80" x="414" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="iSYTDI-pQ72JhvzFNiAF-8" parent="iSYTDI-pQ72JhvzFNiAF-7" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
+          <mxGeometry height="520" width="10" x="35" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="iSYTDI-pQ72JhvzFNiAF-30" edge="1" parent="iSYTDI-pQ72JhvzFNiAF-7" source="iSYTDI-pQ72JhvzFNiAF-8" style="html=1;align=left;spacingLeft=2;endArrow=block;rounded=0;edgeStyle=orthogonalEdgeStyle;curved=0;rounded=0;" target="iSYTDI-pQ72JhvzFNiAF-8" value="sendNotification(GajiCair):&lt;div&gt;&lt;span style=&quot;background-color: light-dark(#ffffff, var(--ge-dark-color, #121212)); color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;Kirim email/notif ke konselor&lt;/span&gt;&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="80" y="520" />
+              <mxPoint x="80" y="560" />
+            </Array>
+            <mxPoint x="50" y="525" as="sourcePoint" />
+            <mxPoint x="55" y="555" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iSYTDI-pQ72JhvzFNiAF-9" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlEntity;size=80;" value="Booking Model" vertex="1">
+          <mxGeometry height="680" width="80" x="620" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="iSYTDI-pQ72JhvzFNiAF-10" parent="iSYTDI-pQ72JhvzFNiAF-9" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
+          <mxGeometry height="520" width="10" x="35" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="iSYTDI-pQ72JhvzFNiAF-13" edge="1" parent="1" source="iSYTDI-pQ72JhvzFNiAF-3" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="iSYTDI-pQ72JhvzFNiAF-5" value="Buka Tab &quot;Perlu Dibayar&quot;">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <Array as="points">
+              <mxPoint x="200" y="180" />
+            </Array>
+            <mxPoint x="80" y="180" as="sourcePoint" />
+            <mxPoint x="160" y="180" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iSYTDI-pQ72JhvzFNiAF-14" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="iSYTDI-pQ72JhvzFNiAF-8" value="GET /api/admin/payouts">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="255" y="220" as="sourcePoint" />
+            <mxPoint x="445" y="220" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iSYTDI-pQ72JhvzFNiAF-15" edge="1" parent="1" source="iSYTDI-pQ72JhvzFNiAF-8" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="iSYTDI-pQ72JhvzFNiAF-10" value="Cari booking selesai&amp;nbsp;&lt;div&gt;yang kolom bukti bayarnya&amp;nbsp;&lt;/div&gt;&lt;div&gt;masih kosong/belum digaji&lt;/div&gt;">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <Array as="points">
+              <mxPoint x="580" y="260" />
+            </Array>
+            <mxPoint x="490" y="240" as="sourcePoint" />
+            <mxPoint x="570" y="240" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iSYTDI-pQ72JhvzFNiAF-16" edge="1" parent="1" source="iSYTDI-pQ72JhvzFNiAF-10" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;curved=0;rounded=0;" target="iSYTDI-pQ72JhvzFNiAF-8" value="Return List Data">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="500" y="300" />
+            </Array>
+            <mxPoint x="610" y="300" as="sourcePoint" />
+            <mxPoint x="530" y="300" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iSYTDI-pQ72JhvzFNiAF-17" edge="1" parent="1" source="iSYTDI-pQ72JhvzFNiAF-8" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;curved=0;rounded=0;" target="iSYTDI-pQ72JhvzFNiAF-5" value="Return JSON List">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="340" y="340" />
+            </Array>
+            <mxPoint x="390" y="350" as="sourcePoint" />
+            <mxPoint x="310" y="350" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iSYTDI-pQ72JhvzFNiAF-18" edge="1" parent="1" source="iSYTDI-pQ72JhvzFNiAF-3" style="html=1;verticalAlign=bottom;endArrow=none;curved=0;rounded=0;endFill=0;startArrow=classic;startFill=1;" target="iSYTDI-pQ72JhvzFNiAF-5" value="Tampilkan List Tagihan">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <Array as="points">
+              <mxPoint x="150" y="380" />
+            </Array>
+            <mxPoint x="90" y="380" as="sourcePoint" />
+            <mxPoint x="170" y="380" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iSYTDI-pQ72JhvzFNiAF-19" edge="1" parent="1" source="iSYTDI-pQ72JhvzFNiAF-3" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" value="Upload Bukti&amp;nbsp;&lt;div&gt;&amp;amp; Klik &quot;Konfirmasi Bayar&quot;&lt;/div&gt;">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="75" y="420" as="sourcePoint" />
+            <mxPoint x="245" y="420" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iSYTDI-pQ72JhvzFNiAF-20" edge="1" parent="1" source="iSYTDI-pQ72JhvzFNiAF-5" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="iSYTDI-pQ72JhvzFNiAF-8" value="POST /api/admin/payouts/{id}">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <Array as="points">
+              <mxPoint x="330" y="460" />
+            </Array>
+            <mxPoint x="260" y="410" as="sourcePoint" />
+            <mxPoint x="340" y="410" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iSYTDI-pQ72JhvzFNiAF-21" edge="1" parent="1" source="iSYTDI-pQ72JhvzFNiAF-8" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="iSYTDI-pQ72JhvzFNiAF-10" value="find($id)">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <Array as="points">
+              <mxPoint x="570" y="500" />
+            </Array>
+            <mxPoint x="460" y="490" as="sourcePoint" />
+            <mxPoint x="540" y="490" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iSYTDI-pQ72JhvzFNiAF-23" edge="1" parent="1" source="iSYTDI-pQ72JhvzFNiAF-8" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;curved=0;rounded=0;" value="Return Success">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="445" y="620" as="sourcePoint" />
+            <mxPoint x="255" y="620" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iSYTDI-pQ72JhvzFNiAF-24" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=none;curved=0;rounded=0;endFill=0;startArrow=classic;startFill=1;" value="Update UI (Hilangkan dari List)">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <Array as="points">
+              <mxPoint x="170" y="660" />
+            </Array>
+            <mxPoint x="65" y="660" as="sourcePoint" />
+            <mxPoint x="245" y="660" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iSYTDI-pQ72JhvzFNiAF-28" edge="1" parent="1" source="iSYTDI-pQ72JhvzFNiAF-8" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="iSYTDI-pQ72JhvzFNiAF-10" value="update([&#39;payout_proof&#39; =&amp;gt; &#39;file.jpg&#39;,&amp;nbsp;&lt;div&gt;&#39;payout_status&#39; =&amp;gt; &#39;paid&#39;])&lt;/div&gt;">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="565" y="540" />
+            </Array>
+            <mxPoint x="440" y="540" as="sourcePoint" />
+            <mxPoint x="610" y="540" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

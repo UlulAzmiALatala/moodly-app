@@ -10,17 +10,23 @@ class CounselorAvailability extends Model
 {
     use HasFactory;
 
+    // Nama tabel
+    protected $table = 'counselor_availabilities';
+
     protected $fillable = [
-        // --- PERBAIKAN: Tambahkan counselor_id ---
         'counselor_id',
-        // --- AKHIR PERBAIKAN ---
-        'day_of_week',
+        'tanggal_konsultasi',
         'start_time',
         'end_time',
     ];
 
+    // [TAMBAHAN PENTING] Casting agar tanggal otomatis jadi object Carbon
+    protected $casts = [
+        'tanggal_konsultasi' => 'date:Y-m-d',
+    ];
+
     /**
-     * Relasi ke User (Konselor) yang memiliki jadwal ini.
+     * Relasi ke konselor (User model).
      */
     public function counselor(): BelongsTo
     {

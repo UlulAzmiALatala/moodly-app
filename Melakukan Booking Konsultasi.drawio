@@ -1,0 +1,205 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.2.10">
+  <diagram name="Page-1" id="2YBvvXClWsGukQMizWep">
+    <mxGraphModel dx="786" dy="497" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="jZ-QYYHuujH8RQ6wR3ZN-48" edge="1" parent="1" source="jZ-QYYHuujH8RQ6wR3ZN-11" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="jZ-QYYHuujH8RQ6wR3ZN-14" value="Update status agar Admin tahu&amp;nbsp;&lt;div&gt;ada pembayaran masuk&lt;/div&gt;">
+          <mxGeometry relative="1" width="80" x="0.4878" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="760" y="680" />
+            </Array>
+            <mxPoint x="580.0604347826087" y="720" as="sourcePoint" />
+            <mxPoint x="999.93" y="720" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jZ-QYYHuujH8RQ6wR3ZN-36" edge="1" parent="1" source="jZ-QYYHuujH8RQ6wR3ZN-14" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;dashed=1;" value="Return Booking Data">
+          <mxGeometry relative="1" x="0.4878" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="925" y="400" />
+              <mxPoint x="895" y="420" />
+            </Array>
+            <mxPoint x="990" y="400" as="sourcePoint" />
+            <mxPoint x="585" y="400" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jZ-QYYHuujH8RQ6wR3ZN-35" edge="1" parent="1" source="jZ-QYYHuujH8RQ6wR3ZN-11" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="jZ-QYYHuujH8RQ6wR3ZN-14" value="Simpan data booking baru ke database">
+          <mxGeometry relative="1" width="80" x="0.4878" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="860" y="360" />
+            </Array>
+            <mxPoint x="610" y="360" as="sourcePoint" />
+            <mxPoint x="690" y="360" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="aM9ryv3xv72pqoxQDRHE-7" edge="1" parent="1" source="jZ-QYYHuujH8RQ6wR3ZN-3" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" target="jZ-QYYHuujH8RQ6wR3ZN-8" value="Memilih Tanggal &amp;amp; Jam Konsultasi">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="190" y="160" />
+              <mxPoint x="225" y="180" />
+            </Array>
+            <mxPoint x="130" y="220" as="sourcePoint" />
+            <mxPoint x="325" y="180" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="aM9ryv3xv72pqoxQDRHE-8" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" value="Return Success Message">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="475" y="720" />
+            </Array>
+            <mxPoint x="575" y="720" as="sourcePoint" />
+            <mxPoint x="355" y="720" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jZ-QYYHuujH8RQ6wR3ZN-1" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlActor;size=80;" value="Customer" vertex="1">
+          <mxGeometry height="800" width="30" x="70" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="jZ-QYYHuujH8RQ6wR3ZN-3" parent="jZ-QYYHuujH8RQ6wR3ZN-1" style="html=1;points=[];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
+          <mxGeometry height="640" width="10" x="10" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="jZ-QYYHuujH8RQ6wR3ZN-4" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlBoundary;size=80;" value="&lt;br&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp;Halaman&amp;nbsp;&lt;div&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp;Detail&amp;nbsp;&lt;/div&gt;&lt;div&gt;&amp;nbsp; &amp;nbsp; Konselor&lt;br&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="800" width="100" x="300" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="jZ-QYYHuujH8RQ6wR3ZN-8" parent="jZ-QYYHuujH8RQ6wR3ZN-4" style="html=1;points=[];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
+          <mxGeometry height="640" width="10" x="45" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="jZ-QYYHuujH8RQ6wR3ZN-39" edge="1" parent="jZ-QYYHuujH8RQ6wR3ZN-4" source="jZ-QYYHuujH8RQ6wR3ZN-8" style="html=1;align=left;spacingLeft=2;endArrow=block;rounded=0;edgeStyle=orthogonalEdgeStyle;curved=0;rounded=0;" target="jZ-QYYHuujH8RQ6wR3ZN-8" value="Redirect ke Halaman&amp;nbsp;&lt;div&gt;Pembayaran&lt;/div&gt;">
+          <mxGeometry relative="1" x="-0.0721" y="-120" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint y="400" />
+              <mxPoint y="440" />
+            </Array>
+            <mxPoint x="-115" y="290" as="sourcePoint" />
+            <mxPoint x="-10" y="450" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jZ-QYYHuujH8RQ6wR3ZN-5" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlEntity;size=80;" value="Jadwal (Schedule) Model" vertex="1">
+          <mxGeometry height="800" width="80" x="750" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="jZ-QYYHuujH8RQ6wR3ZN-13" parent="jZ-QYYHuujH8RQ6wR3ZN-5" style="html=1;points=[];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
+          <mxGeometry height="640" width="10" x="35" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="jZ-QYYHuujH8RQ6wR3ZN-7" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlControl;size=90;" value="BookingFlowController" vertex="1">
+          <mxGeometry height="810" width="80" x="540" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="jZ-QYYHuujH8RQ6wR3ZN-11" parent="jZ-QYYHuujH8RQ6wR3ZN-7" style="html=1;points=[];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
+          <mxGeometry height="640" width="10" x="35" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="jZ-QYYHuujH8RQ6wR3ZN-47" edge="1" parent="jZ-QYYHuujH8RQ6wR3ZN-7" style="html=1;align=left;spacingLeft=2;endArrow=block;rounded=0;edgeStyle=orthogonalEdgeStyle;curved=0;rounded=0;" target="jZ-QYYHuujH8RQ6wR3ZN-11" value="Proses simpan gambar&amp;nbsp;&lt;div&gt;ke storage server&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="80" y="570" />
+              <mxPoint x="80" y="610" />
+            </Array>
+            <mxPoint x="45" y="570.0000000000002" as="sourcePoint" />
+            <mxPoint x="45" y="750" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jZ-QYYHuujH8RQ6wR3ZN-9" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" value="Klik &quot;Buat Pesanan&quot;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="190" y="199.5" />
+              <mxPoint x="225" y="219.5" />
+            </Array>
+            <mxPoint x="90" y="199.5" as="sourcePoint" />
+            <mxPoint x="345" y="199.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jZ-QYYHuujH8RQ6wR3ZN-10" edge="1" parent="1" source="jZ-QYYHuujH8RQ6wR3ZN-8" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" target="jZ-QYYHuujH8RQ6wR3ZN-11" value="POST /api/bookings">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="460" y="240" />
+              <mxPoint x="495" y="260" />
+            </Array>
+            <mxPoint x="360" y="240" as="sourcePoint" />
+            <mxPoint x="580" y="240" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jZ-QYYHuujH8RQ6wR3ZN-12" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlEntity;size=80;" value="Booking Model" vertex="1">
+          <mxGeometry height="800" width="80" x="960" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="jZ-QYYHuujH8RQ6wR3ZN-14" parent="jZ-QYYHuujH8RQ6wR3ZN-12" style="html=1;points=[];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
+          <mxGeometry height="640" width="10" x="35" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="jZ-QYYHuujH8RQ6wR3ZN-15" edge="1" parent="1" source="jZ-QYYHuujH8RQ6wR3ZN-11" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" target="jZ-QYYHuujH8RQ6wR3ZN-13" value="&lt;code data-path-to-node=&quot;15,3,0&quot; data-index-in-node=&quot;39&quot;&gt;checkAvailability()&lt;/code&gt;&amp;nbsp;&lt;div&gt;(Cek apakah jam masih kosong)&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="695" y="280" />
+              <mxPoint x="730" y="300" />
+            </Array>
+            <mxPoint x="590" y="280" as="sourcePoint" />
+            <mxPoint x="810" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jZ-QYYHuujH8RQ6wR3ZN-33" edge="1" parent="1" source="jZ-QYYHuujH8RQ6wR3ZN-13" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;dashed=1;" target="jZ-QYYHuujH8RQ6wR3ZN-11" value="Return Available (True)">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="720" y="320" />
+              <mxPoint x="690" y="340" />
+            </Array>
+            <mxPoint x="780" y="340" as="sourcePoint" />
+            <mxPoint x="650" y="370" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jZ-QYYHuujH8RQ6wR3ZN-37" edge="1" parent="1" source="jZ-QYYHuujH8RQ6wR3ZN-11" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;dashed=1;" target="jZ-QYYHuujH8RQ6wR3ZN-8" value="Return JSON (Booking ID)">
+          <mxGeometry relative="1" x="0.0048" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="500" y="440" />
+              <mxPoint x="475" y="460" />
+            </Array>
+            <mxPoint x="570" y="440" as="sourcePoint" />
+            <mxPoint x="370" y="440" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jZ-QYYHuujH8RQ6wR3ZN-40" edge="1" parent="1" source="jZ-QYYHuujH8RQ6wR3ZN-8" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" target="jZ-QYYHuujH8RQ6wR3ZN-3" value="Tampilkan Form Upload Bukti">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="230" y="520" />
+              <mxPoint x="325" y="590" />
+            </Array>
+            <mxPoint x="190" y="570" as="sourcePoint" />
+            <mxPoint x="445" y="570" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jZ-QYYHuujH8RQ6wR3ZN-41" edge="1" parent="1" source="jZ-QYYHuujH8RQ6wR3ZN-3" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" target="jZ-QYYHuujH8RQ6wR3ZN-8" value="Upload Bukti Transfer">
+          <mxGeometry relative="1" x="-0.0018" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="200" y="560" />
+              <mxPoint x="235" y="580" />
+            </Array>
+            <mxPoint x="100" y="560" as="sourcePoint" />
+            <mxPoint x="355" y="560" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jZ-QYYHuujH8RQ6wR3ZN-42" edge="1" parent="1" source="jZ-QYYHuujH8RQ6wR3ZN-8" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=horizontal;curved=0;rounded=0;" target="jZ-QYYHuujH8RQ6wR3ZN-11" value="POST /api/bookings/{id}/pay">
+          <mxGeometry relative="1" x="0.0048" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="465" y="600" />
+              <mxPoint x="500" y="620" />
+            </Array>
+            <mxPoint x="360" y="600" as="sourcePoint" />
+            <mxPoint x="580" y="600" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jZ-QYYHuujH8RQ6wR3ZN-49" edge="1" parent="1" source="jZ-QYYHuujH8RQ6wR3ZN-8" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" target="jZ-QYYHuujH8RQ6wR3ZN-3" value="Tampilkan Info &quot;Menunggu Verifikasi&quot;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="230" y="760" />
+              <mxPoint x="325" y="830" />
+            </Array>
+            <mxPoint x="345" y="760" as="sourcePoint" />
+            <mxPoint x="90" y="760" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

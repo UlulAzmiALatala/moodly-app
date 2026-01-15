@@ -1,301 +1,430 @@
-import React from "react";
-import { useParams, useNavigate } from "react-router-dom"; // useNavigate sudah diimport
+import React, { useState, useEffect, useMemo } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import apiClient from "../../../api/axios.js";
 
-// --- Komponen Ikon (Dibutuhkan oleh halaman ini) ---
+// --- 1. HOOK COUNTDOWN (Untuk Timer Pembayaran & Sesi) ---
+const useCountdown = (targetDate) => {
+    const targetTime = useMemo(() => {
+        if (!targetDate) return null;
+        return new Date(targetDate);
+    }, [targetDate]);
 
-// Ikon "Salin" (Copy)
-function ClipboardIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a2.25 2.25 0 0 1-2.25 2.25H9A2.25 2.25 0 0 1 6.75 5.25v0B2.25 2.25 0 0 0 6.75 3H9m6.666 0h3c1.03 0 1.9.693 2.166 1.638m-7.332 0L10.5 5.25A2.25 2.25 0 0 0 8.25 3h-3v3.75a2.25 2.25 0 0 1-2.25 2.25H3v9A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V10.5h-3.75a2.25 2.25 0 0 1-2.25-2.25V3.888Z"
-      />
-    </svg>
-  );
-}
+    const [timeLeft, setTimeLeft] = useState({
+        hours: 0,
+        minutes: 0,
+        seconds: 0,
+        isExpired: false,
+    });
 
-// Ikon "Video"
-function VideoCameraIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9A2.25 2.25 0 0 0 13.5 5.25h-9A2.25 2.25 0 0 0 2.25 7.5v9A2.25 2.25 0 0 0 4.5 18.75Z"
-      />
-    </svg>
-  );
-}
+    useEffect(() => {
+        if (!targetTime) return;
 
-// Ikon "Jam"
-function ClockIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-    >
-  	  <path
-  	    strokeLinecap="round"
-  	    strokeLinejoin="round"
-  	    d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-  	  />
-  	</svg>
-  );
-}
+        const calculate = () => {
+            const now = new Date();
+            const difference = targetTime - now;
 
-// --- Komponen Halaman Detail Riwayat ---
+            if (difference <= 0) {
+                return { hours: 0, minutes: 0, seconds: 0, isExpired: true };
+            }
+
+            return {
+                hours: Math.floor(difference / (1000 * 60 * 60)),
+                minutes: Math.floor((difference / 1000 / 60) % 60),
+                seconds: Math.floor((difference / 1000) % 60),
+                isExpired: false,
+            };
+        };
+
+        setTimeLeft(calculate());
+        const timer = setInterval(() => setTimeLeft(calculate()), 1000);
+        return () => clearInterval(timer);
+    }, [targetTime]);
+
+    return timeLeft;
+};
+
+// --- 2. HELPER FORMAT ---
+const formatCurrency = (amount) =>
+    new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        minimumFractionDigits: 0,
+    }).format(amount);
+const formatNum = (num) => String(num).padStart(2, "0");
+const formatDateFull = (dateString) => {
+    if (!dateString) return "-";
+    return new Date(dateString).toLocaleDateString("id-ID", {
+        weekday: "short",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+    });
+};
+const formatTimeRange = (startTime, durationMinutes) => {
+    if (!startTime || !durationMinutes) return "-";
+    try {
+        const [h, m] = startTime.split(":").map(Number);
+        const start = new Date();
+        start.setHours(h, m, 0);
+        const end = new Date(start.getTime() + durationMinutes * 60000);
+        const format = (d) =>
+            d
+                .toLocaleTimeString("id-ID", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                })
+                .replace(".", ".");
+        return `${format(start)} - ${format(end)}`;
+    } catch {
+        return startTime;
+    }
+};
+
+// --- 3. IKON (Sederhana) ---
+const Icons = {
+    Back: () => (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+        >
+            <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 19l-7-7 7-7"
+            />
+        </svg>
+    ),
+    Copy: () => (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+            className="text-[#00B2FF]"
+        >
+            <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+            />
+        </svg>
+    ),
+    Video: () => (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="text-[#00B2FF]"
+        >
+            <path d="M4.5 4.5a3 3 0 00-3 3v9a3 3 0 003 3h8.25a3 3 0 003-3v-9a3 3 0 00-3-3H4.5zM19.94 18.75l-2.69-2.69V7.94l2.69-2.69c.944-.945 2.56-.276 2.56 1.06v11.38c0 1.336-1.616 2.005-2.56 1.06z" />
+        </svg>
+    ),
+    Clock: () => (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+            className="text-[#00B2FF]"
+        >
+            <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+            />
+        </svg>
+    ),
+};
+
 export default function DetailRiwayatPage() {
-  const { id } = useParams(); // Untuk mengambil ID dari URL, misal: /riwayat/5
-  const navigate = useNavigate(); // useNavigate sudah diimport
+    const { id } = useParams();
+    const navigate = useNavigate();
+    const [booking, setBooking] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-  // Data dummy (menggunakan versi yang lebih kecil)
-  // Ganti ini dengan fetch API Anda nanti
-  const dummyData = {
-    id: id,
-    name: "Vina Amalia, M.Psi., Psikolog",
-    specialization: "Keluarga, Stress, Pasangan +5 Lainnya",
-    date: "Kam, 12 September 2025",
-    time: "15.00 - 16.00",
-    type: "Vidio Call",
-    status: "Menunggu Pembayaran",
-    statusColor: "bg-yellow-100 text-yellow-700",
-    sessionInfo: "Individu | 2 Jam Sesi",
-    bookingId: "gg44gs7-33yeijduus-8832j-ey7e7w",
-    payment: {
-  	  method: "Virtual Account BCA",
-  	  logo: "/images/bca-logo.png",
-  	  vaNumber: "7684567465748394754654",
-  	  total: "Rp 230.000",
-  	},
-  	countdown: {
-  	  hours: "01",
-  	  minutes: "39",
-  	  seconds: "04",
-  	},
-  	avatar: "https://i.pravatar.cc/100?img=1",
-  };
+    useEffect(() => {
+        if (!id) return;
+        const fetchBooking = async () => {
+            try {
+                setLoading(true);
+                // Pastikan relasi 'paymentMethod' diload di backend (HistoryController@show)
+                const res = await apiClient.get(`/api/history/${id}`);
+                setBooking(res.data);
+            } catch (err) {
+                console.error(err);
+                setError("Gagal memuat data.");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchBooking();
+    }, [id]);
 
-  // Fungsi untuk menyalin teks ke clipboard
-  	const copyToClipboard = (textToCopy, fieldName) => {
-  	  // Gunakan document.execCommand untuk kompatibilitas lebih luas
-  	  const textArea = document.createElement("textarea");
-  	  textArea.value = textToCopy;
-  	  textArea.style.position = "fixed"; // Hindari scroll
-  	  textArea.style.left = "-9999px"; // Pindahkan keluar layar
-  	  document.body.appendChild(textArea);
-  	  textArea.focus();
-  	  textArea.select();
-  	  try {
-  	  	const successful = document.execCommand('copy');
-  	  	const msg = successful ? `${fieldName} berhasil disalin!` : `Gagal menyalin ${fieldName}.`;
-  	  	alert(msg); // Ganti dengan notifikasi yang lebih baik
-  	  } catch (err) {
-  	  	console.error(`Gagal menyalin ${fieldName}: `, err);
-  	  	alert(`Gagal menyalin ${fieldName}.`);
-  	  }
-  	  document.body.removeChild(textArea);
-  	};
+    const copyToClipboard = (text) => {
+        navigator.clipboard.writeText(text).then(() => alert("Disalin!"));
+    };
 
+    if (loading)
+        return (
+            <div className="flex h-screen justify-center items-center">
+                <div className="w-10 h-10 border-4 border-[#00B2FF] border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        );
+    if (error || !booking)
+        return (
+            <div className="p-6 text-center text-red-500">
+                {error || "Data tidak ditemukan"}
+            </div>
+        );
 
-  return (
-  	<div className="p-4 bg-gray-50 min-h-screen">
-  	  {/* Header Halaman (versi kecil) */}
-  	  <div className="flex items-center mb-4">
-  	  	<button onClick={() => navigate(-1)} className="text-gray-800 p-1 -ml-1">
-  	  	  <svg
-  	  	  	xmlns="http://www.w3.org/2000/svg"
-  	  	  	fill="none"
-  	  	  	viewBox="0 0 24 24"
-  	  	  	strokeWidth={2}
-  	  	  	stroke="currentColor"
-  	  	  	className="w-6 h-6"
-  	  	  >
-  	  	  	<path
-  	  	  	  strokeLinecap="round"
-  	  	  	  strokeLinejoin="round"
-  	  	  	  d="M15.75 19.5 8.25 12l7.5-7.5"
-  	  	  	/>
-  	  	  </svg>
-  	  	</button>
-  	  	<h1 className="text-lg font-bold text-center text-gray-800 flex-grow">
-  	  	  Detail Riwayat
-  	  	</h1>
-  	  	<div className="w-6"></div> {/* Spacer */}
-  	  </div>
+    // --- DATA EXTRACT ---
+    const { konselor, durasi_konseling, payment_method, jenis_konseling } =
+        booking;
 
-  	  {/* --- Konten Sesuai Desain (versi kecil) --- */}
+    // Hitung target waktu bayar (24 jam dari created_at)
+    const paymentDeadline = new Date(
+        new Date(booking.created_at).getTime() + 24 * 60 * 60 * 1000
+    );
 
-  	  {/* 1. Timer Pembayaran */}
-  	  <div className="flex flex-col items-center mb-3">
-  	  	<p className="text-xs text-gray-700 mb-1">Sisa Waktu Pembayaran</p>
-  	  	<div className="flex items-center space-x-1.5">
-  	  	  <span className="bg-blue-600 text-white font-bold text-base p-1.5 rounded-md w-10 text-center">
-  	  	  	{dummyData.countdown.hours}
-  	  	  </span>
-  	  	  <span className="text-blue-600 font-bold text-base">:</span>
-  	  	  <span className="bg-blue-600 text-white font-bold text-base p-1.5 rounded-md w-10 text-center">
-  	  	  	{dummyData.countdown.minutes}
-  	  	  </span>
-  	  	  <span className="text-blue-600 font-bold text-base">:</span>
-  	  	  <span className="bg-blue-600 text-white font-bold text-base p-1.5 rounded-md w-10 text-center">
-  	  	  	{dummyData.countdown.seconds}
-  	  	  </span>
-  	  	</div>
-  	  </div>
+    // --- RENDER KHUSUS STATUS: MENUNGGU PEMBAYARAN ---
+    if (booking.status_pesanan === "Menunggu Pembayaran") {
+        return (
+            <div className="bg-white min-h-screen font-sans flex flex-col relative">
+                {/* Header Biru */}
+                <div className="bg-[#00B2FF] px-4 py-6 pb-8 flex items-center relative shadow-md z-10">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="text-white absolute left-4 p-1"
+                    >
+                        <Icons.Back />
+                    </button>
+                    <h1 className="text-lg font-bold text-white w-full text-center">
+                        Detail Riwayat
+                    </h1>
+                </div>
 
-  	  {/* 2. Kartu Virtual Account */}
-  	  <div className="bg-white p-3 rounded-xl shadow-lg mb-3">
-  	  	<div className="flex justify-between items-center mb-3">
-  	  	  <h2 className="text-sm font-semibold text-gray-900">
-  	  	  	{dummyData.payment.method}
-  	  	  </h2>
-  	  	  {/* Ganti dengan logo asli jika ada */}
-  	  	  <img
-  	  	  	src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Bank_Central_Asia_logo.svg/1280px-Bank_Central_Asia_logo.svg.png"
-  	  	  	alt="BCA Logo"
-  	  	  	className="h-4"
-  	  	  />
-  	  	</div>
-  	  	<div className="mb-2">
-  	  	  <label className="text-xs text-gray-500 block mb-0.5">
-  	  	  	Nomer Virtual Account
-  	  	  </label>
-  	  	  <div className="flex justify-between items-center">
-  	  	  	<span className="text-sm font-semibold text-gray-800">
-  	  	  	  {dummyData.payment.vaNumber}
-  	  	  	</span>
-  	  	  	<button
-  	  	  	  onClick={() => copyToClipboard(dummyData.payment.vaNumber, 'Nomor Virtual Account')}
-  	  	  	  className="text-blue-600 hover:text-blue-800 ml-2 flex-shrink-0"
-  	  	  	  title="Salin Nomor VA"
-  	  	  	>
-  	  	  	  <ClipboardIcon className="w-4 h-4" />
-  	  	  	</button>
-  	  	  </div>
-  	  	</div>
-  	  	<div>
-  	  	  <label className="text-xs text-gray-500 block mb-0.5">
-  	  	  	Total Pembayaran
-  	  	  </label>
-  	  	  <div className="flex justify-between items-center">
-  	  	  	<span className="text-sm font-bold text-blue-600">
-  	  	  	  {dummyData.payment.total}
-  	  	  	</span>
-  	  	  	<button
-  	  	  	  onClick={() => copyToClipboard(dummyData.payment.total, 'Total Pembayaran')}
-  	  	  	  className="text-blue-600 hover:text-blue-800 ml-2 flex-shrink-0"
-  	  	  	  title="Salin Total Pembayaran"
-  	  	  	>
-  	  	  	  <ClipboardIcon className="w-4 h-4" />
-  	  	  	</button>
-  	  	  </div>
-  	  	</div>
-  	  </div>
+                <div className="px-5 -mt-2 pb-24">
+                    {/* 1. Timer Pembayaran */}
+                    <PaymentTimerDisplay targetDate={paymentDeadline} />
 
-  	  {/* 3. Kartu Detail Sesi Konseling */}
-  	  <div className="bg-white rounded-xl shadow-lg">
-  	  	<div className="p-3">
-  	  	  <div className="flex justify-between items-center">
-  	  	  	<h2 className="text-sm font-semibold text-gray-900">
-  	  	  	  Vidio Call Konseling
-  	  	  	</h2>
-  	  	  	<span
-  	  	  	  className={`text-xs font-semibold px-3 py-1 rounded-full ${dummyData.statusColor}`}
-  	  	  	>
-  	  	  	  {dummyData.status}
-  	  	  	</span>
-  	  	  </div>
-  	  	  <p className="text-xs text-gray-500 mt-1">{dummyData.sessionInfo}</p>
-  	  	</div>
-  	  	<div className="flex items-center space-x-3 px-3 pb-3">
-  	  	  <img
-  	  	    src={dummyData.avatar}
-  	  	    onError={(e) => { e.target.onerror = null; e.target.src=`https://placehold.co/40x40/EBF8FF/7F9CF5?text=${dummyData.name.charAt(0)}`; }}
-  	  	    alt={dummyData.name}
-  	  	    className="w-10 h-10 rounded-full object-cover"
-  	  	  />
-  	  	  <div>
-  	  	    <h3 className="font-semibold text-gray-900 text-xs">
-  	  	      {dummyData.name}
-  	  	    </h3>
-  	  	    <p className="text-xs text-gray-500">{dummyData.specialization}</p>
-  	  	  </div>
-  	  	</div>
-  	  	<hr className="mx-3" />
-  	  	<div className="p-3 space-y-2">
-  	  	  <p className="text-xs font-medium text-gray-800">
-  	  	    {dummyData.date}
-  	  	  </p>
-  	  	  <div className="flex items-center space-x-2">
-  	  	    <VideoCameraIcon className="w-4 h-4 text-gray-500" />
-  	  	    <span className="text-xs text-gray-700">{dummyData.type}</span>
-  	  	  </div>
-  	  	  <div className="flex items-center space-x-2">
-  	  	    <ClockIcon className="w-4 h-4 text-gray-500" />
-section   	    <span className="text-xs text-gray-700">{dummyData.time}</span>
-  	  	  </div>
-  	  	</div>
-  	  	<hr className="mx-3" />
-  	  	<div className="p-3">
-  	  	  <label className="text-xs text-gray-500 block mb-1">
-  	  	    Konseling Booking ID
-  	  	  </label>
-  	  	  <div className="flex justify-between items-center">
-  	  	    <span className="text-xs font-semibold text-gray-800 break-all">
-section   	      {dummyData.bookingId}
-  	  	    </span>
-  	  	    <button
-  	  	      onClick={() => copyToClipboard(dummyData.bookingId, 'Booking ID')}
-  	  	      className="text-blue-600 hover:text-blue-800 ml-2 flex-shrink-0"
-  	  	      title="Salin Booking ID"
-  	  	    >
-  	  	      <ClipboardIcon className="w-4 h-4" />
-  	  	    </button>
-  	  	  </div>
-  	  	</div>
-  	  </div>
+                    {/* 2. Kartu Virtual Account */}
+                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-5">
+                        <div className="flex justify-between items-center mb-4 border-b border-gray-100 pb-3">
+                            <span className="font-bold text-gray-800 text-[15px]">
+                                {payment_method?.name || "Virtual Account"}
+                            </span>
+                            {/* Logo Bank (Hardcoded BCA sesuai gambar, bisa dinamis) */}
+                            <div className="bg-[#00529C] text-white px-2 py-0.5 text-[10px] font-bold rounded">
+                                BCA
+                            </div>
+                        </div>
 
-  	  {/* ============================================== */}
-  	  {/* == PERBAIKAN DI SINI == */}
-  	  {/* ============================================== */}
+                        <div className="mb-4">
+                            <p className="text-xs text-gray-400 mb-1">
+                                Nomer Virtual Account
+                            </p>
+                            <div className="flex justify-between items-center">
+                                <span className="text-base font-bold text-gray-800">
+                                    {payment_method?.account_details ||
+                                        "8000812345678"}
+                                </span>
+                                <button
+                                    onClick={() =>
+                                        copyToClipboard(
+                                            payment_method?.account_details
+                                        )
+                                    }
+                                    className="p-1 hover:bg-blue-50 rounded"
+                                >
+                                    <Icons.Copy />
+                                </button>
+                            </div>
+                        </div>
 
-  	  {/* 4. Tombol Aksi (Dipindahkan ke sini, tidak lagi sticky) */}
-  	  <div className="mt-4">
-  	  	{/* Tombol ini sekarang menggunakan navigate untuk pindah halaman */}
-  	  	<button
-          /* PERBAIKAN: Rute diubah ke /booking/payment/:id agar sesuai AppRouter.jsx */
-  	  	  onClick={() => navigate(`/booking/payment/${id}`)}
-  	  	  className="w-full bg-blue-600 text-white font-semibold py-2.5 rounded-lg shadow-lg hover:bg-blue-700 transition-colors text-sm"
-  	  	>
-  	  	  Lihat Invoice Pembayaran
-  	  	</button>
-  	  </div>
+                        <div>
+                            <p className="text-xs text-gray-400 mb-1">
+                                Total Pembayaran
+                            </p>
+                            <div className="flex justify-between items-center">
+                                <span className="text-base font-bold text-gray-800">
+                                    {formatCurrency(booking.total_harga)}
+                                </span>
+                                <button
+                                    onClick={() =>
+                                        copyToClipboard(booking.total_harga)
+                                    }
+                                    className="p-1 hover:bg-blue-50 rounded"
+                                >
+                                    <Icons.Copy />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
 
-  	  {/* ============================================== */}
-  	  {/* == AKHIR PERBAIKAN == */}
-  	  {/* ============================================== */}
+                    {/* 3. Kartu Detail Sesi (Outline Biru & Badge Kuning) */}
+                    <div className="bg-white rounded-2xl border-[1.5px] border-[#00B2FF] p-5 shadow-sm relative overflow-hidden">
+                        <div className="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 className="font-bold text-[#00B2FF] text-[15px]">
+                                    {booking.metode_konsultasi} Konseling
+                                </h3>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    {jenis_konseling?.jenis_konseling ||
+                                        "Individu"}{" "}
+                                    | {durasi_konseling?.durasi_menit || "?"}{" "}
+                                    Menit Sesi
+                                </p>
+                            </div>
+                            {/* Badge Kuning */}
+                            <span className="bg-[#F6C444] text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-sm">
+                                Menunggu Pembayaran
+                            </span>
+                        </div>
 
-  </div>
-  );
+                        <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-100">
+                            <img
+                                src={
+                                    konselor?.avatar ||
+                                    `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                        konselor?.name
+                                    )}&background=EBF4FF&color=00B2FF`
+                                }
+                                className="w-12 h-12 rounded-full object-cover border border-gray-100"
+                                alt="Konselor"
+                            />
+                            <div>
+                                <h4 className="font-bold text-[#4A6FA5] text-sm">
+                                    {konselor?.name}
+                                </h4>
+                                <p className="text-xs text-gray-400 w-40 truncate">
+                                    {konselor?.spesialisasi
+                                        ? konselor.spesialisasi.join(", ")
+                                        : "Psikolog Klinis"}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2 text-sm text-gray-700 mb-4">
+                            <div className="font-bold text-black text-[13px]">
+                                {formatDateFull(booking.tanggal_konsultasi)}
+                            </div>
+                            <div className="flex items-center gap-2 text-gray-500 text-xs">
+                                <Icons.Video />
+                                <span>{booking.metode_konsultasi}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-gray-500 text-xs">
+                                <Icons.Clock />
+                                <span>
+                                    {formatTimeRange(
+                                        booking.jam_konsultasi,
+                                        durasi_konseling?.durasi_menit
+                                    )}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+                            <div>
+                                <p className="text-[10px] text-gray-400 mb-0.5">
+                                    Konseling Booking ID
+                                </p>
+                                <p className="text-sm font-bold text-gray-800 tracking-tight">{`MOODLY-${booking.id}`}</p>
+                            </div>
+                            <button
+                                onClick={() =>
+                                    copyToClipboard(`MOODLY-${booking.id}`)
+                                }
+                                className="p-1 hover:bg-blue-50 rounded"
+                            >
+                                <Icons.Copy />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 4. Tombol Aksi Bawah (Fixed) */}
+                <div className="fixed bottom-0 left-0 right-0 bg-white p-4 border-t border-gray-100 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-20 max-w-md mx-auto">
+                    <button
+                        onClick={() =>
+                            navigate(`/booking/upload-proof/${booking.id}`, {
+                                state: { booking },
+                            })
+                        }
+                        className="w-full bg-[#00B2FF] text-white font-bold py-3.5 rounded-full shadow-lg hover:bg-[#009cd9] transition active:scale-[0.98]"
+                    >
+                        Lihat Invoice Pembayaran
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // --- FALLBACK: Render Standar (Status Lain) ---
+    return (
+        <div className="p-4 bg-gray-50 min-h-screen">
+            <div className="bg-[#00B2FF] p-4 pt-8 pb-6 text-white flex items-center mb-4 rounded-b-xl -mx-4 -mt-4 shadow-sm">
+                <button onClick={() => navigate(-1)}>
+                    <Icons.Back />
+                </button>
+                <h1 className="text-lg font-bold w-full text-center -ml-6">
+                    Detail Riwayat
+                </h1>
+            </div>
+            <div className="bg-white rounded-xl shadow p-4 text-center">
+                <h2 className="font-bold text-gray-800 mb-2 text-lg">
+                    {booking.status_pesanan}
+                </h2>
+                <p className="text-gray-600 text-sm mb-4">
+                    Detail lengkap untuk status ini belum di desain khusus.
+                </p>
+                {/* Tambahkan tombol aksi standar di sini jika perlu */}
+            </div>
+        </div>
+    );
 }
 
+// --- Sub-komponen Timer ---
+const PaymentTimerDisplay = ({ targetDate }) => {
+    const { hours, minutes, seconds, isExpired } = useCountdown(targetDate);
+    if (isExpired)
+        return (
+            <div className="text-center text-red-500 font-bold my-4">
+                Waktu Pembayaran Habis
+            </div>
+        );
+
+    return (
+        <div className="flex items-center justify-center gap-3 my-6">
+            <span className="text-sm font-semibold text-[#2B5F9E]">
+                Sisa Waktu Pembayaran
+            </span>
+            <div className="flex items-center gap-1 text-white font-bold text-[13px]">
+                <div className="bg-[#0044CC] w-7 h-7 flex items-center justify-center rounded">
+                    {formatNum(hours)}
+                </div>
+                <span className="text-[#0044CC] font-bold">:</span>
+                <div className="bg-[#0044CC] w-7 h-7 flex items-center justify-center rounded">
+                    {formatNum(minutes)}
+                </div>
+                <span className="text-[#0044CC] font-bold">:</span>
+                <div className="bg-[#0044CC] w-7 h-7 flex items-center justify-center rounded">
+                    {formatNum(seconds)}
+                </div>
+            </div>
+        </div>
+    );
+};

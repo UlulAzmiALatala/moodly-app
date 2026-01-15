@@ -1,6 +1,17 @@
 {
-  "dependencies": {
-    "framer-motion": "^12.23.24",
-    "lucide-react": "^0.552.0"
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "start-dev": "concurrently \"php artisan serve\" \"php artisan queue:work\" \"php artisan reverb:start\" --names=\"SERVER,QUEUE,REVERB\" --prefix-colors=\"green,yellow,magenta\""
+  },
+  "devDependencies": {
+    "axios": "^1.7.4",
+    "concurrently": "^9.0.1",
+    "laravel-echo": "^1.16.1",
+    "laravel-vite-plugin": "^1.0.0",
+    "pusher-js": "^8.4.0-rc2",
+    "vite": "^7.2.4"
   }
 }

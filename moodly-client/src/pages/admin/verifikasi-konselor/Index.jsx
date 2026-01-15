@@ -1,166 +1,452 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import apiClient from "../../../api/axios";
+import {
+    Search,
+    Eye,
+    CheckCircle,
+    XCircle,
+    ChevronLeft,
+    ChevronRight,
+    User,
+    Mail,
+    Phone,
+    GraduationCap,
+} from "lucide-react";
 
-// --- Komponen Ikon ---
-const DetailIcon = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-gray-500 hover:text-blue-600 transition-colors duration-200"
-    >
-        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-        <circle cx="12" cy="12" r="3"></circle>
-    </svg>
-);
+import ApproveModal from "./modals/ApproveModal";
+import RejectModal from "./modals/RejectModal";
+
+// 1. Import Hook Toast
+import { useToast } from "../../../context/ToastContext";
 
 // --- Komponen Badge Status ---
 const StatusBadge = ({ status }) => {
     const styles = {
-        Verifikasi: "bg-yellow-100 text-yellow-700",
-        Terverifikasi: "bg-green-100 text-green-700",
-        Ditolak: "bg-orange-100 text-orange-700", // Atau bg-red-100 text-red-700
-        Banned: "bg-red-100 text-red-700 font-bold",
-        Offline: "bg-gray-100 text-gray-700", // Fallback
+        "Menunggu Verifikasi": "bg-yellow-50 text-yellow-700 border-yellow-200",
+        Verifikasi: "bg-yellow-50 text-yellow-700 border-yellow-200",
+        Terverifikasi: "bg-green-50 text-green-700 border-green-200",
+        Ditolak: "bg-red-50 text-red-700 border-red-200",
+        Banned: "bg-gray-50 text-gray-700 border-gray-200",
     };
+
+    const currentStyle =
+        styles[status] || "bg-gray-50 text-gray-600 border-gray-200";
+
     return (
         <span
-            className={`px-3 py-1 text-xs font-medium rounded-full ${
-                styles[status] || styles.Offline
-            }`}
+            className={`px-2.5 py-0.5 text-xs font-bold rounded-full border ${currentStyle}`}
         >
             {status}
         </span>
     );
 };
 
-const VerifikasiKonselorPage = () => {
-    const [konselorList, setKonselorList] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    // State filter bisa ditambahkan nanti jika perlu
-    // const [filterStatus, setFilterStatus] = useState('Verifikasi');
+// --- KOMPONEN PAGINASI (Gaya Moodly - Cyan) ---
+const Pagination = ({ meta, onPageChange }) => {
+    if (!meta || meta.total === 0) return null;
 
-    const fetchData = async () => {
-        try {
-            setLoading(true);
-            // API endpoint khusus untuk admin verifikasi (hanya status 'Verifikasi')
-            const response = await apiClient.get(
-                "/api/admin/verifikasi-konselor"
-            );
-            setKonselorList(response.data);
-            setError(null);
-        } catch (err) {
-            setError("Gagal memuat data konselor yang perlu diverifikasi.");
-            console.error("Fetch verifikasi error:", err);
-        } finally {
-            setLoading(false);
+    const { current_page, last_page, from, to, total } = meta;
+
+    const getPageNumbers = () => {
+        let pages = [];
+        let startPage = Math.max(1, current_page - 2);
+        let endPage = Math.min(last_page, startPage + 4);
+
+        if (endPage - startPage < 4) {
+            startPage = Math.max(1, endPage - 4);
         }
+
+        for (let i = startPage; i <= endPage; i++) {
+            pages.push(i);
+        }
+        return pages;
     };
 
-    // Panggil fetchData saat komponen dimuat
-    useEffect(() => {
-        fetchData();
-    }, []); // Array dependensi kosong agar hanya fetch sekali
+    const pageNumbers = getPageNumbers();
 
     return (
-        <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-gray-800">
-                    Verifikasi Data Konselor
-                </h1>
-                {/* Dropdown Status (bisa ditambahkan nanti) */}
-            </div>
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                <table className="w-full text-left">
-                    <thead className="bg-blue-100 text-gray-700">
-                        <tr>
-                            <th className="p-4 font-semibold">No</th>
-                            <th className="p-4 font-semibold">ID Konselor</th>
-                            <th className="p-4 font-semibold">Nama</th>
-                            <th className="p-4 font-semibold">Email</th>
-                            <th className="p-4 font-semibold">No Telepon</th>
-                            <th className="p-4 font-semibold">Status</th>
-                            <th className="p-4 font-semibold">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {loading ? (
-                            <tr>
-                                <td
-                                    colSpan="7"
-                                    className="p-6 text-center text-gray-500"
-                                >
-                                    Memuat data...
-                                </td>
-                            </tr>
-                        ) : error ? (
-                            <tr>
-                                <td
-                                    colSpan="7"
-                                    className="p-6 text-center text-red-500"
-                                >
-                                    {error}
-                                </td>
-                            </tr>
-                        ) : konselorList.length > 0 ? (
-                            konselorList.map((konselor, index) => (
-                                <tr
-                                    key={konselor.id}
-                                    className="border-t hover:bg-gray-50 transition-colors duration-150"
-                                >
-                                    <td className="p-4 text-gray-600">
-                                        {index + 1}
-                                    </td>
-                                    <td className="p-4 text-gray-800">{`#${String(
-                                        konselor.id
-                                    ).padStart(5, "0")}`}</td>
-                                    <td className="p-4 font-medium text-gray-900">
-                                        {konselor.name}
-                                    </td>
-                                    <td className="p-4 text-gray-600">
-                                        {konselor.email}
-                                    </td>
-                                    <td className="p-4 text-gray-600">
-                                        {konselor.phone || "-"}
-                                    </td>
-                                    <td className="p-4">
-                                        <StatusBadge status={konselor.status} />
-                                    </td>
-                                    <td className="p-4">
-                                        <Link
-                                            to={`/admin/verifikasi-konselor/${konselor.id}`}
-                                            title="Lihat Detail Verifikasi"
-                                            className="inline-block p-1 rounded hover:bg-blue-100"
-                                        >
-                                            <DetailIcon />
-                                        </Link>
-                                    </td>
-                                </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td
-                                    colSpan="7"
-                                    className="p-6 text-center text-gray-500"
-                                >
-                                    Tidak ada konselor baru yang perlu
-                                    diverifikasi saat ini.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
+        <div className="px-6 py-4 border-t border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4 bg-white">
+            <p className="text-sm text-gray-500">
+                Menampilkan{" "}
+                <span className="font-bold text-gray-900">{from || 0}</span>{" "}
+                sampai{" "}
+                <span className="font-bold text-gray-900">{to || 0}</span> dari{" "}
+                <span className="font-bold text-gray-900">{total}</span> data
+            </p>
+
+            <div className="flex items-center gap-2">
+                <button
+                    onClick={() => onPageChange(current_page - 1)}
+                    disabled={current_page === 1}
+                    className="p-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    <ChevronLeft size={18} />
+                </button>
+
+                {pageNumbers.map((page) => (
+                    <button
+                        key={page}
+                        onClick={() => onPageChange(page)}
+                        className={`w-9 h-9 rounded-xl text-sm font-bold transition-all shadow-sm border ${
+                            current_page === page
+                                ? "bg-cyan-400 text-white border-cyan-400 shadow-cyan-200"
+                                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                        }`}
+                    >
+                        {page}
+                    </button>
+                ))}
+
+                <button
+                    onClick={() => onPageChange(current_page + 1)}
+                    disabled={current_page === last_page}
+                    className="p-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    <ChevronRight size={18} />
+                </button>
             </div>
         </div>
     );
 };
 
-export default VerifikasiKonselorPage; // Pastikan export default ada
+const VerifikasiKonselorPage = () => {
+    // --- State Data ---
+    const [konselorList, setKonselorList] = useState([]);
+    const [pagination, setPagination] = useState({});
+    const [currentPage, setCurrentPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState("");
+
+    // --- State UI ---
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // 2. Panggil Hook Toast
+    const { addToast } = useToast();
+
+    // --- State Modals ---
+    const [isApproveModalOpen, setApproveModalOpen] = useState(false);
+    const [isRejectModalOpen, setRejectModalOpen] = useState(false);
+    const [selectedKonselor, setSelectedKonselor] = useState(null);
+
+    // --- Fetch Data ---
+    const fetchData = async (page = 1, search = "") => {
+        setLoading(true);
+        try {
+            const response = await apiClient.get(
+                `/api/admin/verifikasi-konselor?page=${page}&search=${search}`
+            );
+
+            if (response.data.data) {
+                setKonselorList(response.data.data);
+                setPagination({
+                    current_page: response.data.current_page,
+                    last_page: response.data.last_page,
+                    total: response.data.total,
+                    from: response.data.from,
+                    to: response.data.to,
+                });
+            } else {
+                setKonselorList(response.data);
+                setPagination({});
+            }
+            setError(null);
+        } catch (err) {
+            setError("Gagal memuat data verifikasi konselor.");
+            console.error(err);
+            addToast("Gagal memuat data verifikasi.", "error");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Debounce Search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            fetchData(currentPage, searchTerm);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [currentPage, searchTerm]);
+
+    // --- Handlers ---
+    const handlePageChange = (page) => {
+        if (page >= 1 && page <= (pagination.last_page || 1)) {
+            setCurrentPage(page);
+        }
+    };
+
+    // Fungsi Helper untuk menutup modal dan refresh data
+    const handleActionSuccess = (message, type = "success") => {
+        setApproveModalOpen(false);
+        setRejectModalOpen(false);
+        setSelectedKonselor(null);
+        fetchData(currentPage, searchTerm);
+        addToast(message, type);
+    };
+
+    // --- Logic API Approve & Reject ---
+    const handleApprove = async () => {
+        if (!selectedKonselor) return;
+        try {
+            await apiClient.post(
+                `/api/admin/verifikasi-konselor/${selectedKonselor.id}/approve`
+            );
+            handleActionSuccess("Konselor berhasil diverifikasi!");
+        } catch (err) {
+            console.error("Gagal menyetujui:", err);
+            addToast("Gagal menyetujui verifikasi.", "error");
+        }
+    };
+
+    const handleReject = async (reason) => {
+        if (!selectedKonselor) return;
+        try {
+            await apiClient.post(
+                `/api/admin/verifikasi-konselor/${selectedKonselor.id}/reject`,
+                {
+                    alasan_ditolak: reason,
+                }
+            );
+            handleActionSuccess("Pengajuan konselor ditolak.", "info");
+        } catch (err) {
+            console.error("Gagal menolak:", err);
+            addToast("Gagal menolak verifikasi.", "error");
+        }
+    };
+
+    const openModal = (setter, konselor) => {
+        setSelectedKonselor(konselor);
+        setter(true);
+    };
+
+    return (
+        <div className="space-y-6 p-6 pb-20 font-sans text-gray-600">
+            {/* Header & Search */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">
+                        Verifikasi Konselor
+                    </h1>
+                    <p className="text-sm text-gray-500 mt-1">
+                        Tinjau dokumen dan kualifikasi psikolog baru.
+                    </p>
+                </div>
+
+                <div className="relative w-full md:w-72">
+                    <input
+                        type="text"
+                        placeholder="Cari nama, email, universitas..."
+                        value={searchTerm}
+                        onChange={(e) => {
+                            setSearchTerm(e.target.value);
+                            setCurrentPage(1);
+                        }}
+                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100 transition-all text-sm shadow-sm"
+                    />
+                    <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                </div>
+            </div>
+
+            {/* Table Content */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm whitespace-nowrap">
+                        <thead className="bg-gray-50/50 border-b border-gray-100 text-xs uppercase text-gray-500 font-semibold">
+                            <tr>
+                                <th className="px-6 py-4 rounded-l-xl">ID</th>
+                                <th className="px-6 py-4">Profil</th>
+                                <th className="px-6 py-4">Kontak</th>
+                                <th className="px-6 py-4">Pendidikan</th>
+                                <th className="px-6 py-4 text-center">
+                                    Status
+                                </th>
+                                <th className="px-6 py-4 rounded-r-xl text-right">
+                                    Aksi
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                            {loading ? (
+                                <tr>
+                                    <td
+                                        colSpan="6"
+                                        className="px-6 py-12 text-center"
+                                    >
+                                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-cyan-500 border-t-transparent"></div>
+                                        <p className="mt-3 text-gray-400 text-sm">
+                                            Memuat data...
+                                        </p>
+                                    </td>
+                                </tr>
+                            ) : konselorList.length === 0 ? (
+                                <tr>
+                                    <td
+                                        colSpan="6"
+                                        className="px-6 py-12 text-center text-gray-400 italic"
+                                    >
+                                        Tidak ada data verifikasi konselor.
+                                    </td>
+                                </tr>
+                            ) : (
+                                konselorList.map((konselor) => (
+                                    <tr
+                                        key={konselor.id}
+                                        className="hover:bg-cyan-50/30 transition-colors group"
+                                    >
+                                        <td className="px-6 py-4">
+                                            <span className="font-mono text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded border border-gray-200">
+                                                #
+                                                {String(konselor.id).padStart(
+                                                    5,
+                                                    "0"
+                                                )}
+                                            </span>
+                                        </td>
+
+                                        {/* Profil */}
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <img
+                                                    src={
+                                                        konselor.avatar ||
+                                                        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                                            konselor.name
+                                                        )}&background=ECFEFF&color=0891b2&bold=true`
+                                                    }
+                                                    alt={konselor.name}
+                                                    className="w-10 h-10 rounded-full object-cover border border-gray-200"
+                                                    onError={(e) => {
+                                                        e.target.onerror = null;
+                                                        e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                                            konselor.name
+                                                        )}&background=ECFEFF&color=0891b2&bold=true`;
+                                                    }}
+                                                />
+                                                <div>
+                                                    <div className="font-bold text-gray-900">
+                                                        {konselor.name}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500 flex items-center gap-1">
+                                                        <User size={12} />{" "}
+                                                        Psikolog
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        {/* Kontak */}
+                                        <td className="px-6 py-4">
+                                            <div className="space-y-1">
+                                                <div className="flex items-center gap-2 text-gray-600">
+                                                    <Mail
+                                                        size={14}
+                                                        className="text-gray-400"
+                                                    />
+                                                    {konselor.email}
+                                                </div>
+                                                <div className="flex items-center gap-2 text-gray-600">
+                                                    <Phone
+                                                        size={14}
+                                                        className="text-gray-400"
+                                                    />
+                                                    {konselor.phone || "-"}
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        {/* Pendidikan */}
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2 text-gray-700 font-medium">
+                                                <GraduationCap
+                                                    size={16}
+                                                    className="text-cyan-400"
+                                                />
+                                                {konselor.universitas || (
+                                                    <span className="text-gray-400 italic text-xs">
+                                                        Belum diisi
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
+
+                                        {/* Status */}
+                                        <td className="px-6 py-4 text-center">
+                                            <StatusBadge
+                                                status={konselor.status}
+                                            />
+                                        </td>
+
+                                        {/* Aksi */}
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex justify-end items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                                                <Link
+                                                    to={`/admin/verifikasi-konselor/${konselor.id}`}
+                                                    className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                                                    title="Lihat Detail"
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                </Link>
+
+                                                {/* Tombol Aksi Cepat */}
+                                                {(konselor.status ===
+                                                    "Verifikasi" ||
+                                                    konselor.status ===
+                                                        "Menunggu Verifikasi") && (
+                                                    <>
+                                                        <button
+                                                            onClick={() =>
+                                                                openModal(
+                                                                    setApproveModalOpen,
+                                                                    konselor
+                                                                )
+                                                            }
+                                                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                                            title="Setujui"
+                                                        >
+                                                            <CheckCircle className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() =>
+                                                                openModal(
+                                                                    setRejectModalOpen,
+                                                                    konselor
+                                                                )
+                                                            }
+                                                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                            title="Tolak"
+                                                        >
+                                                            <XCircle className="w-4 h-4" />
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Pagination Footer */}
+                <Pagination meta={pagination} onPageChange={handlePageChange} />
+            </div>
+
+            {/* Modals */}
+            <ApproveModal
+                isOpen={isApproveModalOpen}
+                onClose={() => setApproveModalOpen(false)}
+                onConfirm={handleApprove} // Hubungkan fungsi
+                konselorName={selectedKonselor?.name}
+            />
+            <RejectModal
+                isOpen={isRejectModalOpen}
+                onClose={() => setRejectModalOpen(false)}
+                onConfirm={handleReject} // Hubungkan fungsi
+                konselorName={selectedKonselor?.name}
+            />
+        </div>
+    );
+};
+
+export default VerifikasiKonselorPage;

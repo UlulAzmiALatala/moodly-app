@@ -7,6 +7,11 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\CounselorRegisterController;
+
+Route::post('/register-counselor', [CounselorRegisterController::class, 'store'])
+    ->middleware('guest')
+    ->name('counselor.register');
 
 Route::post('/register', [RegisteredUserController::class, 'store'])
     ->middleware('guest')

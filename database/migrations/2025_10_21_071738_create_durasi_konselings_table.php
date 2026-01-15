@@ -13,8 +13,9 @@ return new class extends Migration
     {
         Schema::create('durasi_konselings', function (Blueprint $table) {
             $table->id();
-            $table->string('durasi_menit'); // Contoh: "60 Menit"
-            $table->unsignedInteger('harga'); // Simpan sebagai angka, contoh: 100000
+            // UBAH DI SINI: Dari string menjadi integer
+            $table->integer('durasi_menit'); // Simpan angka saja: 60, 90, 120
+            $table->unsignedInteger('harga');
             $table->timestamps();
         });
     }

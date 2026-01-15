@@ -5,51 +5,62 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use Illuminate\Http\Request;
-
-// --- TAMBAHAN BARU ---
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-// --- AKHIR TAMBAHAN BARU ---
+use App\Events\PaymentVerified;
+use App\Notifications\BookingStatusUpdated;
 
 class BookingManagementController extends Controller
 {
-    /**
-     * Menampilkan daftar semua pesanan dengan data relasi.
-     */
-    public function index()
+    public function index(Request $request)
     {
-        // Eager load relasi untuk efisiensi query
-        // Urutkan berdasarkan yang perlu diverifikasi dulu
-        return Booking::with(['customer:id,name', 'konselor:id,name'])
-            ->orderByRaw("FIELD(status_pesanan, 'Menunggu Verifikasi') DESC") // <-- Prioritaskan yang butuh aksi
-            ->latest() // Urutkan sisanya berdasarkan terbaru
-            ->get();
+        try {
+            $search = $request->query('search');
+
+            $query = Booking::with([
+                'customer:id,name,email,phone,avatar',
+                'konselor:id,name,avatar'
+            ]);
+
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('id', 'like', "%{$search}%")
+                        ->orWhereHas('customer', function ($c) use ($search) {
+                            $c->where('name', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('konselor', function ($k) use ($search) {
+                            $k->where('name', 'like', "%{$search}%");
+                        });
+                });
+            }
+
+            $bookings = $query->orderByRaw("CASE WHEN status_pesanan = 'Menunggu Verifikasi' THEN 1 ELSE 2 END")
+                ->latest()
+                ->paginate(10);
+
+            return response()->json($bookings);
+        } catch (\Exception $e) {
+            Log::error("Error fetching bookings: " . $e->getMessage());
+            return response()->json(['message' => 'Gagal memuat data pesanan: ' . $e->getMessage()], 500);
+        }
     }
 
-    /**
-     * Menampilkan detail satu pesanan dengan data relasi lengkap.
-     */
     public function show(Booking $booking)
     {
-        // --- PERBAIKAN: Load semua relasi yang mungkin ---
-        // Ini akan otomatis menyertakan 'payment_proof_image_url' dari Model
+        // PERBAIKAN: Hapus 'paymentMethod' dari load karena kolom ID-nya tidak ada di DB
         return $booking->load([
             'customer',
             'konselor',
             'jenisKonseling',
             'durasiKonseling',
-            'tempatKonseling'
+            'tempatKonseling',
+            'refund'
         ]);
-        // --- AKHIR PERBAIKAN ---
     }
 
-    /**
-     * Menghapus pesanan.
-     */
     public function destroy(Booking $booking)
     {
-        // --- PERBAIKAN: Hapus juga bukti bayar jika ada ---
         try {
             if ($booking->payment_proof_image) {
                 Storage::disk('public')->delete($booking->payment_proof_image);
@@ -60,39 +71,33 @@ class BookingManagementController extends Controller
             Log::error('Error deleting booking:', ['booking_id' => $booking->id, 'error' => $e->getMessage()]);
             return response()->json(['message' => 'Gagal menghapus booking.'], 500);
         }
-        // --- AKHIR PERBAIKAN ---
     }
 
-    // Metode store dan update tidak diperlukan untuk Super Admin di halaman ini
-
-
-    // --- METHOD BARU UNTUK VERIFIKASI ---
-
-    /**
-     * Menyetujui pembayaran booking.
-     * POST /api/super-admin/booking-management/{booking}/approve-payment
-     */
     public function approvePayment(Booking $booking)
     {
-        // 1. Validasi: Hanya bisa approve jika statusnya "Menunggu Verifikasi"
         if ($booking->status_pesanan !== 'Menunggu Verifikasi') {
             return response()->json([
                 'message' => 'Hanya booking dengan status "Menunggu Verifikasi" yang bisa disetujui.'
-            ], 409); // 409 Conflict
+            ], 409);
         }
 
         try {
-            // 2. Ubah status
             $booking->status_pesanan = 'Dijadwalkan';
             $booking->save();
 
-            // 3. TODO: Kirim notifikasi ke customer (fitur nanti)
-            // ...
+            // 1. Kirim Notifikasi Database (Lonceng)
+            try {
+                $booking->customer->notify(new BookingStatusUpdated($booking->fresh()));
+            } catch (\Exception $e) {
+                Log::error('Gagal kirim notif database: ' . $e->getMessage());
+            }
 
-            Log::info('Payment approved for booking:', ['booking_id' => $booking->id]);
+            // 2. [PENTING] Broadcast Event Realtime ke Reverb
+            broadcast(new PaymentVerified($booking->fresh()));
 
-            // 4. Kembalikan data booking yang sudah di-update
-            return response()->json($booking->load([
+            Log::info('Payment approved & broadcasted:', ['booking_id' => $booking->id]);
+
+            return response()->json($booking->fresh()->load([
                 'customer',
                 'konselor',
                 'jenisKonseling',
@@ -105,20 +110,14 @@ class BookingManagementController extends Controller
         }
     }
 
-    /**
-     * Menolak pembayaran booking.
-     * POST /api/super-admin/booking-management/{booking}/reject-payment
-     */
     public function rejectPayment(Request $request, Booking $booking)
     {
-        // 1. Validasi: Hanya bisa reject jika statusnya "Menunggu Verifikasi"
         if ($booking->status_pesanan !== 'Menunggu Verifikasi') {
             return response()->json([
                 'message' => 'Hanya booking dengan status "Menunggu Verifikasi" yang bisa ditolak.'
-            ], 409); // 409 Conflict
+            ], 409);
         }
 
-        // 2. Validasi input (alasan penolakan)
         $validator = Validator::make($request->all(), [
             'reason' => 'required|string|max:255',
         ]);
@@ -128,26 +127,29 @@ class BookingManagementController extends Controller
         }
 
         try {
-            // 3. Hapus file bukti bayar yang lama (karena ditolak)
             if ($booking->payment_proof_image) {
                 Storage::disk('public')->delete($booking->payment_proof_image);
             }
 
-            // 4. Update status booking
-            $booking->status_pesanan = 'Pembayaran Ditolak'; // Status baru
-            $booking->payment_proof_image = null; // Hapus path dari DB
+            $booking->status_pesanan = 'Pembayaran Ditolak';
+            $booking->payment_proof_image = null;
             $booking->payment_proof_notes = null;
-            // Kita gunakan kolom 'catatan_pembatalan' untuk menyimpan alasan penolakan
             $booking->catatan_pembatalan = $request->input('reason');
             $booking->save();
 
-            // 5. TODO: Kirim notifikasi ke customer (fitur nanti)
-            // ...
+            // 1. Notifikasi Database
+            try {
+                $booking->customer->notify(new BookingStatusUpdated($booking->fresh()));
+            } catch (\Exception $e) {
+                Log::error('Gagal kirim notif database: ' . $e->getMessage());
+            }
 
-            Log::info('Payment rejected for booking:', ['booking_id' => $booking->id, 'reason' => $request->input('reason')]);
+            // 2. [PENTING] Broadcast Realtime
+            broadcast(new PaymentVerified($booking->fresh()));
 
-            // 6. Kembalikan data booking yang sudah di-update
-            return response()->json($booking->load([
+            Log::info('Payment rejected & broadcasted:', ['booking_id' => $booking->id]);
+
+            return response()->json($booking->fresh()->load([
                 'customer',
                 'konselor',
                 'jenisKonseling',
@@ -160,29 +162,24 @@ class BookingManagementController extends Controller
         }
     }
 
-    // --- METHOD PROXY GAMBAR BARU ---
-    /**
-     * Mengambil file gambar bukti pembayaran (Proxy).
-     * GET /api/super-admin/booking-management/{booking}/payment-proof-image
-     */
     public function getPaymentProofImage(Booking $booking)
     {
         try {
-            // Cek file
             if (!$booking->payment_proof_image || !Storage::disk('public')->exists($booking->payment_proof_image)) {
-                Log::warning('Admin requested non-existent payment proof:', ['booking_id' => $booking->id, 'path' => $booking->payment_proof_image]);
                 return response()->json(['message' => 'Gambar bukti pembayaran tidak ditemukan.'], 404);
             }
-
-            // Ambil path lengkap
             $path = Storage::disk('public')->path($booking->payment_proof_image);
-
-            // Kirim file. Ini akan otomatis lolos CORS (karena ini rute API)
             return response()->file($path);
         } catch (\Exception $e) {
             Log::error('Error fetching payment proof image:', ['booking_id' => $booking->id, 'error' => $e->getMessage()]);
             return response()->json(['message' => 'Gagal mengambil gambar.'], 500);
         }
     }
-    // --- AKHIR METHOD BARU ---
+
+    public function updateLink(Request $request, Booking $booking)
+    {
+        $request->validate(['gmeet_link' => 'nullable|url']);
+        $booking->update(['gmeet_link' => $request->gmeet_link]);
+        return response()->json(['message' => 'Link meeting berhasil disimpan.', 'data' => $booking]);
+    }
 }

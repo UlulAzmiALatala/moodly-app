@@ -13,4 +13,10 @@ class DurasiKonseling extends Model
         'durasi_menit',
         'harga',
     ];
+
+    // TAMBAHKAN INI: Casting tipe data
+    protected $casts = [
+        'durasi_menit' => 'integer', // Pastikan selalu dianggap angka
+        'harga' => 'integer',
+    ];
 }

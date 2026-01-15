@@ -17,10 +17,16 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            UserSeeder::class,
+            // --- PERBAIKAN: JALANKAN INI DULU ---
+            // Ini harus ada sebelum UserSeeder agar ID-nya bisa dipakai
             JenisKonselingSeeder::class,
             DurasiKonselingSeeder::class,
             TempatKonselingSeeder::class,
+
+            // --- BARU JALANKAN USER ---
+            UserSeeder::class,
+
+            // Sisa seeder
             BookingSeeder::class,
             CounselorAvailabilitySeeder::class,
         ]);

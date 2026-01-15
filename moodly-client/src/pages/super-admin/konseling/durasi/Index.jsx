@@ -1,97 +1,161 @@
 import React, { useState, useEffect } from "react";
 import apiClient from "../../../../api/axios";
+import {
+    Search,
+    Plus,
+    Edit2,
+    Trash2,
+    Clock,
+    ChevronLeft,
+    ChevronRight,
+    Loader2,
+} from "lucide-react";
+
 import AddEditModal from "./modals/AddEditModal";
 import DeleteModal from "./modals/DeleteModal";
 
-// --- Komponen Ikon ---
-const EditIcon = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-blue-500 hover:text-blue-700"
-    >
-        <path d="M12 20h9" />
-        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-    </svg>
-);
-const DeleteIcon = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-red-500 hover:text-red-700"
-    >
-        <polyline points="3 6 5 6 21 6" />
-        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-        <line x1="10" y1="11" x2="10" y2="17" />
-        <line x1="14" y1="11" x2="14" y2="17" />
-    </svg>
-);
-const PlusIcon = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-    >
-        <line x1="12" y1="5" x2="12" y2="19" />
-        <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-);
+// 1. Import Hook Toast
+import { useToast } from "../../../../context/ToastContext";
+
+// --- KOMPONEN PAGINASI (Gaya Moodly - Cyan) ---
+const Pagination = ({ meta, onPageChange }) => {
+    if (!meta || meta.total === 0) return null;
+
+    const { current_page, last_page, from, to, total } = meta;
+
+    const getPageNumbers = () => {
+        let pages = [];
+        let startPage = Math.max(1, current_page - 2);
+        let endPage = Math.min(last_page, startPage + 4);
+
+        if (endPage - startPage < 4) {
+            startPage = Math.max(1, endPage - 4);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            pages.push(i);
+        }
+        return pages;
+    };
+
+    const pageNumbers = getPageNumbers();
+
+    return (
+        <div className="px-6 py-4 border-t border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4 bg-white">
+            <p className="text-sm text-gray-500">
+                Menampilkan{" "}
+                <span className="font-bold text-gray-900">{from || 0}</span>{" "}
+                sampai{" "}
+                <span className="font-bold text-gray-900">{to || 0}</span> dari{" "}
+                <span className="font-bold text-gray-900">{total}</span> data
+            </p>
+
+            <div className="flex items-center gap-2">
+                <button
+                    onClick={() => onPageChange(current_page - 1)}
+                    disabled={current_page === 1}
+                    className="p-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    <ChevronLeft size={18} />
+                </button>
+
+                {pageNumbers.map((page) => (
+                    <button
+                        key={page}
+                        onClick={() => onPageChange(page)}
+                        className={`w-9 h-9 rounded-xl text-sm font-bold transition-all shadow-sm border ${
+                            current_page === page
+                                ? "bg-cyan-400 text-white border-cyan-400 shadow-cyan-200"
+                                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                        }`}
+                    >
+                        {page}
+                    </button>
+                ))}
+
+                <button
+                    onClick={() => onPageChange(current_page + 1)}
+                    disabled={current_page === last_page}
+                    className="p-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    <ChevronRight size={18} />
+                </button>
+            </div>
+        </div>
+    );
+};
 
 const DurasiKonselingPage = () => {
+    // --- State Data ---
     const [durasiList, setDurasiList] = useState([]);
+    const [pagination, setPagination] = useState({});
+    const [currentPage, setCurrentPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState("");
+
+    // --- State UI ---
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+
+    // 2. Panggil Hook Toast
+    const { addToast } = useToast();
+
+    // --- State Modal ---
     const [isAddEditModalOpen, setAddEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
     const [selectedDurasi, setSelectedDurasi] = useState(null);
 
+    // --- Helper Format ---
     const formatRupiah = (number) => {
         return new Intl.NumberFormat("id-ID", {
             style: "currency",
             currency: "IDR",
             minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
         }).format(number);
     };
 
-    const fetchData = async () => {
+    // --- Fetch Data ---
+    const fetchData = async (page = 1, search = "") => {
+        setLoading(true);
         try {
-            setLoading(true);
             const response = await apiClient.get(
-                "/api/super-admin/durasi-konseling"
+                `/api/super-admin/durasi-konseling?page=${page}&search=${search}`
             );
-            setDurasiList(response.data);
-            setError(null);
+
+            if (response.data.data) {
+                setDurasiList(response.data.data);
+                setPagination({
+                    current_page: response.data.current_page,
+                    last_page: response.data.last_page,
+                    total: response.data.total,
+                    from: response.data.from,
+                    to: response.data.to,
+                });
+            } else {
+                setDurasiList(response.data);
+                setPagination({});
+            }
         } catch (err) {
-            setError("Gagal memuat data. Silakan coba lagi.");
             console.error(err);
+            addToast("Gagal memuat data durasi konseling.", "error");
         } finally {
             setLoading(false);
         }
     };
 
+    // Effect untuk Search (Debounce)
     useEffect(() => {
-        fetchData();
-    }, []);
+        const timer = setTimeout(() => {
+            fetchData(currentPage, searchTerm);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [currentPage, searchTerm]);
+
+    // --- Handlers ---
+    const handlePageChange = (page) => {
+        if (page >= 1 && page <= (pagination.last_page || 1)) {
+            setCurrentPage(page);
+        }
+    };
 
     const handleOpenAddModal = () => {
         setSelectedDurasi(null);
@@ -108,7 +172,8 @@ const DurasiKonselingPage = () => {
         setDeleteModalOpen(true);
     };
 
-    const handleSave = async (data) => {
+    // Handler Simpan (Create/Update) dengan Toast
+    const handleSave = async (data, setErrors) => {
         try {
             if (selectedDurasi) {
                 await apiClient.put(
@@ -119,80 +184,186 @@ const DurasiKonselingPage = () => {
                 await apiClient.post("/api/super-admin/durasi-konseling", data);
             }
             setAddEditModalOpen(false);
-            fetchData();
+            fetchData(currentPage, searchTerm);
+
+            addToast(
+                selectedDurasi
+                    ? "Data durasi diperbarui!"
+                    : "Data durasi ditambahkan!",
+                "success"
+            );
         } catch (err) {
             console.error("Gagal menyimpan data:", err);
+            if (err.response?.status === 422 && setErrors) {
+                setErrors(err.response.data.errors);
+                addToast("Periksa kembali inputan Anda.", "warning");
+            } else {
+                addToast(
+                    err.response?.data?.message ||
+                        "Terjadi kesalahan saat menyimpan.",
+                    "error"
+                );
+            }
         }
     };
 
+    // Handler Delete dengan Toast
     const handleDelete = async () => {
         try {
             await apiClient.delete(
                 `/api/super-admin/durasi-konseling/${selectedDurasi.id}`
             );
             setDeleteModalOpen(false);
-            fetchData();
+            fetchData(currentPage, searchTerm);
+            addToast("Data durasi berhasil dihapus.", "success");
         } catch (err) {
             console.error("Gagal menghapus data:", err);
+            addToast("Gagal menghapus data.", "error");
         }
     };
 
-    if (loading) return <div className="p-6">Memuat data...</div>;
-    if (error) return <div className="p-6 text-red-500">{error}</div>;
-
     return (
-        <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">Durasi Konseling</h1>
-                <button
-                    onClick={handleOpenAddModal}
-                    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center gap-2"
-                >
-                    <PlusIcon />
-                    Tambah Durasi Konseling
-                </button>
+        <div className="space-y-6 p-2 pb-20">
+            {/* Header & Search */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">
+                        Durasi Konseling
+                    </h1>
+                    <p className="text-sm text-gray-500 mt-1">
+                        Atur opsi lama waktu sesi konseling dan harganya.
+                    </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                    <div className="relative flex-1 md:w-64">
+                        <input
+                            type="text"
+                            placeholder="Cari durasi..."
+                            value={searchTerm}
+                            onChange={(e) => {
+                                setSearchTerm(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100 transition-all text-sm shadow-sm"
+                        />
+                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    </div>
+                    <button
+                        onClick={handleOpenAddModal}
+                        className="flex items-center justify-center gap-2 px-5 py-2.5 bg-cyan-600 text-white rounded-xl hover:bg-cyan-700 transition-all shadow-lg shadow-cyan-200 text-sm font-bold whitespace-nowrap"
+                    >
+                        <Plus className="w-4 h-4" /> Tambah Durasi
+                    </button>
+                </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                <table className="w-full text-left">
-                    <thead className="bg-blue-100">
-                        <tr>
-                            <th className="p-4">No</th>
-                            <th className="p-4">Durasi (Menit)</th>
-                            <th className="p-4">Harga (Rp)</th>
-                            <th className="p-4">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {durasiList.map((item, index) => (
-                            <tr key={item.id} className="border-t">
-                                <td className="p-4">{index + 1}</td>
-                                <td className="p-4">{item.durasi_menit}</td>
-                                <td className="p-4">
-                                    {formatRupiah(item.harga)}
-                                </td>
-                                <td className="p-4 flex gap-4">
-                                    <button
-                                        onClick={() =>
-                                            handleOpenEditModal(item)
-                                        }
-                                    >
-                                        <EditIcon />
-                                    </button>
-                                    <button
-                                        onClick={() =>
-                                            handleOpenDeleteModal(item)
-                                        }
-                                    >
-                                        <DeleteIcon />
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+            {/* Table Content */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                {loading ? (
+                    <div className="p-12 text-center">
+                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-cyan-500 border-t-transparent"></div>
+                        <p className="mt-3 text-gray-500 text-sm">
+                            Memuat data...
+                        </p>
+                    </div>
+                ) : (
+                    <>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm text-gray-600">
+                                <thead className="bg-gray-50/50 border-b border-gray-100 text-xs uppercase text-gray-500 font-semibold">
+                                    <tr>
+                                        <th className="px-6 py-4 w-16 text-center">
+                                            No
+                                        </th>
+                                        <th className="px-6 py-4">
+                                            Durasi Waktu
+                                        </th>
+                                        <th className="px-6 py-4">
+                                            Harga Paket
+                                        </th>
+                                        <th className="px-6 py-4 text-right">
+                                            Aksi
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50">
+                                    {durasiList.length === 0 ? (
+                                        <tr>
+                                            <td
+                                                colSpan="4"
+                                                className="px-6 py-12 text-center text-gray-400 italic"
+                                            >
+                                                Belum ada data durasi konseling.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        durasiList.map((item, index) => (
+                                            <tr
+                                                key={item.id}
+                                                className="hover:bg-cyan-50/30 transition-colors group"
+                                            >
+                                                <td className="px-6 py-4 text-center text-gray-400">
+                                                    {pagination.from
+                                                        ? pagination.from +
+                                                          index
+                                                        : index + 1}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-2 font-bold text-gray-800 text-base">
+                                                        <div className="p-1.5 bg-cyan-100 text-cyan-600 rounded-lg">
+                                                            <Clock className="w-4 h-4" />
+                                                        </div>
+                                                        {item.durasi_menit}{" "}
+                                                        Menit
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 font-medium text-green-600">
+                                                    {formatRupiah(item.harga)}
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                                                        <button
+                                                            onClick={() =>
+                                                                handleOpenEditModal(
+                                                                    item
+                                                                )
+                                                            }
+                                                            className="p-2 text-cyan-600 hover:bg-cyan-50 rounded-lg transition-colors"
+                                                            title="Edit"
+                                                        >
+                                                            <Edit2 className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() =>
+                                                                handleOpenDeleteModal(
+                                                                    item
+                                                                )
+                                                            }
+                                                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                            title="Hapus"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Pagination Footer */}
+                        <Pagination
+                            meta={pagination}
+                            onPageChange={handlePageChange}
+                        />
+                    </>
+                )}
             </div>
 
+            {/* Modals */}
             <AddEditModal
                 isOpen={isAddEditModalOpen}
                 onClose={() => setAddEditModalOpen(false)}
@@ -203,7 +374,9 @@ const DurasiKonselingPage = () => {
                 isOpen={isDeleteModalOpen}
                 onClose={() => setDeleteModalOpen(false)}
                 onConfirm={handleDelete}
-                itemName={selectedDurasi?.durasi_menit}
+                itemName={
+                    selectedDurasi ? `${selectedDurasi.durasi_menit} Menit` : ""
+                }
             />
         </div>
     );

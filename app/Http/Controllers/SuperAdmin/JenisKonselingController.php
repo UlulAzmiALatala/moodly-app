@@ -6,16 +6,26 @@ use App\Http\Controllers\Controller;
 use App\Models\JenisKonseling;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Storage; // 1. Import Storage
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class JenisKonselingController extends Controller
 {
     /**
      * Menampilkan daftar semua jenis konseling.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return JenisKonseling::latest()->get();
+        $search = $request->query('search');
+
+        $query = JenisKonseling::latest();
+
+        if ($search) {
+            $query->where('jenis_konseling', 'like', "%{$search}%");
+        }
+
+        // Gunakan paginate agar sesuai dengan frontend yang mengharapkan struktur paginasi
+        return $query->paginate(10);
     }
 
     /**
@@ -26,28 +36,28 @@ class JenisKonselingController extends Controller
         $validated = $request->validate([
             'jenis_konseling' => 'required|string|max:255|unique:jenis_konselings,jenis_konseling',
             'tipe_layanan' => ['required', 'string', Rule::in(['Online', 'Offline'])],
-
-            // 2. Validasi diubah menjadi 'image' (file)
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,svg|max:2048', // 2MB Max
-
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,svg|max:2048',
             'biaya_layanan' => ['required', 'string', Rule::in(['Nominal Tetap', 'Persentase'])],
             'nilai' => 'required|string|max:50',
             'status' => ['required', 'string', Rule::in(['Aktif', 'Tidak Aktif'])],
         ]);
 
-        $imagePath = null;
-        // 3. Logika untuk menyimpan file jika ada
-        if ($request->hasFile('image')) {
-            // Simpan di 'storage/app/public/jenis-konseling-icons'
-            $imagePath = $request->file('image')->store('jenis-konseling-icons', 'public');
+        try {
+            $dataToCreate = $request->except('image');
+
+            // Upload Gambar
+            if ($request->hasFile('image')) {
+                $path = $request->file('image')->store('jenis-konseling-icons', 'public');
+                $dataToCreate['image'] = $path;
+            }
+
+            $jenisKonseling = JenisKonseling::create($dataToCreate);
+
+            return response()->json($jenisKonseling, 201);
+        } catch (\Exception $e) {
+            Log::error("Gagal simpan jenis konseling: " . $e->getMessage());
+            return response()->json(['message' => 'Terjadi kesalahan server'], 500);
         }
-
-        // 4. Gabungkan data tervalidasi dengan path gambar
-        $dataToCreate = array_merge($validated, ['image' => $imagePath]);
-
-        $jenisKonseling = JenisKonseling::create($dataToCreate);
-
-        return response()->json($jenisKonseling, 201);
     }
 
     /**
@@ -65,48 +75,48 @@ class JenisKonselingController extends Controller
     {
         $jenisKonseling = JenisKonseling::findOrFail($id);
 
-        $validated = $request->validate([
+        $request->validate([
             'jenis_konseling' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('jenis_konselings')->ignore($jenisKonseling->id)],
             'tipe_layanan' => ['sometimes', 'required', 'string', Rule::in(['Online', 'Offline'])],
-
-            // 5. Validasi gambar untuk update
-            // 'nullable' jika tidak ada gambar baru, 'image' jika ada
             'image' => 'nullable|image|mimes:jpeg,png,jpg,svg|max:2048',
-
             'biaya_layanan' => ['sometimes', 'required', 'string', Rule::in(['Nominal Tetap', 'Persentase'])],
             'nilai' => 'sometimes|required|string|max:50',
             'status' => ['sometimes', 'required', 'string', Rule::in(['Aktif', 'Tidak Aktif'])],
         ]);
 
-        // Ambil semua data kecuali 'image'
-        $dataToUpdate = $request->except('image');
+        try {
+            $dataToUpdate = $request->except('image');
 
-        // 6. Logika Update Gambar (Hapus yg lama, simpan yg baru)
-        if ($request->hasFile('image')) {
-            // Hapus gambar lama jika ada
-            if ($jenisKonseling->image) {
-                Storage::disk('public')->delete($jenisKonseling->getRawOriginal('image'));
+            // Logika Update Gambar
+            if ($request->hasFile('image')) {
+                // Hapus gambar lama (Gunakan getRawOriginal untuk dapatkan path, bukan URL)
+                if ($jenisKonseling->getRawOriginal('image') && Storage::disk('public')->exists($jenisKonseling->getRawOriginal('image'))) {
+                    Storage::disk('public')->delete($jenisKonseling->getRawOriginal('image'));
+                }
+
+                // Simpan gambar baru
+                $path = $request->file('image')->store('jenis-konseling-icons', 'public');
+                $dataToUpdate['image'] = $path;
             }
 
-            // Simpan gambar baru
-            $imagePath = $request->file('image')->store('jenis-konseling-icons', 'public');
-            $dataToUpdate['image'] = $imagePath;
+            $jenisKonseling->update($dataToUpdate);
+
+            return response()->json($jenisKonseling->fresh());
+        } catch (\Exception $e) {
+            Log::error("Gagal update jenis konseling {$id}: " . $e->getMessage());
+            return response()->json(['message' => 'Gagal menyimpan perubahan'], 500);
         }
-
-        $jenisKonseling->update($dataToUpdate);
-
-        // Kita return model yang baru di-refresh agar URL Accessor-nya ter-trigger
-        return response()->json($jenisKonseling->fresh());
     }
 
     /**
      * Menghapus jenis konseling dari database.
      */
-    public function destroy(JenisKonseling $jenisKonseling)
+    public function destroy($id)
     {
-        // 7. Hapus gambar dari storage saat data dihapus
-        if ($jenisKonseling->image) {
-            // getRawOriginal() mengambil path mentah, bukan URL dari Accessor
+        $jenisKonseling = JenisKonseling::findOrFail($id);
+
+        // Hapus gambar dari storage saat data dihapus
+        if ($jenisKonseling->getRawOriginal('image') && Storage::disk('public')->exists($jenisKonseling->getRawOriginal('image'))) {
             Storage::disk('public')->delete($jenisKonseling->getRawOriginal('image'));
         }
 

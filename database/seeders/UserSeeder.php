@@ -55,28 +55,49 @@ class UserSeeder extends Seeder
         );
 
         // --- KONSELOR ---
-        $konselorStatuses = ['Verifikasi', 'Terverifikasi', 'Ditolak', 'Banned'];
+
+        // ID Offline: 1(Pernikahan), 2(Individu), 3(Keluarga), 4(Karir), 5(Depresi), 6(Anak)
+        // ID Online: 7(Chat), 8(Video), 9(Voice Call) <-- UPDATE DI SINI
+
+        // Buat beberapa kombinasi spesialisasi (Array berisi ID)
+        $specLists = [
+            [2, 5, 7], // Konselor 1: Individu, Depresi, Chat
+            [3, 6, 7, 8], // Konselor 2: Keluarga, Anak, Chat, Video
+            [1, 4],       // Konselor 3: Pernikahan, Karir (Hanya Offline)
+            [2, 5, 8, 9], // Konselor 4: Individu, Depresi, Video, Voice Call <-- UPDATE DI SINI
+            [1, 2, 3, 4, 5, 6, 7, 8, 9] // Konselor 5: Bisa Semua <-- UPDATE DI SINI
+        ];
+
+        // Definisikan metode layanan (Array berisi String)
+        $metodeLists = [
+            ['Chat'], // Konselor 1: Hanya bisa Chat
+            ['Chat', 'Video Call'], // Konselor 2: Bisa Chat dan Video Call
+            [], // Konselor 3: Tidak ada metode online
+            ['Video Call', 'Voice Call'], // Konselor 4: Bisa Video dan Voice Call
+            ['Chat', 'Video Call', 'Voice Call'] // Konselor 5: Bisa semua metode
+        ];
+
         for ($i = 1; $i <= 5; $i++) {
             User::updateOrCreate(
                 ['email' => 'konselor' . $i . '@moodly.com'],
                 [
                     'name' => 'Konselor ' . $i,
                     'role' => 'konselor',
-                    'status' => $konselorStatuses[array_rand($konselorStatuses)],
+                    'status' => 'Terverifikasi',
                     'phone' => '082' . str_pad($i, 9, '0', STR_PAD_LEFT),
                     'city' => ['Yogyakarta', 'Jakarta', 'Bandung', 'Surabaya'][array_rand(['Yogyakarta', 'Jakarta', 'Bandung', 'Surabaya'])],
                     'password' => Hash::make('password'),
                     'email_verified_at' => now(),
                     'surat_izin_praktik' => 'SIP-00' . $i,
-                    'spesialisasi' => ['Keluarga', 'Anak', 'Remaja'], // Array langsung, cast di model akan handle
+                    'spesialisasi' => $specLists[$i - 1], // Data spesialisasi yang sudah di-update
+                    'metode_layanan' => $metodeLists[$i - 1], // Data metode layanan
                     'rating' => rand(40, 50) / 10,
                 ]
             );
         }
 
         // --- CUSTOMER ---
-        // PERBAIKAN: Tambahkan 'Verifikasi' ke kemungkinan status
-        $customerStatuses = ['Offline', 'Banned', 'Verifikasi', 'Verifikasi', 'Verifikasi']; // Perbanyak Verifikasi
+        $customerStatuses = ['Offline', 'Banned', 'Verifikasi', 'Verifikasi', 'Verifikasi'];
         for ($i = 1; $i <= 10; $i++) {
             User::updateOrCreate(
                 ['email' => 'customer' . $i . '@moodly.com'],
@@ -92,6 +113,6 @@ class UserSeeder extends Seeder
             );
         }
 
-        $this->command->info('UserSeeder berhasil dijalankan.');
+        $this->command->info('UserSeeder berhasil dijalankan (termasuk spesialisasi Voice Call ID:9).');
     }
 }

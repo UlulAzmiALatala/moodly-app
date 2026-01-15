@@ -1,273 +1,444 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import apiClient from "../../../api/axios";
+import {
+    Search,
+    MoreHorizontal,
+    Shield,
+    ShieldOff,
+    Trash2,
+    ChevronLeft,
+    ChevronRight,
+    Loader2,
+} from "lucide-react";
 
-// Impor modal-modal
+// Import Modal
 import BlockModal from "./modals/BlockModal";
 import UnblockModal from "./modals/UnblockModal";
 import DeleteModal from "./modals/DeleteModal";
 
-// Ikon-ikon
-const DetailIcon = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-gray-500 hover:text-gray-700"
-    >
-        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-        <circle cx="12" cy="12" r="3"></circle>
-    </svg>
-);
-const BlockIcon = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-orange-500 hover:text-orange-700"
-    >
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
-    </svg>
-);
-const UnblockIcon = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-green-500 hover:text-green-700"
-    >
-        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-        <polyline points="22 4 12 14.01 9 11.01"></polyline>
-    </svg>
-);
-const DeleteIcon = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-red-500 hover:text-red-700"
-    >
-        <polyline points="3 6 5 6 21 6" />
-        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-    </svg>
-);
+// 1. Import Hook Toast
+import { useToast } from "../../../context/ToastContext";
 
-// Badge Status (Sama seperti di halaman Admin)
+// --- Komponen Badge Status ---
 const StatusBadge = ({ status }) => {
     const styles = {
-        Online: "bg-green-100 text-green-700",
-        Offline: "bg-gray-100 text-gray-700",
-        Banned: "bg-red-100 text-red-700",
+        Active: "bg-green-50 text-green-700 border-green-200",
+        Online: "bg-green-50 text-green-700 border-green-200",
+        Offline: "bg-gray-50 text-gray-600 border-gray-200",
+        Banned: "bg-red-50 text-red-700 border-red-200 font-bold",
+        Verifikasi: "bg-yellow-50 text-yellow-700 border-yellow-200",
     };
+    const currentStyle = styles[status] || styles.Offline;
+
     return (
         <span
-            className={`px-3 py-1 text-sm font-medium rounded-full ${
-                styles[status] || styles.Offline
-            }`}
+            className={`px-2.5 py-0.5 text-xs font-bold rounded-full border ${currentStyle}`}
         >
-            {status}
+            {status || "Offline"}
         </span>
     );
 };
 
-const CustomerManagementPage = () => {
-    const [customers, setCustomers] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+// --- KOMPONEN PAGINASI (Gaya Moodly - Cyan) ---
+const Pagination = ({ meta, onPageChange }) => {
+    if (!meta || meta.total === 0) return null;
 
-    // State modals
+    const { current_page, last_page, from, to, total } = meta;
+
+    const getPageNumbers = () => {
+        let pages = [];
+        let startPage = Math.max(1, current_page - 2);
+        let endPage = Math.min(last_page, startPage + 4);
+
+        if (endPage - startPage < 4) {
+            startPage = Math.max(1, endPage - 4);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            pages.push(i);
+        }
+        return pages;
+    };
+
+    const pageNumbers = getPageNumbers();
+
+    return (
+        <div className="px-6 py-4 border-t border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4 bg-white">
+            <p className="text-sm text-gray-500">
+                Menampilkan{" "}
+                <span className="font-bold text-gray-900">{from || 0}</span>{" "}
+                sampai{" "}
+                <span className="font-bold text-gray-900">{to || 0}</span> dari{" "}
+                <span className="font-bold text-gray-900">{total}</span> data
+            </p>
+
+            <div className="flex items-center gap-2">
+                <button
+                    onClick={() => onPageChange(current_page - 1)}
+                    disabled={current_page === 1}
+                    className="p-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    <ChevronLeft size={18} />
+                </button>
+
+                {pageNumbers.map((page) => (
+                    <button
+                        key={page}
+                        onClick={() => onPageChange(page)}
+                        className={`w-9 h-9 rounded-xl text-sm font-bold transition-all shadow-sm border ${
+                            current_page === page
+                                ? "bg-cyan-400 text-white border-cyan-400 shadow-cyan-200"
+                                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                        }`}
+                    >
+                        {page}
+                    </button>
+                ))}
+
+                <button
+                    onClick={() => onPageChange(current_page + 1)}
+                    disabled={current_page === last_page}
+                    className="p-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    <ChevronRight size={18} />
+                </button>
+            </div>
+        </div>
+    );
+};
+
+const CustomerManagementPage = () => {
+    // --- State Data ---
+    const [customers, setCustomers] = useState([]);
+    const [pagination, setPagination] = useState({});
+    const [currentPage, setCurrentPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState("");
+
+    // --- State UI ---
+    const [loading, setLoading] = useState(true);
+
+    // 2. Panggil Hook Toast
+    const { addToast } = useToast();
+
+    // --- State Modals ---
     const [isBlockModalOpen, setBlockModalOpen] = useState(false);
     const [isUnblockModalOpen, setUnblockModalOpen] = useState(false);
     const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
     const [selectedCustomer, setSelectedCustomer] = useState(null);
 
-    const fetchData = async () => {
+    // --- Fetch Data ---
+    const fetchData = async (page = 1, search = "") => {
+        setLoading(true);
         try {
-            setLoading(true);
             const response = await apiClient.get(
-                "/api/super-admin/customer-management"
+                `/api/super-admin/customer-management?page=${page}&search=${search}`
             );
-            setCustomers(response.data);
-            setError(null);
+
+            if (response.data.data) {
+                setCustomers(response.data.data);
+                setPagination({
+                    current_page: response.data.current_page,
+                    last_page: response.data.last_page,
+                    total: response.data.total,
+                    from: response.data.from,
+                    to: response.data.to,
+                });
+            } else {
+                setCustomers(response.data);
+                setPagination({});
+            }
         } catch (err) {
-            setError("Gagal memuat data customer.");
             console.error(err);
+            // 3. Toast Error Fetch
+            addToast("Gagal memuat data customer.", "error");
         } finally {
             setLoading(false);
         }
     };
+
     useEffect(() => {
-        fetchData();
-    }, []);
+        const timer = setTimeout(() => {
+            fetchData(currentPage, searchTerm);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [currentPage, searchTerm]);
 
-    // Handlers CRUD (Block, Unblock, Delete) - Sama seperti Admin & Konselor
-    const handleBlock = async () => {
+    const handlePageChange = (page) => {
+        if (page >= 1 && page <= (pagination.last_page || 1)) {
+            setCurrentPage(page);
+        }
+    };
+
+    // --- 4. Update Logic Action dengan Toast ---
+    const executeAction = async (actionType) => {
+        if (!selectedCustomer) return;
         try {
-            await apiClient.post(
-                `/api/super-admin/customer-management/${selectedCustomer.id}/block`
-            );
+            let url = `/api/super-admin/customer-management/${selectedCustomer.id}`;
+            let msg = "";
+
+            if (actionType === "block") {
+                url += "/block";
+                msg = "Customer berhasil diblokir.";
+            } else if (actionType === "unblock") {
+                url += "/unblock";
+                msg = "Blokir customer berhasil dibuka.";
+            } else if (actionType === "delete") {
+                await apiClient.delete(url);
+                msg = "Customer berhasil dihapus permanen.";
+            } else {
+                await apiClient.post(url);
+            }
+
+            if (actionType !== "delete") await apiClient.post(url);
+
             setBlockModalOpen(false);
-            fetchData();
-        } catch (err) {
-            console.error("Gagal memblokir:", err);
-        }
-    };
-    const handleUnblock = async () => {
-        try {
-            await apiClient.post(
-                `/api/super-admin/customer-management/${selectedCustomer.id}/unblock`
-            );
             setUnblockModalOpen(false);
-            fetchData();
-        } catch (err) {
-            console.error("Gagal unblock:", err);
-        }
-    };
-    const handleDelete = async () => {
-        try {
-            await apiClient.delete(
-                `/api/super-admin/customer-management/${selectedCustomer.id}`
-            );
             setDeleteModalOpen(false);
-            fetchData();
+            fetchData(currentPage, searchTerm);
+
+            // Toast Sukses
+            addToast(msg, "success");
         } catch (err) {
-            console.error("Gagal menghapus:", err);
+            // Toast Gagal
+            addToast(
+                err.response?.data?.message || "Gagal melakukan aksi.",
+                "error"
+            );
         }
     };
 
-    const openModal = (setter, customer = null) => {
+    const openModal = (setter, customer) => {
         setSelectedCustomer(customer);
         setter(true);
     };
 
-    if (loading) return <div className="p-6">Memuat data...</div>;
-    if (error) return <div className="p-6 text-red-500">{error}</div>;
-
     return (
-        <div className="p-6">
-            <h1 className="text-2xl font-bold mb-6">Data Customer</h1>
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                <table className="w-full text-left">
-                    <thead className="bg-blue-100">
-                        <tr>
-                            <th className="p-4">No</th>
-                            <th className="p-4">ID Customer</th>
-                            <th className="p-4">Nama</th>
-                            <th className="p-4">Jenis Kelamin</th>{" "}
-                            {/* Placeholder */}
-                            <th className="p-4">No Telepon</th>
-                            <th className="p-4">Kota</th>
-                            <th className="p-4">Email</th>
-                            <th className="p-4">Status</th>
-                            <th className="p-4">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {customers.map((customer, index) => (
-                            <tr key={customer.id} className="border-t">
-                                <td className="p-4">{index + 1}</td>
-                                <td className="p-4">{`#${String(
-                                    customer.id
-                                ).padStart(5, "0")}`}</td>
-                                <td className="p-4 font-medium">
-                                    {customer.name}
-                                </td>
-                                <td className="p-4">Perempuan</td>{" "}
-                                {/* Placeholder */}
-                                <td className="p-4">{customer.phone || "-"}</td>
-                                <td className="p-4">{customer.city || "-"}</td>
-                                <td className="p-4">{customer.email}</td>
-                                <td className="p-4">
-                                    <StatusBadge status={customer.status} />
-                                </td>
-                                <td className="p-4 flex gap-3 items-center">
-                                    <Link
-                                        to={`/admin/customer-management/${customer.id}`}
-                                    >
-                                        <DetailIcon />
-                                    </Link>
-                                    {customer.status === "Banned" ? (
-                                        <button
-                                            onClick={() =>
-                                                openModal(
-                                                    setUnblockModalOpen,
-                                                    customer
-                                                )
-                                            }
-                                        >
-                                            <UnblockIcon />
-                                        </button>
-                                    ) : (
-                                        <button
-                                            onClick={() =>
-                                                openModal(
-                                                    setBlockModalOpen,
-                                                    customer
-                                                )
-                                            }
-                                        >
-                                            <BlockIcon />
-                                        </button>
-                                    )}
-                                    <button
-                                        onClick={() =>
-                                            openModal(
-                                                setDeleteModalOpen,
-                                                customer
-                                            )
-                                        }
-                                    >
-                                        <DeleteIcon />
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+        <div className="space-y-6 p-6 pb-20 font-sans text-gray-600">
+            {/* Header & Search */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">
+                        Data Customer
+                    </h1>
+                    <p className="text-sm text-gray-500 mt-1">
+                        Kelola pengguna aplikasi (pasien/klien).
+                    </p>
+                </div>
+
+                <div className="relative w-full md:w-72">
+                    <input
+                        type="text"
+                        placeholder="Cari nama, email, kota..."
+                        value={searchTerm}
+                        onChange={(e) => {
+                            setSearchTerm(e.target.value);
+                            setCurrentPage(1);
+                        }}
+                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100 transition-all text-sm shadow-sm"
+                    />
+                    <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                </div>
             </div>
 
-            {/* Render Modals */}
+            {/* Table Content */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm text-gray-600 whitespace-nowrap">
+                        <thead className="bg-gray-50/50 border-b border-gray-100 text-xs uppercase text-gray-500 font-semibold">
+                            <tr>
+                                <th className="px-6 py-4">ID</th>
+                                <th className="px-6 py-4 text-center">
+                                    Avatar
+                                </th>
+                                <th className="px-6 py-4">Nama Lengkap</th>
+                                <th className="px-6 py-4">Email</th>
+                                <th className="px-6 py-4">No. Telepon</th>
+                                <th className="px-6 py-4">Jenis Kelamin</th>
+                                <th className="px-6 py-4">Kota</th>
+                                <th className="px-6 py-4 text-center">
+                                    Status
+                                </th>
+                                <th className="px-6 py-4 text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                            {loading ? (
+                                <tr>
+                                    <td
+                                        colSpan="9"
+                                        className="px-6 py-12 text-center"
+                                    >
+                                        <div className="inline-flex flex-col items-center gap-2">
+                                            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-cyan-500 border-t-transparent"></div>
+                                            <span className="text-gray-400 text-xs">
+                                                Memuat data...
+                                            </span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : customers.length === 0 ? (
+                                <tr>
+                                    <td
+                                        colSpan="9"
+                                        className="px-6 py-12 text-center text-gray-400 italic"
+                                    >
+                                        Tidak ada data customer ditemukan.
+                                    </td>
+                                </tr>
+                            ) : (
+                                customers.map((customer) => (
+                                    <tr
+                                        key={customer.id}
+                                        className="hover:bg-cyan-50/30 transition-colors group"
+                                    >
+                                        {/* 1. ID */}
+                                        <td className="px-6 py-4">
+                                            <span className="font-mono text-gray-500 bg-gray-100 px-2 py-1 rounded text-xs">
+                                                #
+                                                {String(customer.id).padStart(
+                                                    3,
+                                                    "0"
+                                                )}
+                                            </span>
+                                        </td>
+
+                                        {/* 2. Avatar */}
+                                        <td className="px-6 py-4 text-center">
+                                            <div className="flex justify-center">
+                                                <img
+                                                    src={
+                                                        customer.avatar ||
+                                                        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                                            customer.name
+                                                        )}&background=EBF4FF&color=0891b2&bold=true`
+                                                    }
+                                                    alt={customer.name}
+                                                    className="w-8 h-8 rounded-full object-cover border border-gray-200 bg-gray-50"
+                                                    onError={(e) => {
+                                                        e.target.onerror = null;
+                                                        e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                                            customer.name
+                                                        )}&background=EBF4FF&color=0891b2&bold=true`;
+                                                    }}
+                                                />
+                                            </div>
+                                        </td>
+
+                                        {/* 3. Nama */}
+                                        <td className="px-6 py-4 font-bold text-gray-900">
+                                            {customer.name}
+                                        </td>
+
+                                        {/* 4. Email */}
+                                        <td className="px-6 py-4">
+                                            {customer.email}
+                                        </td>
+
+                                        {/* 5. No Telepon */}
+                                        <td className="px-6 py-4">
+                                            {customer.phone || "-"}
+                                        </td>
+
+                                        {/* 6. Jenis Kelamin */}
+                                        <td className="px-6 py-4">
+                                            {customer.gender || "-"}
+                                        </td>
+
+                                        {/* 7. Kota */}
+                                        <td className="px-6 py-4">
+                                            {customer.city || "-"}
+                                        </td>
+
+                                        {/* 8. Status */}
+                                        <td className="px-6 py-4 text-center">
+                                            <StatusBadge
+                                                status={customer.status}
+                                            />
+                                        </td>
+
+                                        {/* 9. Aksi */}
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex justify-end items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                                                <Link
+                                                    to={`/admin/customer-management/${customer.id}`}
+                                                    className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                                                    title="Detail"
+                                                >
+                                                    <MoreHorizontal className="w-4 h-4" />
+                                                </Link>
+
+                                                {customer.status ===
+                                                "Banned" ? (
+                                                    <button
+                                                        onClick={() =>
+                                                            openModal(
+                                                                setUnblockModalOpen,
+                                                                customer
+                                                            )
+                                                        }
+                                                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                                        title="Buka Blokir"
+                                                    >
+                                                        <Shield className="w-4 h-4" />
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={() =>
+                                                            openModal(
+                                                                setBlockModalOpen,
+                                                                customer
+                                                            )
+                                                        }
+                                                        className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                                                        title="Blokir"
+                                                    >
+                                                        <ShieldOff className="w-4 h-4" />
+                                                    </button>
+                                                )}
+
+                                                <button
+                                                    onClick={() =>
+                                                        openModal(
+                                                            setDeleteModalOpen,
+                                                            customer
+                                                        )
+                                                    }
+                                                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                    title="Hapus"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Pagination */}
+                <Pagination meta={pagination} onPageChange={handlePageChange} />
+            </div>
+
+            {/* Modals */}
             <BlockModal
                 isOpen={isBlockModalOpen}
                 onClose={() => setBlockModalOpen(false)}
-                onConfirm={handleBlock}
-                customer={selectedCustomer}
+                onConfirm={() => executeAction("block")}
+                customerName={selectedCustomer?.name}
             />
             <UnblockModal
                 isOpen={isUnblockModalOpen}
                 onClose={() => setUnblockModalOpen(false)}
-                onConfirm={handleUnblock}
-                customer={selectedCustomer}
+                onConfirm={() => executeAction("unblock")}
+                customerName={selectedCustomer?.name}
             />
             <DeleteModal
                 isOpen={isDeleteModalOpen}
                 onClose={() => setDeleteModalOpen(false)}
-                onConfirm={handleDelete}
+                onConfirm={() => executeAction("delete")}
                 customerName={selectedCustomer?.name}
             />
         </div>

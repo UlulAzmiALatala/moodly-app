@@ -1,198 +1,268 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import apiClient from "../../../api/axios";
+import { useAuth } from "../../../context/AuthContext";
+import Echo from "laravel-echo";
+import Pusher from "pusher-js";
+import { ChevronLeft, Send, User } from "lucide-react";
 
-const MobileLayout = ({ children }) => (
-  <div className="flex justify-center min-h-screen bg-[#FFF9F8]">
-    <div className="w-full max-w-md min-h-screen bg-[#FFF9F8] flex flex-col">
-      {children}
-    </div>
-  </div>
-);
+window.Pusher = Pusher;
 
-const BackArrowIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="h-6 w-6"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2.5}
-  >
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-  </svg>
-);
-
-const PlayIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="h-6 w-6 ml-1"
-    fill="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path d="M8 5v14l11-7z" />
-  </svg>
-);
+// --- Inisialisasi Echo ---
+const echo = new Echo({
+    broadcaster: "reverb",
+    key: import.meta.env.VITE_REVERB_APP_KEY,
+    wsHost: import.meta.env.VITE_REVERB_HOST,
+    wsPort: import.meta.env.VITE_REVERB_PORT ?? 80,
+    wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
+    forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? "https") === "https",
+    enabledTransports: ["ws", "wss"],
+    authorizer: (channel, options) => {
+        return {
+            authorize: (socketId, callback) => {
+                apiClient
+                    .post("/api/broadcasting/auth", {
+                        socket_id: socketId,
+                        channel_name: channel.name,
+                    })
+                    .then((response) => callback(null, response.data))
+                    .catch((error) => callback(error));
+            },
+        };
+    },
+});
 
 const faqsList = [
-  "Apa yang harus dilakukan jika lupa kata sandi?",
-  "Bagaimana cara memulai sesi curhat?",
-  "Bagaimana cara berlangganan pro?",
-  "Berapa lama durasi sesi curhat?",
-  "Apa yang terjadi jika saya terlambat?",
+    "Lupa kata sandi?",
+    "Cara mulai sesi curhat?",
+    "Langganan paket Pro?",
+    "Durasi sesi berapa lama?",
+    "Saya terlambat hadir?",
 ];
 
-const answers = {
-  "Apa yang harus dilakukan jika lupa kata sandi?":
-    "Jika kamu lupa kata sandi kamu bisa masuk ke profile lalu akan ada pilihan menu lupa kata sandi. Pilih menu tersebut dan kamu akan di arahkan untuk membuat kata sandi baru.",
-  "Bagaimana cara memulai sesi curhat?":
-    "Untuk memulai sesi curhat, kembali ke Beranda, pilih psikolog, dan jadwalkan sesi.",
-  "Bagaimana cara berlangganan pro?":
-    "Berlangganan pro dapat dilakukan di menu 'Profile' dengan memilih paket yang diinginkan.",
-  "Berapa lama durasi sesi curhat?":
-    "Durasi standar untuk sesi curhat adalah 60 menit.",
-  "Apa yang terjadi jika saya terlambat?":
-    "Jika terlambat lebih dari 15 menit, sesi akan dianggap hangus. Harap hubungi admin jika ada kendala.",
-};
+export default function ChatAdminPage() {
+    const navigate = useNavigate();
+    const { user } = useAuth();
+    const messagesEndRef = useRef(null);
 
-export default function FAQChatAdminPage() {
-  const navigate = useNavigate();
-  const messagesEndRef = useRef(null);
+    const [messages, setMessages] = useState([]);
+    const [inputText, setInputText] = useState("");
+    const [loading, setLoading] = useState(true);
 
-  const [messages, setMessages] = useState([
-    { sender: "admin", text: "Halo! Ada yang bisa saya bantu hari ini?" },
-  ]);
-  const [inputText, setInputText] = useState("");
+    // Auto Scroll
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages]);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    // 1. Fetch History & Listen Real-time
+    useEffect(() => {
+        if (!user) return;
 
-  const sendMessage = (text) => {
-    if (!text.trim()) return;
+        const fetchMessages = async () => {
+            try {
+                const response = await apiClient.get("/api/help/messages");
+                setMessages(response.data);
+            } catch (error) {
+                console.error("Gagal load chat bantuan:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchMessages();
 
-    setMessages((prev) => [...prev, { sender: "user", text }]);
+        const channelName = `help.user.${user.id}`;
+        const channel = echo.private(channelName);
 
-    // Balasan otomatis jika FAQ dikenali
-    if (answers[text]) {
-      setTimeout(() => {
-        setMessages((prev) => [
-          ...prev,
-          { sender: "admin", text: answers[text] },
-        ]);
-      }, 500);
-    }
-  };
+        channel.listen(".NewHelpMessage", (e) => {
+            if (e.message.sender_id === user.id) return;
+            setMessages((prev) => {
+                if (!prev.find((m) => m.id === e.message.id)) {
+                    return [...prev, e.message];
+                }
+                return prev;
+            });
+        });
 
-  const handleSendClick = () => {
-    if (!inputText.trim()) return;
-    sendMessage(inputText.trim());
-    setInputText("");
-  };
+        return () => {
+            echo.leave(channelName);
+        };
+    }, [user]);
 
-  const handleInputKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendClick();
-    }
-  };
+    // 2. Fungsi Kirim Pesan
+    const sendMessage = async (text) => {
+        if (!text.trim()) return;
 
-  return (
-    <MobileLayout>
-      <div className="flex flex-col h-full w-full bg-[#00D1FF] relative">
-        {/* Header — tetap di atas saat scroll */}
-        <header className="w-full p-4 pt-8 sticky top-0 z-20 bg-[#00D1FF]">
-          <div className="flex items-center gap-4">
-            <button
-              className="text-white"
-              onClick={() => navigate(-1)}
-              aria-label="Kembali"
-            >
-              <BackArrowIcon />
-            </button>
-            <img
-              src="/images/Admin_Moodly.png"
-              alt="Admin Avatar"
-              className="w-12 h-12 rounded-full object-cover scale-[1.5]"
-              style={{ borderRadius: "9999px" }}
-            />
-            <div>
-              <h1 className="font-semibold text-white text-base">Admin Moodly</h1>
-              <p className="text-xs text-white/90">Online</p>
-            </div>
-          </div>
-        </header>
+        const tempId = Date.now();
+        const newMessage = {
+            id: tempId,
+            user_id: user.id,
+            sender_id: user.id,
+            message: text,
+            created_at: new Date().toISOString(),
+            isOptimistic: true,
+        };
 
-        {/* Chat area yang bisa di-scroll */}
-        <div className="flex-1 flex flex-col bg-white pt-8 z-10 rounded-t-[2.5rem] overflow-y-auto">
-          <main className="flex-1 p-4 space-y-4">
-            {messages.map((msg, i) => (
-              <div
-                key={i}
-                className={`flex ${
-                  msg.sender === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
-                <div
-                  className={`max-w-xs md:max-w-md px-5 py-3 rounded-2xl ${
-                    msg.sender === "user"
-                      ? "rounded-tr-none bg-white text-gray-800 border-2 border-black"
-                      : "rounded-tl-none bg-white text-gray-800 border-2 border-black"
-                  }`}
-                >
-                  <p className="text-sm leading-relaxed whitespace-pre-line">
-                    {msg.text}
-                  </p>
+        setMessages((prev) => [...prev, newMessage]);
+        setInputText("");
+
+        try {
+            const response = await apiClient.post("/api/help/messages", {
+                message: text,
+            });
+            setMessages((prev) =>
+                prev.map((msg) => (msg.id === tempId ? response.data : msg))
+            );
+        } catch (error) {
+            console.error("Gagal kirim pesan:", error);
+            setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
+            alert("Gagal mengirim pesan. Periksa koneksi Anda.");
+        }
+    };
+
+    const handleSendClick = () => {
+        sendMessage(inputText);
+    };
+
+    const handleInputKeyDown = (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSendClick();
+        }
+    };
+
+    return (
+        <div className="flex justify-center h-screen bg-gray-50 font-sans overflow-hidden">
+            {/* Inject CSS Khusus untuk Hide Scrollbar */}
+            <style>{`
+                .scrollbar-hide::-webkit-scrollbar {
+                    display: none;
+                }
+                .scrollbar-hide {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                }
+            `}</style>
+
+            <div className="w-full max-w-md h-full bg-white flex flex-col shadow-xl relative">
+                {/* Header (Fixed) */}
+                <header className="flex-shrink-0 bg-gradient-to-r from-cyan-500 to-blue-600 p-4 pt-6 flex items-center gap-3 shadow-md z-20">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="p-2 rounded-full hover:bg-white/20 text-white transition-colors"
+                    >
+                        <ChevronLeft size={24} />
+                    </button>
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center border-2 border-white/30 backdrop-blur-sm">
+                            <User size={20} className="text-white" />
+                        </div>
+                        <div>
+                            <h1 className="font-bold text-white text-base leading-tight">
+                                Admin Bantuan
+                            </h1>
+                            <div className="flex items-center gap-1.5">
+                                <span
+                                    className={`w-2 h-2 rounded-full ${
+                                        loading
+                                            ? "bg-yellow-400"
+                                            : "bg-green-400"
+                                    } animate-pulse`}
+                                ></span>
+                                <span className="text-xs text-white/90 font-medium">
+                                    {loading ? "Menghubungkan..." : "Online"}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                {/* Chat Area Container */}
+                <div className="flex-1 bg-gray-50 relative flex flex-col overflow-hidden">
+                    {/* Background Pattern */}
+                    <div
+                        className="absolute inset-0 opacity-5 pointer-events-none"
+                        style={{
+                            backgroundImage:
+                                "radial-gradient(#cbd5e1 1px, transparent 1px)",
+                            backgroundSize: "20px 20px",
+                        }}
+                    ></div>
+
+                    {/* Chat Messages List - Added 'scrollbar-hide' class */}
+                    <main className="flex-1 overflow-y-auto p-4 space-y-4 z-10 pb-4 scrollbar-hide">
+                        {!loading && messages.length === 0 && (
+                            <div className="flex justify-center mt-10">
+                                <div className="bg-white px-6 py-4 rounded-2xl shadow-sm text-center border border-gray-100 max-w-[80%]">
+                                    <p className="text-sm text-gray-600">
+                                        Halo, Sobat Moodly! 👋 <br />
+                                        Ada kendala teknis atau pertanyaan soal
+                                        layanan? Admin siap membantu di sini.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {messages.map((msg, i) => {
+                            const isMe = msg.sender_id === user?.id;
+                            return (
+                                <div
+                                    key={msg.id || i}
+                                    className={`flex w-full ${
+                                        isMe ? "justify-end" : "justify-start"
+                                    }`}
+                                >
+                                    <div
+                                        className={`max-w-[85%] px-5 py-3.5 text-sm leading-relaxed shadow-sm relative transition-all ${
+                                            isMe
+                                                ? "bg-cyan-500 text-white rounded-2xl rounded-tr-none"
+                                                : "bg-white text-gray-800 rounded-2xl rounded-tl-none border border-gray-200"
+                                        } ${
+                                            msg.isOptimistic ? "opacity-70" : ""
+                                        }`}
+                                    >
+                                        {msg.message}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        <div ref={messagesEndRef} />
+                    </main>
                 </div>
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </main>
 
-          {/* FAQ bawah chat */}
-          <section className="px-4 pb-4">
-            <div className="border border-gray-300 rounded-lg divide-y divide-gray-300 bg-white text-left shadow-sm">
-              <div className="flex items-center px-4 py-3 gap-2">
-                <div className="flex items-center justify-center w-6 h-6 rounded-full border border-gray-400">
-                  <span className="text-xs font-semibold text-gray-600">?</span>
-                </div>
-                <span className="font-semibold text-gray-700 text-sm">FAQ</span>
-              </div>
+                {/* Footer Input (Fixed) */}
+                <footer className="flex-shrink-0 bg-white p-3 border-t border-gray-100 z-20">
+                    {/* FAQ Shortcuts - Added 'scrollbar-hide' */}
+                    <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide mb-1 px-1">
+                        {faqsList.map((faq, i) => (
+                            <button
+                                key={i}
+                                onClick={() => sendMessage(faq)}
+                                className="whitespace-nowrap px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-full text-[11px] font-medium text-gray-600 hover:bg-cyan-50 hover:text-cyan-600 hover:border-cyan-200 transition-colors"
+                            >
+                                {faq}
+                            </button>
+                        ))}
+                    </div>
 
-              {faqsList.map((faq, i) => (
-                <button
-                  key={i}
-                  className="w-full text-left px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-                  onClick={() => sendMessage(faq)}
-                >
-                  {faq}
-                </button>
-              ))}
+                    <div className="flex items-center gap-3 bg-gray-50 p-2 pr-2 pl-4 rounded-full border border-gray-200 focus-within:border-cyan-400 focus-within:ring-2 focus-within:ring-cyan-100 transition-all shadow-sm">
+                        <input
+                            type="text"
+                            value={inputText}
+                            onChange={(e) => setInputText(e.target.value)}
+                            onKeyDown={handleInputKeyDown}
+                            className="flex-grow bg-transparent outline-none text-sm text-gray-700 placeholder-gray-400 h-9"
+                            placeholder="Tulis pesan bantuan..."
+                        />
+                        <button
+                            onClick={handleSendClick}
+                            disabled={!inputText.trim()}
+                            className="w-9 h-9 flex items-center justify-center bg-cyan-500 text-white rounded-full hover:bg-cyan-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all shadow-md active:scale-95 flex-shrink-0"
+                        >
+                            <Send size={16} />
+                        </button>
+                    </div>
+                </footer>
             </div>
-          </section>
-
-          {/* Input tetap di bawah */}
-          <footer className="bg-white p-4 sticky bottom-0">
-            <div className="flex items-center space-x-3">
-              <textarea
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyDown={handleInputKeyDown}
-                className="flex-grow w-full px-5 py-3 bg-white border-2 border-black rounded-xl focus:outline-none resize-none"
-                rows={1}
-                placeholder="Ketik pesan..."
-              />
-              <button
-                onClick={handleSendClick}
-                disabled={!inputText.trim()}
-                className="bg-[#00D1FF] text-white w-12 h-12 flex items-center justify-center rounded-full border-2 border-black flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label="Kirim Pesan"
-              >
-                <PlayIcon />
-              </button>
-            </div>
-          </footer>
         </div>
-      </div>
-    </MobileLayout>
-  );
+    );
 }
