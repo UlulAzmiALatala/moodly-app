@@ -1,0 +1,114 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.2.10">
+  <diagram name="Halaman-1" id="MOtVAHNrk5lNdyP9p5g_">
+    <mxGraphModel dx="786" dy="497" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-32" parent="1" style="swimlane;childLayout=stackLayout;resizeParent=1;resizeParentMax=0;startSize=20;html=1;" value="Mengelola Jadwal Ketersediaan (Konselor)" vertex="1">
+          <mxGeometry height="1010" width="520" x="30" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-33" parent="NfrjoVSsBagVf-9eMVJK-32" style="swimlane;startSize=20;html=1;" value="Konselor" vertex="1">
+          <mxGeometry height="990" width="240" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-34" parent="NfrjoVSsBagVf-9eMVJK-33" style="ellipse;html=1;shape=startState;" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="102.49999999999955" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-35" parent="NfrjoVSsBagVf-9eMVJK-33" style="rounded=1;whiteSpace=wrap;html=1;" value="Membuka Menu &#39;Atur Jadwal" vertex="1">
+          <mxGeometry height="50" width="125" x="55" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-36" edge="1" parent="NfrjoVSsBagVf-9eMVJK-33" source="NfrjoVSsBagVf-9eMVJK-34" style="html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=light-dark(#36393D,#FFFFFF);rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fillColor=#eeeeee;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="NfrjoVSsBagVf-9eMVJK-35" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="69.99999999999955" y="40" as="sourcePoint" />
+            <mxPoint x="50" y="100" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-37" edge="1" parent="NfrjoVSsBagVf-9eMVJK-33" source="NfrjoVSsBagVf-9eMVJK-38" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="NfrjoVSsBagVf-9eMVJK-40">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-38" parent="NfrjoVSsBagVf-9eMVJK-33" style="rounded=1;whiteSpace=wrap;html=1;" value="Memilih Tanggal" vertex="1">
+          <mxGeometry height="50" width="125" x="57.5" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-39" edge="1" parent="NfrjoVSsBagVf-9eMVJK-33" source="NfrjoVSsBagVf-9eMVJK-40" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="NfrjoVSsBagVf-9eMVJK-41">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-40" parent="NfrjoVSsBagVf-9eMVJK-33" style="rounded=1;whiteSpace=wrap;html=1;" value="Input Jam Mulai &amp;amp; Jam Selesai" vertex="1">
+          <mxGeometry height="45" width="110" x="65" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-41" parent="NfrjoVSsBagVf-9eMVJK-33" style="rounded=1;whiteSpace=wrap;html=1;" value="Klik Tombol &#39;Simpan Slot" vertex="1">
+          <mxGeometry height="50" width="125" x="57.5" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-42" parent="NfrjoVSsBagVf-9eMVJK-33" style="ellipse;html=1;shape=endState;fillColor=light-dark(#FFFFFF,#000000);strokeColor=light-dark(#ff0000, #ffffff);" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="105" y="930" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-43" edge="1" parent="NfrjoVSsBagVf-9eMVJK-33" source="NfrjoVSsBagVf-9eMVJK-44" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="NfrjoVSsBagVf-9eMVJK-42">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-44" parent="NfrjoVSsBagVf-9eMVJK-33" style="rounded=1;whiteSpace=wrap;html=1;" value="Melihat Jadwal Baru" vertex="1">
+          <mxGeometry height="40" width="127.5" x="56.25" y="835" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-45" parent="NfrjoVSsBagVf-9eMVJK-32" style="swimlane;startSize=20;html=1;" value="Sistem" vertex="1">
+          <mxGeometry height="990" width="280" x="240" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-46" parent="NfrjoVSsBagVf-9eMVJK-45" style="rounded=1;whiteSpace=wrap;html=1;" value="Menampilkan Kalender &amp;amp; List Jadwal" vertex="1">
+          <mxGeometry height="50" width="120" x="80" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-47" edge="1" parent="NfrjoVSsBagVf-9eMVJK-45" source="NfrjoVSsBagVf-9eMVJK-49" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="NfrjoVSsBagVf-9eMVJK-56">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-48" edge="1" parent="NfrjoVSsBagVf-9eMVJK-45" source="NfrjoVSsBagVf-9eMVJK-49" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="NfrjoVSsBagVf-9eMVJK-55">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-49" parent="NfrjoVSsBagVf-9eMVJK-45" style="rhombus;whiteSpace=wrap;html=1;" value="Jadwal Bentrok?" vertex="1">
+          <mxGeometry height="80" width="80" x="100" y="610" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-50" edge="1" parent="NfrjoVSsBagVf-9eMVJK-45" source="NfrjoVSsBagVf-9eMVJK-51" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="NfrjoVSsBagVf-9eMVJK-53">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-51" parent="NfrjoVSsBagVf-9eMVJK-45" style="rounded=1;whiteSpace=wrap;html=1;" value="Cek Validasi Input (Jam Selesai &amp;gt; Jam Mulai?)" vertex="1">
+          <mxGeometry height="50" width="125" x="77.5" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-52" edge="1" parent="NfrjoVSsBagVf-9eMVJK-45" source="NfrjoVSsBagVf-9eMVJK-53" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="NfrjoVSsBagVf-9eMVJK-49">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-53" parent="NfrjoVSsBagVf-9eMVJK-45" style="rounded=1;whiteSpace=wrap;html=1;" value="Cek Bentrok Jadwal di Database" vertex="1">
+          <mxGeometry height="50" width="125" x="77.5" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-54" edge="1" parent="NfrjoVSsBagVf-9eMVJK-45" source="NfrjoVSsBagVf-9eMVJK-55" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="NfrjoVSsBagVf-9eMVJK-57">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-55" parent="NfrjoVSsBagVf-9eMVJK-45" style="rounded=1;whiteSpace=wrap;html=1;" value="Simpan Data Jadwal Baru" vertex="1">
+          <mxGeometry height="40" width="110" x="10" y="760" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-56" parent="NfrjoVSsBagVf-9eMVJK-45" style="rounded=1;whiteSpace=wrap;html=1;" value="Tampilkan Alert Error/Jadwal Penuh" vertex="1">
+          <mxGeometry height="40" width="110" x="160" y="710" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-57" parent="NfrjoVSsBagVf-9eMVJK-45" style="rounded=1;whiteSpace=wrap;html=1;" value="Update Tampilan Kalender (Slot Bertambah)" vertex="1">
+          <mxGeometry height="50" width="122.5" x="78.75" y="830" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-63" parent="NfrjoVSsBagVf-9eMVJK-45" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Ya" vertex="1">
+          <mxGeometry height="30" width="60" x="180" y="620" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-64" parent="NfrjoVSsBagVf-9eMVJK-45" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Tidak" vertex="1">
+          <mxGeometry height="30" width="60" x="40" y="620" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-58" edge="1" parent="NfrjoVSsBagVf-9eMVJK-32" source="NfrjoVSsBagVf-9eMVJK-35" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="NfrjoVSsBagVf-9eMVJK-46">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="172.5" y="250" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-59" edge="1" parent="NfrjoVSsBagVf-9eMVJK-32" source="NfrjoVSsBagVf-9eMVJK-46" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="NfrjoVSsBagVf-9eMVJK-38">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-60" edge="1" parent="NfrjoVSsBagVf-9eMVJK-32" source="NfrjoVSsBagVf-9eMVJK-41" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="NfrjoVSsBagVf-9eMVJK-51">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-61" edge="1" parent="NfrjoVSsBagVf-9eMVJK-32" source="NfrjoVSsBagVf-9eMVJK-56" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=0;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="NfrjoVSsBagVf-9eMVJK-40">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="NfrjoVSsBagVf-9eMVJK-62" edge="1" parent="NfrjoVSsBagVf-9eMVJK-32" source="NfrjoVSsBagVf-9eMVJK-57" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="NfrjoVSsBagVf-9eMVJK-44">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,145 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.2.10">
+  <diagram name="Halaman-1" id="f6hYRWrh5gaw1KdWJfTP">
+    <mxGraphModel dx="786" dy="497" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="4jF6FpDafbgQC16psOkb-1" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" value="create($validatedData)&lt;div&gt;Simpan data jadwal baru ke database&lt;/div&gt;">
+          <mxGeometry relative="1" width="80" x="0.0217" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="458.9999999999998" y="520" as="sourcePoint" />
+            <mxPoint x="735" y="520" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4jF6FpDafbgQC16psOkb-3" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlActor;size=80;" value="Konselor &amp;amp; Administrator" vertex="1">
+          <mxGeometry height="680" width="40" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="4jF6FpDafbgQC16psOkb-4" parent="4jF6FpDafbgQC16psOkb-3" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
+          <mxGeometry height="520" width="10" x="15" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="4jF6FpDafbgQC16psOkb-5" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlBoundary;size=80;" value="&amp;nbsp; &amp;nbsp; &amp;nbsp; Halaman&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; Kelola&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp;Jadwal" vertex="1">
+          <mxGeometry height="680" width="80" x="210" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="4jF6FpDafbgQC16psOkb-6" parent="4jF6FpDafbgQC16psOkb-5" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
+          <mxGeometry height="520" width="10" x="35" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="4jF6FpDafbgQC16psOkb-7" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlControl;size=80;" value="AvailabilityController" vertex="1">
+          <mxGeometry height="680" width="80" x="414" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="4jF6FpDafbgQC16psOkb-8" parent="4jF6FpDafbgQC16psOkb-7" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
+          <mxGeometry height="520" width="10" x="35" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="4jF6FpDafbgQC16psOkb-28" edge="1" parent="4jF6FpDafbgQC16psOkb-7" source="4jF6FpDafbgQC16psOkb-8" style="html=1;align=left;spacingLeft=2;endArrow=block;rounded=0;edgeStyle=orthogonalEdgeStyle;curved=0;rounded=0;" target="4jF6FpDafbgQC16psOkb-8" value="Validasi penting! Cek apakah jam yang dipilih&amp;nbsp;&lt;div&gt;bertabrakan dengan jadwal lain di&amp;nbsp;&lt;/div&gt;&lt;div&gt;&lt;code data-path-to-node=&quot;11,2,1,0,0&quot; data-index-in-node=&quot;95&quot;&gt;Ketersediaan Konselor Model&lt;/code&gt;&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="86" y="400" />
+              <mxPoint x="86" y="440" />
+            </Array>
+            <mxPoint x="46" y="400" as="sourcePoint" />
+            <mxPoint x="51" y="430" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4jF6FpDafbgQC16psOkb-9" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlEntity;size=80;" value="Ketersediaan Konselor Model (CounselorAvailability)" vertex="1">
+          <mxGeometry height="680" width="80" x="700" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="4jF6FpDafbgQC16psOkb-10" parent="4jF6FpDafbgQC16psOkb-9" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
+          <mxGeometry height="520" width="10" x="35" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="4jF6FpDafbgQC16psOkb-11" edge="1" parent="1" source="4jF6FpDafbgQC16psOkb-4" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="4jF6FpDafbgQC16psOkb-6" value="Buka Menu &quot;Atur Jadwal&quot;">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="200" y="160" />
+            </Array>
+            <mxPoint x="80" y="160" as="sourcePoint" />
+            <mxPoint x="160" y="160" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4jF6FpDafbgQC16psOkb-12" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="4jF6FpDafbgQC16psOkb-8" value="GET /api/counselor/availability">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="255" y="200" as="sourcePoint" />
+            <mxPoint x="445" y="200" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4jF6FpDafbgQC16psOkb-13" edge="1" parent="1" source="4jF6FpDafbgQC16psOkb-8" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="4jF6FpDafbgQC16psOkb-10" value="Mengambil semua slot waktu&amp;nbsp;&lt;div&gt;milik konselor yang sedang login&lt;/div&gt;">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <Array as="points">
+              <mxPoint x="580" y="240" />
+            </Array>
+            <mxPoint x="490" y="220" as="sourcePoint" />
+            <mxPoint x="570" y="220" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4jF6FpDafbgQC16psOkb-14" edge="1" parent="1" source="4jF6FpDafbgQC16psOkb-10" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;curved=0;rounded=0;" target="4jF6FpDafbgQC16psOkb-8" value="Return Collection (List Jadwal)">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="500" y="280" />
+            </Array>
+            <mxPoint x="610" y="280" as="sourcePoint" />
+            <mxPoint x="530" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4jF6FpDafbgQC16psOkb-15" edge="1" parent="1" source="4jF6FpDafbgQC16psOkb-8" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;curved=0;rounded=0;" target="4jF6FpDafbgQC16psOkb-6" value="Return JSON Response">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="340" y="320" />
+            </Array>
+            <mxPoint x="390" y="330" as="sourcePoint" />
+            <mxPoint x="310" y="330" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4jF6FpDafbgQC16psOkb-16" edge="1" parent="1" source="4jF6FpDafbgQC16psOkb-4" style="html=1;verticalAlign=bottom;endArrow=none;curved=0;rounded=0;endFill=0;startArrow=classic;startFill=1;" target="4jF6FpDafbgQC16psOkb-6" value="Tampilkan Kalender/List Slot">
+          <mxGeometry relative="1" width="80" x="0.0065" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="150" y="360" />
+            </Array>
+            <mxPoint x="90" y="360" as="sourcePoint" />
+            <mxPoint x="170" y="360" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4jF6FpDafbgQC16psOkb-17" edge="1" parent="1" source="4jF6FpDafbgQC16psOkb-4" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" value="Pilih Tanggal &amp;amp; Jam (Start - End)&amp;nbsp;&lt;div&gt;-&amp;gt; Klik &quot;Simpan&quot;&lt;/div&gt;">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="75" y="400" as="sourcePoint" />
+            <mxPoint x="245" y="400" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4jF6FpDafbgQC16psOkb-18" edge="1" parent="1" source="4jF6FpDafbgQC16psOkb-6" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" target="4jF6FpDafbgQC16psOkb-8" value="POST /api/counselor/availability">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <Array as="points">
+              <mxPoint x="330" y="440" />
+            </Array>
+            <mxPoint x="260" y="390" as="sourcePoint" />
+            <mxPoint x="340" y="390" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4jF6FpDafbgQC16psOkb-20" edge="1" parent="1" source="4jF6FpDafbgQC16psOkb-8" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;curved=0;rounded=0;" value="Return Success (201 Created)">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="448.9999999999998" y="600" as="sourcePoint" />
+            <mxPoint x="255" y="600" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4jF6FpDafbgQC16psOkb-21" edge="1" parent="1" source="4jF6FpDafbgQC16psOkb-4" style="html=1;verticalAlign=bottom;endArrow=none;curved=0;rounded=0;endFill=0;startArrow=classic;startFill=1;" target="4jF6FpDafbgQC16psOkb-6" value="Tampilkan Notifikasi&amp;nbsp;&lt;div&gt;&quot;Jadwal Berhasil Ditambahkan&quot;&lt;/div&gt;">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="170" y="640" />
+            </Array>
+            <mxPoint x="65" y="640" as="sourcePoint" />
+            <mxPoint x="245" y="640" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4jF6FpDafbgQC16psOkb-26" edge="1" parent="1" source="4jF6FpDafbgQC16psOkb-10" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;curved=0;rounded=0;" value="Return Created Object">
+          <mxGeometry relative="1" x="-0.0217" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="1015" y="560" as="sourcePoint" />
+            <mxPoint x="459" y="560" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
