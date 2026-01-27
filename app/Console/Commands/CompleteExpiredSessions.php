@@ -4,13 +4,24 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\Booking;
+use App\Services\BookingFinanceService; // <--- WAJIB DI-IMPORT
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
 class CompleteExpiredSessions extends Command
 {
+    // Nama command sesuai punya kamu
     protected $signature = 'app:complete-expired-sessions';
     protected $description = 'Mencari sesi yang sedang berlangsung dan menandainya sebagai "Selesai" jika waktunya telah habis.';
+
+    protected $financeService;
+
+    // Inject Service Calculator di sini
+    public function __construct(BookingFinanceService $financeService)
+    {
+        parent::__construct();
+        $this->financeService = $financeService;
+    }
 
     public function handle()
     {
@@ -23,59 +34,49 @@ class CompleteExpiredSessions extends Command
         $activeStatuses = ['Dijadwalkan', 'Berlangsung', 'Aktif', 'Proses', 'Menunggu Konfirmasi', 'DISETUJUI'];
 
         $bookings = Booking::whereIn('status_pesanan', $activeStatuses)
-            ->with('durasiKonseling')
+            ->with('durasiKonseling') // Eager load biar ringan
             ->get();
 
         if ($bookings->isEmpty()) {
             $this->info('Tidak ada sesi aktif yang ditemukan.');
-            Log::info('Cronjob: Tidak ada sesi aktif.');
             return;
         }
 
         $completedCount = 0;
 
         foreach ($bookings as $booking) {
+            // Validasi data tidak lengkap
             if (!$booking->durasiKonseling || !$booking->tanggal_konsultasi || !$booking->jam_konsultasi) {
-                Log::warning("Cronjob: Booking #{$booking->id} dilewati (data tidak lengkap).");
                 continue;
             }
 
             try {
-                // --- PERBAIKAN LOGIKA PARSING WAKTU ---
-
-                // 1. Ambil string jam dari DB (contoh: "13.00 - 14.00" atau "13:00:00")
+                // --- LOGIKA PARSING WAKTU (SAYA PERTAHANKAN KARENA SUDAH BAGUS) ---
                 $timeStringFromDB = $booking->jam_konsultasi;
-
-                // 2. Bersihkan string itu untuk mendapatkan jam mulai saja
-                // Ganti "." dengan ":" (misal "13.00" -> "13:00")
                 $cleanedTimeString = str_replace('.', ':', $timeStringFromDB);
-
-                // 3. Ambil 5 karakter pertama (misal "13:00 - 14:00" -> "13:00")
-                $startTimeString = substr($cleanedTimeString, 0, 5); // Hasilnya "13:00"
-
-                // 4. Gabungkan tanggal dan jam yang sudah bersih
+                $startTimeString = substr($cleanedTimeString, 0, 5);
                 $fullStartTimeString = $booking->tanggal_konsultasi . ' ' . $startTimeString;
 
-                // 5. Parse waktu mulai menggunakan format yang kita tahu
                 $startTime = Carbon::createFromFormat('Y-m-d H:i', $fullStartTimeString, $timezone);
-
-                // --- AKHIR PERBAIKAN ---
 
                 $durationInMinutes = (int) $booking->durasiKonseling->durasi_menit;
                 $endTime = $startTime->copy()->addMinutes($durationInMinutes);
 
+                // --- CEK APAKAH SUDAH LEWAT WAKTU? ---
                 if ($now->gte($endTime)) {
-                    $booking->status_pesanan = 'Selesai';
-                    $booking->save();
+
+                    // [PERBAIKAN UTAMA ADA DI SINI]
+                    // Jangan cuma update status manual.
+                    // Panggil Service biar duitnya dihitung!
+
+                    $this->financeService->completeBooking($booking);
 
                     $completedCount++;
-                    Log::info("Cronjob: Sesi #{$booking->id} ditandai Selesai. (Waktu Selesai: {$endTime->toDateTimeString()})");
+                    $this->info("Sesi #{$booking->id} selesai. Keuangan telah dihitung.");
+                    Log::info("Cronjob: Sesi #{$booking->id} selesai & hitung duit.");
                 }
             } catch (\Exception $e) {
-                // Log error jika parsing GAGAL (mungkin formatnya beda lagi)
                 Log::error("Cronjob: Gagal memproses booking #{$booking->id}", [
-                    'string_asli' => $booking->jam_konsultasi,
-                    'string_dibersihkan' => $startTimeString ?? 'Gagal',
                     'error' => $e->getMessage()
                 ]);
             }

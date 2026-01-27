@@ -1,21 +1,17 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import apiClient from "../../../api/axios";
 import { useToast } from "../../../context/ToastContext";
 import {
     ChevronLeft,
     Printer,
-    Download,
-    Share2,
     Calendar,
     Clock,
     User,
     CreditCard,
     CheckCircle,
-    XCircle,
     Wallet,
     FileText,
-    Building,
 } from "lucide-react";
 
 // --- Import Modal Pembayaran ---
@@ -23,11 +19,12 @@ import PaymentModal from "./modals/PaymentModal";
 
 // --- Helper Functions ---
 const formatRupiah = (amount) => {
+    if (isNaN(amount) || amount === null || amount === undefined) return "Rp 0";
     return new Intl.NumberFormat("id-ID", {
         style: "currency",
         currency: "IDR",
         minimumFractionDigits: 0,
-    }).format(amount || 0);
+    }).format(amount);
 };
 
 const formatDate = (dateString) => {
@@ -52,12 +49,14 @@ export default function FinanceDetailPage() {
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
+    // State untuk menyimpan data yang sudah dihitung agar bisa dilempar ke modal
+    const [calculatedBooking, setCalculatedBooking] = useState(null);
 
     const fetchDetail = async () => {
         setLoading(true);
         try {
             const response = await apiClient.get(
-                `/api/super-admin/keuangan/${id}`
+                `/api/super-admin/keuangan/${id}`,
             );
             setBooking(response.data);
         } catch (error) {
@@ -72,6 +71,84 @@ export default function FinanceDetailPage() {
     useEffect(() => {
         fetchDetail();
     }, [id]);
+
+    // --- LOGIC CALCULATOR SAKTI (VERSI SHOW.JSX) ---
+    // Logika ini harus SAMA PERSIS dengan Index.jsx agar konsisten
+    const calculateFinancials = (data) => {
+        if (!data)
+            return {
+                total: 0,
+                appFee: 0,
+                adminFee: 0,
+                totalPotongan: 0,
+                gajiKonselor: 0,
+            };
+
+        const total = parseInt(data.total_harga) || 0;
+
+        // 1. PRIORITAS UTAMA: AMBIL DARI DATABASE
+        const dbTotalPotongan = parseInt(data.admin_fee || 0);
+        const dbGajiKonselor = parseInt(data.counselor_net || 0);
+
+        // Jika data dari DB valid (lebih dari 0), GUNAKAN ITU!
+        if (dbTotalPotongan > 0 || dbGajiKonselor > 0) {
+            const fixedAdmin = 5000;
+            let appFeeReal = dbTotalPotongan - fixedAdmin;
+            if (appFeeReal < 0) appFeeReal = 0;
+
+            return {
+                total,
+                appFee: appFeeReal,
+                adminFee: fixedAdmin,
+                totalPotongan: dbTotalPotongan,
+                gajiKonselor: dbGajiKonselor,
+            };
+        }
+
+        // 2. FALLBACK: HITUNG MANUAL (Hanya jika DB masih 0/NULL)
+        const relasi = data.jenisKonseling || data.jenis_konseling || {};
+        let appFeeHitungan = 0;
+
+        // [FIX] Ambil angka dari 'nilai', bersihkan dari "Rp" atau titik
+        let rawNilai = String(relasi.nilai || "0").replace(/[^0-9]/g, "");
+        let nilaiBersih = parseInt(rawNilai);
+
+        // Cek tipe biaya
+        const tipe = (relasi.biaya_layanan || "").toLowerCase();
+
+        if (tipe.includes("persen") || tipe.includes("percentage")) {
+            const dasar = total - 5000;
+            appFeeHitungan = dasar * (nilaiBersih / 100);
+        } else {
+            // Nominal
+            appFeeHitungan = nilaiBersih;
+        }
+
+        const adminFee = 5000;
+        const totalPotongan = appFeeHitungan + adminFee;
+
+        let gajiHitungan = total - totalPotongan;
+        if (gajiHitungan < 0) gajiHitungan = 0;
+
+        return {
+            total,
+            appFee: appFeeHitungan,
+            adminFee,
+            totalPotongan,
+            gajiKonselor: gajiHitungan,
+        };
+    };
+
+    // Update calculatedBooking saat booking berubah
+    useEffect(() => {
+        if (booking) {
+            const financials = calculateFinancials(booking);
+            setCalculatedBooking({
+                ...booking,
+                counselor_net: financials.gajiKonselor, // Inject nilai yang benar ke objek untuk modal
+            });
+        }
+    }, [booking]);
 
     const handlePrint = () => {
         window.print();
@@ -92,6 +169,9 @@ export default function FinanceDetailPage() {
 
     if (!booking) return null;
 
+    // Ambil hasil perhitungan
+    const { total, appFee, adminFee, totalPotongan, gajiKonselor } =
+        calculateFinancials(booking);
     const isPaid = booking.counselor_payment_status === "PAID";
 
     return (
@@ -277,30 +357,47 @@ export default function FinanceDetailPage() {
                                             Total Transaksi Customer
                                         </td>
                                         <td className="px-6 py-4 text-right font-medium text-gray-900">
-                                            {formatRupiah(booking.total_harga)}
+                                            {formatRupiah(total)}
                                         </td>
                                     </tr>
                                     <tr>
                                         <td className="px-6 py-4 text-gray-700">
-                                            Potongan Platform & Biaya Admin
+                                            Biaya Admin (Bank/Transfer)
                                             <span className="block text-xs text-gray-400 mt-0.5">
-                                                Pendapatan Moodly
+                                                Ditanggung Konselor
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right font-medium text-red-500">
-                                            - {formatRupiah(booking.admin_fee)}
+                                            - {formatRupiah(adminFee)}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="px-6 py-4 text-gray-700">
+                                            Biaya Aplikasi (Platform Fee)
+                                            <span className="block text-xs text-gray-400 mt-0.5">
+                                                Sesuai Jenis Layanan
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right font-medium text-red-500">
+                                            - {formatRupiah(appFee)}
+                                        </td>
+                                    </tr>
+                                    <tr className="bg-red-50/50">
+                                        <td className="px-6 py-2 text-red-600 font-bold text-xs uppercase">
+                                            Total Potongan
+                                        </td>
+                                        <td className="px-6 py-2 text-right font-bold text-red-600 text-xs">
+                                            - {formatRupiah(totalPotongan)}
                                         </td>
                                     </tr>
                                 </tbody>
                                 <tfoot className="bg-cyan-50">
                                     <tr>
                                         <td className="px-6 py-4 font-bold text-cyan-800 uppercase tracking-wide">
-                                            Total Transfer (Gaji Konselor)
+                                            Total Transfer (Gaji Bersih)
                                         </td>
                                         <td className="px-6 py-4 text-right font-extrabold text-xl text-cyan-700">
-                                            {formatRupiah(
-                                                booking.counselor_net
-                                            )}
+                                            {formatRupiah(gajiKonselor)}
                                         </td>
                                     </tr>
                                 </tfoot>
@@ -348,16 +445,12 @@ export default function FinanceDetailPage() {
                 )}
             </div>
 
-            <div className="text-center text-gray-400 text-xs mt-8 pb-8 print:hidden">
-                &copy; {new Date().getFullYear()} Moodly Finance System. Dokumen
-                ini digenerate secara otomatis oleh sistem.
-            </div>
-
             {/* --- MODAL --- */}
+            {/* Gunakan calculatedBooking agar modal menerima nilai yang benar */}
             <PaymentModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                booking={booking}
+                booking={calculatedBooking || booking}
                 onSuccess={() => {
                     fetchDetail();
                     addToast("Gaji berhasil dibayarkan!", "success");

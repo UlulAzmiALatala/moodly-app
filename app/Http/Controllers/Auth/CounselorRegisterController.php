@@ -61,9 +61,13 @@ class CounselorRegisterController extends Controller
 
         event(new Registered($user));
 
-        // Trigger Event Realtime ke Admin (Toast Notifikasi)
+        // Pastikan query ini benar-benar dapat user admin
         $admins = User::whereIn('role', ['admin', 'super-admin'])->get();
-        Notification::send($admins, new NewCounselorRegistered($user));
+
+        // Cek dulu ada admin gak (biar gak error kalau kosong)
+        if ($admins->count() > 0) {
+            Notification::send($admins, new NewCounselorRegistered($user));
+        }
 
         Auth::login($user);
 

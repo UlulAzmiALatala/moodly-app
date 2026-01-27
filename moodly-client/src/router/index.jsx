@@ -122,6 +122,7 @@ import CounselorChatPage from "../pages/counselor/konseling/chat/ChatPageCounsel
 // 5. ADMIN & SUPER ADMIN PAGES
 // =========================================
 import AdminDashboardPage from "../pages/admin/dashboard/Index.jsx";
+// [UPDATE] Import Super Admin Dashboard (Uncommented)
 import SuperAdminDashboardPage from "../pages/super-admin/dashboard/Index.jsx";
 
 // --- Master Data ---
@@ -152,14 +153,14 @@ import SuperAdminHelpChatPage from "../pages/super-admin/help/Index.jsx";
 
 // --- Finance ---
 import FinancePage from "../pages/super-admin/keuangan/Index.jsx";
-import FinanceDetailPage from "../pages/super-admin/keuangan/Show.jsx"; // [IMPORT BARU]
+import FinanceDetailPage from "../pages/super-admin/keuangan/Show.jsx";
 
 // === GUARDS ===
 const GuestGuard = () => {
     const { user } = useAuth();
     if (user) {
         if (user.role?.includes("super-admin"))
-            return <Navigate to="/super-admin/dashboard" />;
+            return <Navigate to="/admin/dashboard" />;
         if (user.role?.includes("admin"))
             return <Navigate to="/admin/dashboard" />;
         if (user.role?.includes("konselor") || user.role?.includes("counselor"))
@@ -173,7 +174,7 @@ const ProtectedGuard = () => {
     const { user } = useAuth();
     if (!user) return <Navigate to="/login" />;
     if (user.role?.includes("super-admin"))
-        return <Navigate to="/super-admin/dashboard" />;
+        return <Navigate to="/admin/dashboard" />;
     if (user.role?.includes("admin")) return <Navigate to="/admin/dashboard" />;
     if (user.role?.includes("konselor") || user.role?.includes("counselor"))
         return <Navigate to="/counselor/home" />;
@@ -184,7 +185,7 @@ const CounselorProtectedGuard = () => {
     const { user } = useAuth();
     if (!user) return <Navigate to="/counselor/login" />;
     if (user.role?.includes("super-admin"))
-        return <Navigate to="/super-admin/dashboard" />;
+        return <Navigate to="/admin/dashboard" />;
     if (user.role?.includes("admin")) return <Navigate to="/admin/dashboard" />;
     if (!user.role?.includes("konselor") && !user.role?.includes("counselor"))
         return <Navigate to="/home" />;
@@ -194,10 +195,12 @@ const CounselorProtectedGuard = () => {
 const AdminGuestGuard = () => {
     const { user } = useAuth();
     if (user) {
-        if (user.role?.includes("super-admin"))
-            return <Navigate to="/super-admin/dashboard" />;
-        if (user.role?.includes("admin"))
+        if (
+            user.role?.includes("super-admin") ||
+            user.role?.includes("admin")
+        ) {
             return <Navigate to="/admin/dashboard" />;
+        }
     }
     return <Outlet />;
 };
@@ -210,6 +213,20 @@ const AdminProtectedGuard = () => {
     ) : (
         <Navigate to="/admin/login" />
     );
+};
+
+// === [BARU] DASHBOARD SWITCHER ===
+// Komponen ini otomatis memilih dashboard berdasarkan role
+const DashboardSwitcher = () => {
+    const { user } = useAuth();
+
+    // Jika user adalah Super Admin, return dashboard Super Admin
+    if (user?.role === "super-admin") {
+        return <SuperAdminDashboardPage />;
+    }
+
+    // Jika bukan (berarti Admin biasa), return dashboard Admin
+    return <AdminDashboardPage />;
 };
 
 // === ROUTER UTAMA ===
@@ -226,7 +243,8 @@ const AppRouter = () => {
 
     return (
         <Routes>
-            {/* === AUTH (SEMUA PERAN) === */}
+            {/* ... (AUTH & CUSTOMER ROUTES SAMA SEPERTI SEBELUMNYA) ... */}
+
             <Route element={<GuestGuard />}>
                 <Route element={<AuthLayout />}>
                     <Route path="/" element={<OnboardingPage />} />
@@ -515,7 +533,7 @@ const AppRouter = () => {
                 </Route>
             </Route>
 
-            {/* === ADMIN & SUPER ADMIN === */}
+            {/* === ADMIN & SUPER ADMIN (UNIFIED PATH) === */}
             <Route element={<AdminGuestGuard />}>
                 <Route element={<AuthAdminLayout />}>
                     <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -532,20 +550,19 @@ const AppRouter = () => {
 
             <Route element={<AdminProtectedGuard />}>
                 <Route element={<AdminLayout />}>
+                    {/* Redirect Root Admin */}
                     <Route
                         path="/admin"
                         element={<Navigate to="/admin/dashboard" />}
                     />
+
+                    {/* [UPDATE] Dashboard (Smart Switcher) */}
                     <Route
                         path="/admin/dashboard"
-                        element={<AdminDashboardPage />}
-                    />
-                    <Route
-                        path="/super-admin/dashboard"
-                        element={<SuperAdminDashboardPage />}
+                        element={<DashboardSwitcher />}
                     />
 
-                    {/* Master Data */}
+                    {/* --- MASTER DATA (Sebelumnya Super Admin) --- */}
                     <Route
                         path="/admin/jenis-konseling"
                         element={<JenisKonselingPage />}
@@ -563,7 +580,7 @@ const AppRouter = () => {
                         element={<PaymentMethodsPage />}
                     />
 
-                    {/* Management Lists */}
+                    {/* --- MANAGEMENT LISTS --- */}
                     <Route
                         path="/admin/admin-management"
                         element={<AdminManagementPage />}
@@ -597,7 +614,7 @@ const AppRouter = () => {
                         element={<BookingDetailPage />}
                     />
 
-                    {/* Operations */}
+                    {/* --- OPERATIONS (Shared) --- */}
                     <Route
                         path="/admin/jadwal-konsultasi"
                         element={<JadwalKonsultasiPage />}
@@ -628,23 +645,20 @@ const AppRouter = () => {
                         element={<SuperAdminHelpChatPage />}
                     />
 
-                    {/* Super Admin Exclusive */}
+                    {/* --- SUPER ADMIN EXCLUSIVE (Mapped to /admin/) --- */}
                     <Route
-                        path="/super-admin/refund-management"
+                        path="/admin/refund-management"
                         element={<RefundManagementPage />}
                     />
                     <Route
-                        path="/super-admin/help-center"
+                        path="/admin/help-center"
                         element={<SuperAdminHelpChatPage />}
                     />
 
                     {/* --- KEUANGAN (FINANCE) --- */}
+                    <Route path="/admin/keuangan" element={<FinancePage />} />
                     <Route
-                        path="/super-admin/keuangan"
-                        element={<FinancePage />}
-                    />
-                    <Route
-                        path="/super-admin/keuangan/:id" // Rute Detail Transaksi Baru
+                        path="/admin/keuangan/:id"
                         element={<FinanceDetailPage />}
                     />
                 </Route>

@@ -20,7 +20,8 @@ class BookingFinanceService
      */
     public function completeBooking(Booking $booking)
     {
-        if (in_array($booking->status_pesanan, ['Selesai', 'SELESAI', 'Dibatalkan', 'DIBATALKAN'])) {
+        // Cek status agar tidak diproses ganda
+        if (in_array(strtoupper($booking->status_pesanan), ['SELESAI', 'DIBATALKAN', 'DITOLAK'])) {
             return $booking;
         }
 
@@ -28,32 +29,61 @@ class BookingFinanceService
         try {
             $booking->load(['jenisKonseling', 'konselor']);
 
-            // [FIX] Pastikan total_harga ada nilainya, default 0 jika null
-            $totalTransaksi = (float) ($booking->total_harga ?? 0);
+            // 1. Ambil Total Transaksi (Hapus "Rp" atau titik jika ada)
+            $totalTransaksi = $this->parseNumber($booking->total_harga);
 
+            // 2. Hitung Harga Dasar Sesi (Total - 5000)
             $hargaSesi = $totalTransaksi - self::FIXED_CUSTOMER_FEE;
-            if ($hargaSesi < 0) $hargaSesi = 0; // Cegah nilai negatif
+            if ($hargaSesi < 0) $hargaSesi = 0;
 
             $potonganAplikasi = 0;
             $jenis = $booking->jenisKonseling;
 
             if ($jenis) {
-                $nilaiPotongan = (float) $jenis->nilai;
-                if ($jenis->biaya_layanan === 'Nominal Tetap') {
-                    $potonganAplikasi = $nilaiPotongan;
-                } elseif ($jenis->biaya_layanan === 'Persentase') {
-                    $potonganAplikasi = $hargaSesi * ($nilaiPotongan / 100);
+                // [FIX UTAMA] Bersihkan 'nilai' dari database (misal "Rp 15.000" jadi 15000)
+                $nilaiBersih = $this->parseNumber($jenis->nilai);
+
+                // [FIX] Normalisasi tipe layanan (biar tidak sensitif huruf besar/kecil)
+                $tipeBiaya = strtolower(trim($jenis->biaya_layanan));
+
+                // Logika Deteksi yang Fleksibel
+                if (str_contains($tipeBiaya, 'persen') || $tipeBiaya === 'percentage') {
+                    // Rumus Persentase: Harga Sesi * (Nilai / 100)
+                    $potonganAplikasi = $hargaSesi * ($nilaiBersih / 100);
+                } elseif (str_contains($tipeBiaya, 'nominal') || str_contains($tipeBiaya, 'tetap') || str_contains($tipeBiaya, 'flat')) {
+                    // Rumus Nominal: Langsung ambil nilainya
+                    $potonganAplikasi = $nilaiBersih;
+                }
+                // Fallback: Jika tidak ada match string, tapi ada nilai, anggap nominal
+                elseif ($nilaiBersih > 0) {
+                    $potonganAplikasi = $nilaiBersih;
                 }
             }
 
+            // 3. Hitung Total Admin Fee (Potongan App + 5000)
             $totalAdminFee = $potonganAplikasi + self::FIXED_CUSTOMER_FEE;
+
+            // 4. Hitung Hak Mitra (Total - Total Admin Fee)
             $counselorNet = $totalTransaksi - $totalAdminFee;
-            if ($counselorNet < 0) $counselorNet = 0; // Cegah minus
+
+            // Safety Check
+            if ($counselorNet < 0) $counselorNet = 0;
+
+            // Debugging Log (Bisa dicek di storage/logs/laravel.log)
+            Log::info("Finance Calculation Booking #{$booking->id}", [
+                'total' => $totalTransaksi,
+                'jenis_raw' => $jenis ? $jenis->biaya_layanan : 'null',
+                'nilai_raw' => $jenis ? $jenis->nilai : 'null',
+                'nilai_bersih' => $jenis ? $this->parseNumber($jenis->nilai) : 0,
+                'app_fee' => $potonganAplikasi,
+                'admin_fee_fixed' => self::FIXED_CUSTOMER_FEE,
+                'mitra_net' => $counselorNet
+            ]);
 
             $booking->update([
                 'status_pesanan' => 'Selesai',
-                'admin_fee' => $totalAdminFee,
-                'counselor_net' => $counselorNet,
+                'admin_fee' => $totalAdminFee,       // Ini App Fee + 5000
+                'counselor_net' => $counselorNet,    // Ini Gaji Mitra
                 'counselor_payment_status' => 'UNPAID',
             ]);
 
@@ -75,5 +105,21 @@ class BookingFinanceService
             Log::error("Gagal finance service: " . $e->getMessage());
             throw $e;
         }
+    }
+
+    /**
+     * Fungsi sakti untuk membersihkan string angka
+     * Contoh: "Rp 15.000" -> 15000
+     * Contoh: "10%" -> 10
+     */
+    private function parseNumber($value)
+    {
+        if (is_numeric($value)) {
+            return (float) $value;
+        }
+        // Hapus semua karakter KECUALI angka dan titik
+        // Hati-hati: Jika format Indonesia pakai koma (10,5), ganti ',' jadi '.'
+        $clean = preg_replace('/[^0-9.]/', '', str_replace(',', '.', (string)$value));
+        return (float) $clean;
     }
 }

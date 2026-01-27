@@ -18,11 +18,13 @@ class RefundRequested implements ShouldBroadcastNow
 
     public function __construct(Refund $refund)
     {
-        $this->refund = $refund->load(['booking.customer', 'customer']);
+        // Pastikan load booking dan customer agar nama/nominal bisa diambil
+        $this->refund = $refund->load(['booking.customer']);
     }
 
     public function broadcastOn(): array
     {
+        // Tetap di channel 'admin-notifications' biar satu pintu
         return [
             new PrivateChannel('admin-notifications'),
         ];
@@ -31,5 +33,28 @@ class RefundRequested implements ShouldBroadcastNow
     public function broadcastAs(): string
     {
         return 'RefundRequested';
+    }
+
+    /**
+     * [BARU] Format data khusus untuk Toast Notifikasi Frontend
+     */
+    public function broadcastWith(): array
+    {
+        // Ambil nama customer (dari relasi booking)
+        $customerName = $this->refund->booking->customer->name ?? 'Customer';
+        $amount = number_format($this->refund->jumlah_refund ?? 0, 0, ',', '.');
+
+        return [
+            'id' => $this->refund->id,
+            'title' => 'Pengajuan Refund Baru',
+            'message' => "Order #{$this->refund->booking_id} ({$customerName}) mengajukan refund Rp {$amount}.",
+            'link' => '/admin/refund-management', // Link sesuai Sidebar baru
+            'type' => 'warning', // Warna kuning (Penting!)
+            'timestamp' => now()->toIso8601String(),
+            'data' => [
+                'booking_id' => $this->refund->booking_id,
+                'status' => 'Menunggu Persetujuan'
+            ]
+        ];
     }
 }

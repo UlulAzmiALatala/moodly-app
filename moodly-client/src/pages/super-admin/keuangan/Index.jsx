@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom"; // [BARU] Import Link
+import { Link } from "react-router-dom";
 import apiClient from "../../../api/axios";
 import {
     Search,
@@ -13,13 +13,10 @@ import {
     CheckCircle,
     XCircle,
     FileText,
-    Eye, // [BARU] Ikon Mata untuk tooltip
+    Eye,
 } from "lucide-react";
 
-// --- 1. Import Hook Toast ---
 import { useToast } from "../../../context/ToastContext";
-
-// --- Import Modal Payment ---
 import PaymentModal from "./modals/PaymentModal";
 
 // --- Helper Functions ---
@@ -42,29 +39,17 @@ const formatDate = (dateString) => {
     });
 };
 
-// --- KOMPONEN PAGINASI ---
 const Pagination = ({ meta, onPageChange }) => {
     if (!meta || meta.total === 0) return null;
-
     const { current_page, last_page, from, to, total } = meta;
-
     const getPageNumbers = () => {
         let pages = [];
         let startPage = Math.max(1, current_page - 2);
         let endPage = Math.min(last_page, startPage + 4);
-
-        if (endPage - startPage < 4) {
-            startPage = Math.max(1, endPage - 4);
-        }
-
-        for (let i = startPage; i <= endPage; i++) {
-            pages.push(i);
-        }
+        if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
+        for (let i = startPage; i <= endPage; i++) pages.push(i);
         return pages;
     };
-
-    const pageNumbers = getPageNumbers();
-
     return (
         <div className="px-6 py-4 border-t border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4 bg-white">
             <p className="text-sm text-gray-500">
@@ -74,34 +59,27 @@ const Pagination = ({ meta, onPageChange }) => {
                 <span className="font-bold text-gray-900">{to || 0}</span> dari{" "}
                 <span className="font-bold text-gray-900">{total}</span> data
             </p>
-
             <div className="flex items-center gap-2">
                 <button
                     onClick={() => onPageChange(current_page - 1)}
                     disabled={current_page === 1}
-                    className="p-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="p-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 transition-colors"
                 >
                     <ChevronLeft size={18} />
                 </button>
-
-                {pageNumbers.map((page) => (
+                {getPageNumbers().map((page) => (
                     <button
                         key={page}
                         onClick={() => onPageChange(page)}
-                        className={`w-9 h-9 rounded-xl text-sm font-bold transition-all shadow-sm border ${
-                            current_page === page
-                                ? "bg-cyan-500 text-white border-cyan-500 shadow-cyan-200"
-                                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
-                        }`}
+                        className={`w-9 h-9 rounded-xl text-sm font-bold transition-all shadow-sm border ${current_page === page ? "bg-cyan-500 text-white border-cyan-500 shadow-cyan-200" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}
                     >
                         {page}
                     </button>
                 ))}
-
                 <button
                     onClick={() => onPageChange(current_page + 1)}
                     disabled={current_page === last_page}
-                    className="p-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="p-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 transition-colors"
                 >
                     <ChevronRight size={18} />
                 </button>
@@ -110,41 +88,29 @@ const Pagination = ({ meta, onPageChange }) => {
     );
 };
 
-// --- HALAMAN UTAMA ---
 const FinancePage = () => {
-    // --- State Data ---
     const [data, setData] = useState({ bookings: { data: [] }, summary: {} });
     const [pagination, setPagination] = useState({});
-
-    // --- State Filter & Search ---
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterStatus, setFilterStatus] = useState("ALL");
     const [selectedMonth, setSelectedMonth] = useState(
-        new Date().getMonth() + 1
+        new Date().getMonth() + 1,
     );
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-
-    // --- State UI ---
     const [loading, setLoading] = useState(true);
     const { addToast } = useToast();
-
-    // --- State Modal ---
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedBooking, setSelectedBooking] = useState(null);
 
-    // --- Fetch Data Function ---
     const fetchData = async () => {
         setLoading(true);
         try {
             let url = `/api/super-admin/keuangan?page=${currentPage}&search=${searchTerm}&month=${selectedMonth}&year=${selectedYear}`;
-            if (filterStatus !== "ALL") {
+            if (filterStatus !== "ALL")
                 url += `&payment_status=${filterStatus}`;
-            }
-
             const response = await apiClient.get(url);
             setData(response.data);
-
             const meta = response.data.bookings;
             if (meta) {
                 setPagination({
@@ -164,16 +130,82 @@ const FinancePage = () => {
     };
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            fetchData();
-        }, 500);
+        const timer = setTimeout(() => fetchData(), 500);
         return () => clearTimeout(timer);
     }, [currentPage, searchTerm, selectedMonth, selectedYear, filterStatus]);
 
     const handlePageChange = (page) => setCurrentPage(page);
 
+    // --- LOGIKA CALCULATOR SAKTI (VERSI PERBAIKAN) ---
+    const calculatePayout = (booking) => {
+        const total = parseInt(booking.total_harga || 0);
+
+        // 1. PRIORITAS UTAMA: AMBIL DARI DATABASE
+        // Backend sudah menghitung dan menyimpan di kolom 'admin_fee' dan 'counselor_net'
+        const dbTotalPotongan = parseInt(booking.admin_fee || 0);
+        const dbGajiKonselor = parseInt(booking.counselor_net || 0);
+
+        // Jika data dari DB valid (lebih dari 0), GUNAKAN ITU LANGSUNG!
+        if (dbTotalPotongan > 0 || dbGajiKonselor > 0) {
+            const fixedAdmin = 5000;
+            // App Fee = Total Potongan - Biaya Admin 5000
+            let appFeeReal = dbTotalPotongan - fixedAdmin;
+            if (appFeeReal < 0) appFeeReal = 0;
+
+            return {
+                total,
+                appFee: appFeeReal,
+                adminFee: fixedAdmin,
+                totalPotongan: dbTotalPotongan,
+                gajiKonselor: dbGajiKonselor,
+            };
+        }
+
+        // 2. FALLBACK: HITUNG MANUAL (Hanya jika DB masih 0/NULL)
+        // Ini untuk berjaga-jaga jika ada data lama yang belum ter-update oleh cronjob
+
+        const relasi = booking.jenisKonseling || booking.jenis_konseling;
+        let appFeeHitungan = 0;
+
+        if (relasi) {
+            // [FIX] Ambil angka dari 'nilai', bersihkan dari "Rp" atau titik
+            let rawNilai = String(relasi.nilai || "0").replace(/[^0-9]/g, "");
+            let nilaiBersih = parseInt(rawNilai);
+
+            // Cek tipe: Persentase atau Nominal
+            const tipe = (relasi.biaya_layanan || "").toLowerCase();
+
+            if (tipe.includes("persen") || tipe.includes("percentage")) {
+                // Rumus Persen: (Total - 5000) * Persen
+                const dasar = total - 5000;
+                appFeeHitungan = dasar * (nilaiBersih / 100);
+            } else {
+                // Rumus Nominal: Langsung ambil nilainya
+                appFeeHitungan = nilaiBersih;
+            }
+        }
+
+        const adminFee = 5000;
+        const totalPotongan = appFeeHitungan + adminFee;
+
+        let gajiHitungan = total - totalPotongan;
+        if (gajiHitungan < 0) gajiHitungan = 0;
+
+        return {
+            total,
+            appFee: appFeeHitungan,
+            adminFee,
+            totalPotongan,
+            gajiKonselor: gajiHitungan,
+        };
+    };
+
     const openPaymentModal = (booking) => {
-        setSelectedBooking(booking);
+        const { gajiKonselor } = calculatePayout(booking);
+        setSelectedBooking({
+            ...booking,
+            counselor_net: gajiKonselor,
+        });
         setIsModalOpen(true);
     };
 
@@ -184,7 +216,6 @@ const FinancePage = () => {
 
     return (
         <div className="space-y-6 p-6 pb-20 font-sans text-gray-600">
-            {/* --- HEADER & FILTER --- */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">
@@ -195,7 +226,6 @@ const FinancePage = () => {
                         konselor.
                     </p>
                 </div>
-
                 <div className="flex flex-wrap gap-2 bg-white p-1 rounded-xl border border-gray-200 shadow-sm">
                     <div className="relative">
                         <select
@@ -227,12 +257,12 @@ const FinancePage = () => {
                         >
                             <option value="2024">2024</option>
                             <option value="2025">2025</option>
+                            <option value="2026">2026</option>
                         </select>
                     </div>
                 </div>
             </div>
 
-            {/* --- STATISTIK CARDS --- */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center gap-3 mb-3">
@@ -249,7 +279,6 @@ const FinancePage = () => {
                             : formatRupiah(data.summary?.total_omset)}
                     </h3>
                 </div>
-
                 <div className="bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl p-5 text-white shadow-lg shadow-cyan-200 hover:shadow-cyan-300 transition-shadow">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="p-2 bg-white/20 rounded-lg text-white">
@@ -265,7 +294,6 @@ const FinancePage = () => {
                             : formatRupiah(data.summary?.total_bersih)}
                     </h3>
                 </div>
-
                 <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
@@ -281,7 +309,6 @@ const FinancePage = () => {
                             : formatRupiah(data.summary?.total_payout)}
                     </h3>
                 </div>
-
                 <div className="bg-red-50 rounded-2xl p-5 border border-red-100 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="p-2 bg-red-100 rounded-lg text-red-600">
@@ -299,7 +326,6 @@ const FinancePage = () => {
                 </div>
             </div>
 
-            {/* --- TABEL DATA --- */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="p-5 border-b border-gray-100 flex flex-col xl:flex-row justify-between items-center gap-4">
                     <div className="flex bg-gray-100 p-1 rounded-xl w-full xl:w-auto">
@@ -310,21 +336,16 @@ const FinancePage = () => {
                                     setFilterStatus(status);
                                     setCurrentPage(1);
                                 }}
-                                className={`flex-1 xl:flex-none px-6 py-2 rounded-lg text-xs font-bold transition-all ${
-                                    filterStatus === status
-                                        ? "bg-white text-cyan-600 shadow-sm"
-                                        : "text-gray-500 hover:text-gray-700"
-                                }`}
+                                className={`flex-1 xl:flex-none px-6 py-2 rounded-lg text-xs font-bold transition-all ${filterStatus === status ? "bg-white text-cyan-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
                             >
                                 {status === "ALL"
                                     ? "Semua"
                                     : status === "UNPAID"
-                                    ? "Belum Bayar"
-                                    : "Lunas"}
+                                      ? "Belum Bayar"
+                                      : "Lunas"}
                             </button>
                         ))}
                     </div>
-
                     <div className="relative w-full xl:w-72">
                         <input
                             type="text"
@@ -349,10 +370,10 @@ const FinancePage = () => {
                                     Customer & Konselor
                                 </th>
                                 <th className="px-6 py-4 text-right">
-                                    Total Sesi
+                                    Total Transaksi
                                 </th>
                                 <th className="px-6 py-4 text-right">
-                                    Admin Fee
+                                    Potongan (App + Admin)
                                 </th>
                                 <th className="px-6 py-4 text-right bg-blue-50/30 text-blue-700 border-l border-blue-50">
                                     Gaji Konselor
@@ -389,114 +410,136 @@ const FinancePage = () => {
                                     </td>
                                 </tr>
                             ) : (
-                                data.bookings.data.map((item) => (
-                                    <tr
-                                        key={item.id}
-                                        className="hover:bg-cyan-50/30 transition-colors group"
-                                    >
-                                        {/* ID & Waktu (CLICKABLE LINK) */}
-                                        <td className="px-6 py-4">
-                                            <Link
-                                                to={`/super-admin/keuangan/${item.id}`} // Link ke Detail
-                                                className="block group-hover:translate-x-1 transition-transform"
-                                            >
-                                                <span className="font-mono font-bold text-xs text-cyan-600 bg-cyan-50 px-2 py-0.5 rounded border border-cyan-100 group-hover:text-cyan-700 group-hover:border-cyan-300 transition-colors inline-flex items-center gap-1">
-                                                    #
-                                                    {String(item.id).padStart(
-                                                        5,
-                                                        "0"
-                                                    )}
-                                                    <Eye
-                                                        size={10}
-                                                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                                    />
-                                                </span>
-                                                <div className="text-xs text-gray-400 mt-1.5 flex items-center gap-1">
-                                                    <Calendar size={10} />{" "}
-                                                    {formatDate(
-                                                        item.created_at
-                                                    )}
+                                data.bookings.data.map((item) => {
+                                    // PANGGIL CALCULATOR
+                                    const {
+                                        total,
+                                        appFee,
+                                        adminFee,
+                                        totalPotongan,
+                                        gajiKonselor,
+                                    } = calculatePayout(item);
+
+                                    return (
+                                        <tr
+                                            key={item.id}
+                                            className="hover:bg-cyan-50/30 transition-colors group"
+                                        >
+                                            <td className="px-6 py-4">
+                                                <Link
+                                                    to={`/admin/keuangan/${item.id}`}
+                                                    className="block group-hover:translate-x-1 transition-transform"
+                                                >
+                                                    <span className="font-mono font-bold text-xs text-cyan-600 bg-cyan-50 px-2 py-0.5 rounded border border-cyan-100 group-hover:text-cyan-700 group-hover:border-cyan-300 transition-colors inline-flex items-center gap-1">
+                                                        #
+                                                        {String(
+                                                            item.id,
+                                                        ).padStart(5, "0")}
+                                                        <Eye
+                                                            size={10}
+                                                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        />
+                                                    </span>
+                                                    <div className="text-xs text-gray-400 mt-1.5 flex items-center gap-1">
+                                                        <Calendar size={10} />{" "}
+                                                        {formatDate(
+                                                            item.created_at,
+                                                        )}
+                                                    </div>
+                                                </Link>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="font-bold text-gray-800">
+                                                    {item.customer?.name}
                                                 </div>
-                                            </Link>
-                                        </td>
-
-                                        {/* Customer & Konselor */}
-                                        <td className="px-6 py-4">
-                                            <div className="font-bold text-gray-800">
-                                                {item.customer?.name}
-                                            </div>
-                                            <div className="text-xs text-gray-500 mt-0.5">
-                                                Konselor: {item.konselor?.name}
-                                            </div>
-                                        </td>
-
-                                        {/* Total Sesi */}
-                                        <td className="px-6 py-4 text-right text-gray-500">
-                                            {formatRupiah(item.total_harga)}
-                                        </td>
-
-                                        {/* Admin Fee */}
-                                        <td className="px-6 py-4 text-right text-red-500 font-medium">
-                                            -{formatRupiah(item.admin_fee)}
-                                        </td>
-
-                                        {/* Gaji Konselor */}
-                                        <td className="px-6 py-4 text-right font-bold text-blue-600 bg-blue-50/10 border-l border-blue-50">
-                                            {formatRupiah(item.counselor_net)}
-                                        </td>
-
-                                        {/* Status Badge */}
-                                        <td className="px-6 py-4 text-center">
-                                            {item.counselor_payment_status ===
-                                            "PAID" ? (
-                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">
-                                                    <CheckCircle size={10} />{" "}
-                                                    LUNAS
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-700 border border-red-200">
-                                                    <XCircle size={10} /> BELUM
-                                                    BAYAR
-                                                </span>
-                                            )}
-                                        </td>
-
-                                        {/* Aksi */}
-                                        <td className="px-6 py-4 text-center">
-                                            {item.counselor_payment_status ===
-                                            "UNPAID" ? (
-                                                <button
-                                                    onClick={() =>
-                                                        openPaymentModal(item)
-                                                    }
-                                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm shadow-blue-200 transition active:scale-95 flex items-center gap-2 mx-auto"
-                                                >
-                                                    <Wallet size={12} /> Bayar
-                                                </button>
-                                            ) : (
-                                                <a
-                                                    href={
-                                                        item.counselor_payment_proof_url
-                                                    }
-                                                    target="_blank"
-                                                    rel="noreferrer"
-                                                    className="inline-flex items-center gap-1 px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition mx-auto"
-                                                >
-                                                    <FileText size={12} /> Bukti
-                                                </a>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))
+                                                <div className="text-xs text-gray-500 mt-0.5">
+                                                    Konselor:{" "}
+                                                    {item.konselor?.name}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-right text-gray-500">
+                                                {formatRupiah(total)}
+                                            </td>
+                                            <td className="px-6 py-4 text-right text-red-500 font-medium">
+                                                <div className="flex flex-col items-end text-[10px]">
+                                                    <span>
+                                                        Admin:{" "}
+                                                        {formatRupiah(adminFee)}
+                                                    </span>
+                                                    <span
+                                                        className={
+                                                            appFee === 0
+                                                                ? "text-gray-300"
+                                                                : ""
+                                                        }
+                                                    >
+                                                        App:{" "}
+                                                        {formatRupiah(appFee)}
+                                                    </span>
+                                                    <span className="border-t border-red-200 mt-0.5 pt-0.5 font-bold">
+                                                        Total: -
+                                                        {formatRupiah(
+                                                            totalPotongan,
+                                                        )}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-right font-bold text-blue-600 bg-blue-50/10 border-l border-blue-50">
+                                                {formatRupiah(gajiKonselor)}
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                {item.counselor_payment_status ===
+                                                "PAID" ? (
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">
+                                                        <CheckCircle
+                                                            size={10}
+                                                        />{" "}
+                                                        LUNAS
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-700 border border-red-200">
+                                                        <XCircle size={10} />{" "}
+                                                        BELUM BAYAR
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                {item.counselor_payment_status ===
+                                                "UNPAID" ? (
+                                                    <button
+                                                        onClick={() =>
+                                                            openPaymentModal(
+                                                                item,
+                                                            )
+                                                        }
+                                                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm shadow-blue-200 transition active:scale-95 flex items-center gap-2 mx-auto"
+                                                    >
+                                                        <Wallet size={12} />{" "}
+                                                        Bayar
+                                                    </button>
+                                                ) : (
+                                                    <a
+                                                        href={
+                                                            item.counselor_payment_proof_url
+                                                        }
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="inline-flex items-center gap-1 px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition mx-auto"
+                                                    >
+                                                        <FileText size={12} />{" "}
+                                                        Bukti
+                                                    </a>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             )}
                         </tbody>
                     </table>
                 </div>
-
                 <Pagination meta={pagination} onPageChange={handlePageChange} />
             </div>
-
-            {/* --- INJECT MODAL PEMBAYARAN --- */}
             <PaymentModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}

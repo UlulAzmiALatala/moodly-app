@@ -3,12 +3,13 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueue; // <--- Buat Database (biar gak lemot)
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast; // <--- WAJIB TAMBAH INI BUAT REVERB
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 use App\Models\User;
 
-class NewCounselorRegistered extends Notification implements ShouldQueue
+class NewCounselorRegistered extends Notification implements ShouldQueue, ShouldBroadcast // <--- Tambahkan ShouldBroadcast di sini
 {
     use Queueable;
 
@@ -19,13 +20,11 @@ class NewCounselorRegistered extends Notification implements ShouldQueue
         $this->user = $user;
     }
 
-    // PENTING: return database DAN broadcast
     public function via($notifiable)
     {
         return ['database', 'broadcast'];
     }
 
-    // Data yang disimpan ke Database (History Lonceng)
     public function toDatabase($notifiable)
     {
         return [
@@ -33,21 +32,21 @@ class NewCounselorRegistered extends Notification implements ShouldQueue
             'title' => 'Pendaftaran Konselor',
             'message' => "{$this->user->name} mendaftar sebagai konselor. Harap verifikasi.",
             'link' => "/admin/verifikasi-konselor",
-            'type' => 'new_counselor', // Sesuai Frontend React
+            'type' => 'new_counselor',
             'icon' => 'UserCheck',
             'color' => 'text-blue-600',
             'bg_color' => 'bg-blue-50',
         ];
     }
 
-    // Data yang dikirim Real-time (Popup Cling!)
     public function toBroadcast($notifiable)
     {
+        // Tips: Kirim data yang sama dengan database biar frontend gak bingung parsingnya
         return new BroadcastMessage([
             'id' => $this->id,
             'read_at' => null,
             'created_at' => now()->toIso8601String(),
-            'data' => $this->toDatabase($notifiable),
+            'data' => $this->toDatabase($notifiable), // Reuse data database biar konsisten
         ]);
     }
 }

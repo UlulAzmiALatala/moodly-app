@@ -10,12 +10,13 @@ import {
     Bell,
     X,
     RefreshCw,
-    FileText, // Ikon Refund
-    UserCheck, // Ikon Konselor Baru
-    CreditCard, // Ikon Payout/Gaji
-    AlertTriangle, // Ikon Warning (Gmeet)
+    FileText,
+    UserCheck,
+    CreditCard,
+    AlertTriangle,
 } from "lucide-react";
 
+// Setup Pusher Global
 window.Pusher = Pusher;
 
 const echo = new Echo({
@@ -42,13 +43,11 @@ const echo = new Echo({
 });
 
 const NotificationToast = ({ notification, onClose }) => {
-    // Default Style (Info)
     let borderColor = "border-[#00D1FF]";
     let iconBg = "bg-cyan-50";
     let IconComp = Bell;
     let iconColor = "text-[#00D1FF]";
 
-    // Logika Warna Berdasarkan Tipe
     if (notification?.type === "cancel") {
         borderColor = "border-red-500";
         iconBg = "bg-red-50";
@@ -94,7 +93,6 @@ const NotificationToast = ({ notification, onClose }) => {
                     <div
                         onClick={(e) => {
                             e.stopPropagation();
-                            // Jika user klik toast, jalankan aksi tutup (atau bisa navigasi juga jika mau)
                             onClose();
                         }}
                         className={`bg-white/90 backdrop-blur-md border-l-4 ${borderColor} rounded-lg shadow-2xl p-4 flex items-start gap-3 cursor-pointer hover:bg-white transition`}
@@ -138,6 +136,8 @@ export default function AdminLayout() {
     const [unreadCount, setUnreadCount] = useState(0);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
+    // Ref untuk melacak ID notifikasi yang sudah diproses agar tidak double
+    const processedIdsRef = useRef(new Set());
     const dropdownRef = useRef(null);
 
     const fetchNotifications = async () => {
@@ -151,7 +151,7 @@ export default function AdminLayout() {
                 created_at: n.created_at,
                 title: n.data.title || "Info Sistem",
                 message: n.data.message || "Notifikasi baru diterima",
-                link: n.data.link || n.data.url || "#", // Support 'link' atau 'url'
+                link: n.data.link || n.data.url || "#",
             }));
             setNotifications(formatted);
             setUnreadCount(formatted.filter((n) => !n.read_at).length);
@@ -164,9 +164,7 @@ export default function AdminLayout() {
         if (user) fetchNotifications();
     }, [user]);
 
-    // --- FUNGSI KLIK NOTIFIKASI (NAVIGASI) ---
     const handleNotificationClick = async (notif) => {
-        // 1. Tandai sudah dibaca di backend
         if (!notif.isRealTime && !notif.read_at) {
             try {
                 await apiClient.post("/api/notifications/mark-read", {
@@ -177,18 +175,16 @@ export default function AdminLayout() {
             }
         }
 
-        // 2. Update state lokal
         setNotifications((prev) =>
             prev.map((n) =>
                 n.id === notif.id
                     ? { ...n, read_at: new Date().toISOString() }
-                    : n
-            )
+                    : n,
+            ),
         );
         setUnreadCount((prev) => Math.max(0, prev - 1));
         setIsDropdownOpen(false);
 
-        // 3. LOGIKA NAVIGASI (PRIORITASKAN LINK LANGSUNG)
         if (notif.link && notif.link !== "#") {
             navigate(notif.link);
         } else if (notif.data?.booking_id) {
@@ -203,22 +199,21 @@ export default function AdminLayout() {
             console.log(`📡 Admin: Listening to ${channelName}...`);
             const channel = echo.private(channelName);
 
-            // Fungsi Helper untuk Mencegah Duplikat
+            // Handler dengan Deduplikasi
             const handleNewNotification = (newNotif) => {
-                setNotifications((prev) => {
-                    // Cek jika ID sudah ada di list
-                    const exists = prev.some((n) => n.id === newNotif.id);
-                    if (exists) return prev; // Jangan tambah jika sudah ada
-                    return [newNotif, ...prev];
-                });
+                if (processedIdsRef.current.has(newNotif.id)) {
+                    return;
+                }
 
-                // Update badge & Toast
+                processedIdsRef.current.add(newNotif.id);
+
+                setNotifications((prev) => [newNotif, ...prev]);
                 setUnreadCount((prev) => prev + 1);
                 setToastData(newNotif);
 
-                // Bunyi notifikasi (opsional)
-                // const audio = new Audio('/sounds/notification.mp3');
-                // audio.play().catch(e => console.log("Audio play failed"));
+                setTimeout(() => {
+                    processedIdsRef.current.delete(newNotif.id);
+                }, 2000);
 
                 setTimeout(() => setToastData(null), 8000);
             };
@@ -226,7 +221,7 @@ export default function AdminLayout() {
             // 1. Pembayaran Masuk
             channel.listen(".PaymentProofUploaded", (e) => {
                 handleNewNotification({
-                    id: `pay-${e.booking.id}-${Date.now()}`,
+                    id: `payment-${e.booking.id}`,
                     title: "Pembayaran Masuk",
                     message: `${e.booking.customer.name} mengunggah bukti bayar #${e.booking.id}`,
                     link: `/admin/booking-management/${e.booking.id}`,
@@ -240,7 +235,7 @@ export default function AdminLayout() {
             // 2. Pembatalan Booking
             channel.listen(".BookingCancelled", (e) => {
                 handleNewNotification({
-                    id: `cancel-${e.booking.id}-${Date.now()}`,
+                    id: `cancel-${e.booking.id}`,
                     title: "Pesanan Dibatalkan",
                     message: `${e.booking.customer.name} membatalkan pesanan #${e.booking.id}`,
                     link: `/admin/booking-management/${e.booking.id}`,
@@ -254,7 +249,7 @@ export default function AdminLayout() {
             // 3. Reschedule Request
             channel.listen(".RescheduleRequested", (e) => {
                 handleNewNotification({
-                    id: `resched-${e.booking.id}-${Date.now()}`,
+                    id: `resched-${e.booking.id}`,
                     title: "Pengajuan Reschedule",
                     message: `${e.booking.customer.name} meminta jadwal baru untuk #${e.booking.id}`,
                     link: `/admin/jadwal-konsultasi/${e.booking.id}`,
@@ -268,11 +263,10 @@ export default function AdminLayout() {
             // 4. Refund Request
             channel.listen(".RefundRequested", (e) => {
                 handleNewNotification({
-                    id: `refund-${e.refund.id}-${Date.now()}`,
-                    title: "Pengajuan Refund",
-                    message:
-                        "Ada pengajuan refund baru dari Customer. Harap tinjau.",
-                    link: "/super-admin/refund-management",
+                    id: `refund-${e.id}`,
+                    title: e.title || "Pengajuan Refund",
+                    message: e.message || "Ada pengajuan refund baru.",
+                    link: e.link || "/super-admin/refund-management",
                     read_at: null,
                     created_at: new Date().toISOString(),
                     isRealTime: true,
@@ -283,10 +277,10 @@ export default function AdminLayout() {
             // 5. Konselor Baru
             channel.listen(".NewCounselorRegistered", (e) => {
                 handleNewNotification({
-                    id: `counselor-${e.user.id}-${Date.now()}`,
-                    title: "Pendaftaran Konselor",
-                    message: `${e.user.name} mendaftar sebagai konselor.`,
-                    link: `/admin/verifikasi-konselor`,
+                    id: `counselor-${e.id}`,
+                    title: e.title || "Pendaftaran Konselor",
+                    message: e.message || "Konselor baru mendaftar.",
+                    link: e.link || `/admin/verifikasi-konselor`,
                     read_at: null,
                     created_at: new Date().toISOString(),
                     isRealTime: true,
@@ -294,10 +288,10 @@ export default function AdminLayout() {
                 });
             });
 
-            // 6. Payout / Gaji Konselor
+            // 6. Payout / Gaji
             channel.listen(".PayoutActionRequired", (e) => {
                 handleNewNotification({
-                    id: `payout-${e.booking.id}-${Date.now()}`,
+                    id: `payout-${e.booking.id}`,
                     title: "Pembayaran Gaji Diperlukan",
                     message: `Sesi #${e.booking.id} selesai. Harap proses gaji.`,
                     link: `/super-admin/keuangan`,
@@ -308,17 +302,14 @@ export default function AdminLayout() {
                 });
             });
 
-            // 7. Missing Gmeet Link (Opsional jika via broadcast)
-            // Jika Notification class tidak membroadcast ke 'admin-notifications'
-            // maka block ini mungkin tidak terpanggil lewat pusher, tapi akan muncul
-            // saat admin refresh page (karena masuk DB).
+            // 7. Missing Link
             channel.listen(".MissingGmeetLinkNotification", (e) => {
                 handleNewNotification({
-                    id: `missing-${Date.now()}`,
+                    id: `missing-${e.booking_id}`,
                     title: "Link GMeet Belum Ada!",
                     message:
                         "Segera isi link meeting untuk sesi yang akan mulai!",
-                    link: `/admin/booking-management/${e.booking_id}`, // Sesuaikan data dari event
+                    link: `/admin/booking-management/${e.booking_id}`,
                     read_at: null,
                     created_at: new Date().toISOString(),
                     isRealTime: true,
@@ -332,7 +323,6 @@ export default function AdminLayout() {
         }
     }, [user]);
 
-    // Listener klik luar dropdown
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (
@@ -348,7 +338,7 @@ export default function AdminLayout() {
 
     const roleDisplay = "ADMINISTRATOR";
     const avatarFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-        user?.name || "A"
+        user?.name || "A",
     )}&background=EBF4FF&color=00D1FF&bold=true&size=128`;
 
     return (
@@ -371,27 +361,7 @@ export default function AdminLayout() {
                     </div>
 
                     <div className="flex items-center gap-6">
-                        <div className="hidden md:flex items-center bg-gray-100 rounded-full px-4 py-2 border border-transparent focus-within:border-[#00D1FF] focus-within:bg-white focus-within:ring-2 focus-within:ring-cyan-100 transition-all w-64">
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-5 w-5 text-gray-400"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                                />
-                            </svg>
-                            <input
-                                type="text"
-                                placeholder="Cari data..."
-                                className="bg-transparent border-none outline-none text-sm ml-2 w-full text-gray-700 placeholder-gray-400"
-                            />
-                        </div>
+                        {/* KOLOM PENCARIAN DIHAPUS DARI SINI */}
 
                         <div className="relative" ref={dropdownRef}>
                             <button
@@ -445,7 +415,7 @@ export default function AdminLayout() {
                                                         key={notif.id}
                                                         onClick={() =>
                                                             handleNotificationClick(
-                                                                notif
+                                                                notif,
                                                             )
                                                         }
                                                         className={`px-4 py-3 border-b border-gray-50 cursor-pointer hover:bg-blue-50 transition-colors flex gap-3 items-start ${
@@ -476,17 +446,17 @@ export default function AdminLayout() {
                                                             </p>
                                                             <span className="text-[10px] text-gray-400 mt-1 block">
                                                                 {new Date(
-                                                                    notif.created_at
+                                                                    notif.created_at,
                                                                 ).toLocaleDateString()}{" "}
                                                                 •{" "}
                                                                 {new Date(
-                                                                    notif.created_at
+                                                                    notif.created_at,
                                                                 ).toLocaleTimeString(
                                                                     [],
                                                                     {
                                                                         hour: "2-digit",
                                                                         minute: "2-digit",
-                                                                    }
+                                                                    },
                                                                 )}
                                                             </span>
                                                         </div>

@@ -116,4 +116,8 @@ class User extends Authenticatable
     {
         return $this->hasMany(HelpMessage::class, 'user_id');
     }
+    public function receivesBroadcastNotificationsOn()
+    {
+        return 'App.Models.User.' . $this->id;
+    }
 }

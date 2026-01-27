@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use App\Services\BookingFinanceService; // <--- JANGAN LUPA IMPORT INI
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class JadwalKonsultasiController extends Controller
 {
@@ -18,15 +20,12 @@ class JadwalKonsultasiController extends Controller
         $search = $request->query('search');
         $status = $request->query('status');
 
-        // Eager load relasi yang dibutuhkan
         $query = Booking::with(['customer', 'konselor', 'jenisKonseling']);
 
-        // 1. Filter Berdasarkan Status (jika ada)
         if ($status) {
             $query->where('status_pesanan', $status);
         }
 
-        // 2. Fitur Pencarian (ID, Nama Customer, Nama Konselor)
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('id', 'like', "%{$search}%")
@@ -39,20 +38,14 @@ class JadwalKonsultasiController extends Controller
             });
         }
 
-        // 3. Sorting: Tanggal & Jam Terdekat (Ascending)
         $query->orderBy('tanggal_konsultasi', 'asc')
             ->orderBy('jam_konsultasi', 'asc');
 
-        // 4. Pagination (10 per halaman)
         return $query->paginate(10);
     }
 
-    /**
-     * Menampilkan detail satu jadwal konsultasi.
-     */
     public function show(Booking $booking)
     {
-        // Load relasi lengkap untuk detail page
         return $booking->load([
             'customer',
             'konselor',
@@ -62,9 +55,6 @@ class JadwalKonsultasiController extends Controller
         ]);
     }
 
-    /**
-     * Menghapus jadwal konsultasi.
-     */
     public function destroy(Booking $booking)
     {
         $booking->delete();
@@ -73,8 +63,9 @@ class JadwalKonsultasiController extends Controller
 
     /**
      * Memperbarui status pesanan/jadwal.
+     * [PERBAIKAN] Mengintegrasikan BookingFinanceService saat status 'Selesai'
      */
-    public function updateStatus(Request $request, Booking $booking)
+    public function updateStatus(Request $request, Booking $booking, BookingFinanceService $financeService)
     {
         $allowedStatuses = ['Selesai', 'Batal', 'Proses', 'Dijadwalkan', 'Berlangsung', 'Menunggu Konfirmasi'];
 
@@ -82,18 +73,31 @@ class JadwalKonsultasiController extends Controller
             'status_pesanan' => ['required', 'string', Rule::in($allowedStatuses)],
         ]);
 
-        $booking->update(['status_pesanan' => $validated['status_pesanan']]);
+        $newStatus = $validated['status_pesanan'];
 
-        return response()->json($booking);
+        // --- LOGIKA UTAMA PERBAIKAN ---
+        if ($newStatus === 'Selesai') {
+            // Jika status diubah jadi Selesai, JANGAN update manual.
+            // Panggil Service biar duitnya dihitung!
+            try {
+                $financeService->completeBooking($booking);
+
+                // Refresh data biar frontend dapet update nominalnya
+                return response()->json($booking->fresh());
+            } catch (\Exception $e) {
+                Log::error("Gagal update status selesai: " . $e->getMessage());
+                return response()->json(['message' => 'Gagal menghitung keuangan.'], 500);
+            }
+        } else {
+            // Jika status lain (Batal, Proses, dll), update biasa
+            $booking->update(['status_pesanan' => $newStatus]);
+            return response()->json($booking);
+        }
     }
 
-    /**
-     * Update link Gmeet/Zoom untuk booking tertentu.
-     */
     public function updateGmeetLink(Request $request, Booking $booking)
     {
         $validator = Validator::make($request->all(), [
-            // Validasi URL umum (agar bisa zoom, google meet, dll)
             'gmeet_link' => ['nullable', 'url'],
         ], [
             'gmeet_link.url' => 'Format link tidak valid.',
@@ -106,7 +110,6 @@ class JadwalKonsultasiController extends Controller
             ], 422);
         }
 
-        // Cek apakah metode layanan mendukung link meeting
         $allowedMethods = ['Video Call', 'Voice Call', 'Call'];
 
         if (!in_array($booking->metode_konsultasi, $allowedMethods)) {
@@ -119,7 +122,6 @@ class JadwalKonsultasiController extends Controller
             'gmeet_link' => $request->gmeet_link,
         ]);
 
-        // Refresh data untuk dikirim balik ke frontend
         $booking->load('customer', 'konselor', 'jenisKonseling');
 
         return response()->json([
