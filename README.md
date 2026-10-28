@@ -1,61 +1,95 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+<!-- 🎨 HEALTHTECH STARTUP BANNER -->
+<div align="center">
+  <img src="https://capsule-render.vercel.app/api?type=rounded&color=0:7F52FF,100:00F7FF&height=180&text=Moodly%20Platform&fontSize=50&fontColor=FFFFFF&desc=Mental%20Health%20Care%20%26%20Real-Time%20Management&descSize=18" width="100%" alt="Moodly Banner"/>
+</div>
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+<br/>
 
-## About Laravel
+> **Moodly** adalah platform layanan kesehatan mental digital (*HealthTech*) komprehensif yang dilengkapi dengan **Sistem Manajemen Operasional dan Keuangan Berbasis Real-Time**. Platform ini menghubungkan psikolog dengan klien sekaligus memberikan kendali administratif penuh melalui *dashboard* keuangan yang mutakhir.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+<div align="left">
+  <img src="https://img.shields.io/badge/Domain-HealthTech_Startup-FF69B4?style=flat-square&logo=health&logoColor=white" alt="HealthTech"/>
+  <img src="https://img.shields.io/badge/Status-Thesis_Completed-7F52FF?style=flat-square&logo=git&logoColor=white" alt="Thesis"/>
+  <img src="https://img.shields.io/badge/Laravel-FF2D20?style=flat-square&logo=laravel&logoColor=white" alt="Laravel"/>
+  <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white" alt="Tailwind"/>
+  <img src="https://img.shields.io/badge/Midtrans-005C84?style=flat-square&logo=paypal&logoColor=white" alt="Midtrans"/>
+</div>
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+<br/>
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## 🧠 Sorotan Modul & Fitur (Core Architecture)
 
-## Learning Laravel
+Berbeda dengan aplikasi reservasi biasa, arsitektur Moodly ditopang oleh modul administrator yang mengolah data operasional dan transaksi keuangan secara instan.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+*   💬 **Konseling Real-Time:** Integrasi fitur *live chat* interaktif untuk sesi konsultasi psikologis yang mulus antara klien dan tenaga ahli.
+*   💸 **Keuangan & Payment Gateway:** Otomatisasi pembayaran sesi menggunakan **Midtrans (QRIS & Virtual Account)** dengan pelacakan *webhook* dan notifikasi status *real-time*.
+*   📊 **Dashboard Administrator Instan:** Pemantauan arus kas pendapatan, jadwal sesi aktif, dan metrik kesehatan operasional klinik tanpa perlu memuat ulang halaman (*real-time metrics*).
+*   🎨 **Calm & Intuitive UI:** Antarmuka pengguna (UI) dirancang menggunakan *Tailwind CSS* dengan pendekatan psikologi warna untuk memberikan pengalaman yang menenangkan bagi pengguna.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+---
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## 🏗️ Topologi Teknologi (Tech Stack)
 
-## Laravel Sponsors
+<table>
+  <tr>
+    <td width="30%"><b>Backend & API Server</b></td>
+    <td><code>Laravel</code> <code>PHP 8+</code> (Arsitektur MVC, RESTful Routes, & Real-time Event Broadcasting)</td>
+  </tr>
+  <tr>
+    <td width="30%"><b>Frontend & Styling</b></td>
+    <td><code>JavaScript (ES6)</code> <code>Tailwind CSS</code> <code>Blade Templating</code></td>
+  </tr>
+  <tr>
+    <td width="30%"><b>Database & Storage</b></td>
+    <td><code>MySQL / MariaDB</code> (Relasi entitas multi-role: Admin, Psikolog, Pasien)</td>
+  </tr>
+  <tr>
+    <td width="30%"><b>Third-Party Integration</b></td>
+    <td><code>Midtrans Payment Gateway</code> (QRIS & Bank Transfer)</td>
+  </tr>
+</table>
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+---
 
-### Premium Partners
+## 🚀 Panduan Instalasi (Development Setup)
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+Sistem ini membutuhkan pengaturan *environment* lokal yang mencakup konfigurasi *database* dan kunci API (*API Keys*) Midtrans.
 
-## Contributing
+```bash
+# 1. Clone Repositori
+git clone [https://github.com/UlulAzmiALatala/moodly-app.git](https://github.com/UlulAzmiALatala/moodly-app.git)
+cd moodly-app
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# 2. Install dependensi Backend & Frontend
+composer install
+npm install
 
-## Code of Conduct
+# 3. Konfigurasi Environment & Midtrans API
+cp .env.example .env
+php artisan key:generate
+# Buka file .env dan masukkan MIDTRANS_SERVER_KEY & MIDTRANS_CLIENT_KEY Anda
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# 4. Setup Database & Jalankan Migrasi
+php artisan migrate --seed
 
-## Security Vulnerabilities
+# 5. Build Asset & Jalankan Server Lokal
+npm run dev
+php artisan serve
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+---
 
-## License
+## 🖼️ Tampilan Platform (Application Preview)
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+<div align="center">
+  <!-- GANTI LINK GAMBAR DI BAWAH INI DENGAN SCREENSHOT ASLI MOODLY KAMU -->
+  <img src="https://via.placeholder.com/800x400/0D1117/7F52FF?text=Halaman+Konseling+%26+Booking+(Upload+Screenshot)" alt="Halaman Konseling Moodly" width="80%" />
+  <br/>
+  <br/>
+  <img src="https://via.placeholder.com/800x400/0D1117/00F7FF?text=Dashboard+Keuangan+Real-Time+(Upload+Screenshot)" alt="Dashboard Keuangan Moodly" width="80%" />
+</div>
+
+<br/>
+
+> **Catatan Pengembangan:**
+> Proyek ini dikembangkan selama masa magang di **PT Seven Inc** (2025-2026) dan berhasil diselesaikan serta dipertahankan sebagai sistem utama dalam tugas akhir/skripsi jurusan Informatika. Hak cipta & Arsitektur Sistem &copy; 2026 **Ulul Azmi A. Latala**.
