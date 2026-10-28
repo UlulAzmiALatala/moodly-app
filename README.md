@@ -1,6 +1,6 @@
 <!-- 🎨 HEALTHTECH STARTUP BANNER -->
 <div align="center">
-  <img src="https://capsule-render.vercel.app/api?type=rounded&color=0:7F52FF,100:00F7FF&height=180&text=Moodly%20Platform&fontSize=50&fontColor=FFFFFF&desc=Mental%20Health%20Care%20%26%20Real-Time%20Management&descSize=18" width="100%" alt="Moodly Banner"/>
+  <img src="https://capsule-render.vercel.app/api?type=rounded&color=0:7F52FF,100:00F7FF&height=180&text=Moodly%20Platform&fontSize=50&fontColor=FFFFFF&desc=Mental%20Health%20Care%20and%20Real-Time%20Management&descSize=18" width="100%" alt="Moodly Banner"/>
 </div>
 
 <br/>
@@ -15,41 +15,60 @@
   <img src="https://img.shields.io/badge/Midtrans-005C84?style=flat-square&logo=paypal&logoColor=white" alt="Midtrans"/>
 </div>
 
-<br/>
+<!-- 🟣 GLOWING NEON DIVIDER -->
+<img src="https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/purple.png" width="100%">
 
 ## 🧠 Sorotan Modul & Fitur (Core Architecture)
 
 Berbeda dengan aplikasi reservasi biasa, arsitektur Moodly ditopang oleh modul administrator yang mengolah data operasional dan transaksi keuangan secara instan.
 
-*   💬 **Konseling Real-Time:** Integrasi fitur *live chat* interaktif untuk sesi konsultasi psikologis yang mulus antara klien dan tenaga ahli.
-*   💸 **Keuangan & Payment Gateway:** Otomatisasi pembayaran sesi menggunakan **Midtrans (QRIS & Virtual Account)** dengan pelacakan *webhook* dan notifikasi status *real-time*.
-*   📊 **Dashboard Administrator Instan:** Pemantauan arus kas pendapatan, jadwal sesi aktif, dan metrik kesehatan operasional klinik tanpa perlu memuat ulang halaman (*real-time metrics*).
-*   🎨 **Calm & Intuitive UI:** Antarmuka pengguna (UI) dirancang menggunakan *Tailwind CSS* dengan pendekatan psikologi warna untuk memberikan pengalaman yang menenangkan bagi pengguna.
-
----
-
-## 🏗️ Topologi Teknologi (Tech Stack)
-
 <table>
   <tr>
-    <td width="30%"><b>Backend & API Server</b></td>
-    <td><code>Laravel</code> <code>PHP 8+</code> (Arsitektur MVC, RESTful Routes, & Real-time Event Broadcasting)</td>
+    <td width="50%" valign="top">
+      <h4>💬 Konseling Real-Time</h4>
+      <p>Integrasi fitur <i>live chat</i> interaktif untuk sesi konsultasi psikologis yang mulus antara klien dan tenaga ahli.</p>
+    </td>
+    <td width="50%" valign="top">
+      <h4>💸 Keuangan & Payment Gateway</h4>
+      <p>Otomatisasi pembayaran sesi menggunakan <b>Midtrans (QRIS & Virtual Account)</b> dengan pelacakan <i>webhook</i> dan notifikasi status <i>real-time</i>.</p>
+    </td>
   </tr>
   <tr>
-    <td width="30%"><b>Frontend & Styling</b></td>
-    <td><code>JavaScript (ES6)</code> <code>Tailwind CSS</code> <code>Blade Templating</code></td>
-  </tr>
-  <tr>
-    <td width="30%"><b>Database & Storage</b></td>
-    <td><code>MySQL / MariaDB</code> (Relasi entitas multi-role: Admin, Psikolog, Pasien)</td>
-  </tr>
-  <tr>
-    <td width="30%"><b>Third-Party Integration</b></td>
-    <td><code>Midtrans Payment Gateway</code> (QRIS & Bank Transfer)</td>
+    <td width="50%" valign="top">
+      <h4>📊 Dashboard Administrator Instan</h4>
+      <p>Pemantauan arus kas pendapatan, jadwal sesi aktif, dan metrik operasional klinik tanpa perlu memuat ulang halaman (<i>real-time metrics</i>).</p>
+    </td>
+    <td width="50%" valign="top">
+      <h4>🎨 Calm & Intuitive UI</h4>
+      <p>Antarmuka pengguna (UI) dirancang menggunakan <i>Tailwind CSS</i> dengan pendekatan psikologi warna untuk pengalaman yang menenangkan.</p>
+    </td>
   </tr>
 </table>
 
----
+<!-- 🟣 GLOWING NEON DIVIDER -->
+<img src="https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/purple.png" width="100%">
+
+## 🏗️ Topologi Teknologi (Tech Stack)
+
+<div align="center">
+  <p align="center">
+    <a href="https://skillicons.dev">
+      <img src="https://skillicons.dev/icons?i=laravel,php,js,tailwind,html,css,mysql,figma,vscode&perline=10&theme=dark" alt="Moodly Tech Stack Icons" />
+    </a>
+  </p>
+</div>
+
+<br/>
+
+| Kategori | Teknologi Utama | Deskripsi Implementasi |
+| :--- | :--- | :--- |
+| **Backend & API Server** | `Laravel` `PHP 8+` | Arsitektur MVC, RESTful Routes, & Real-time Event Broadcasting. |
+| **Frontend & Styling** | `JavaScript` `Tailwind CSS` | Komponen interaktif dengan Blade Templating. |
+| **Database & Storage** | `MySQL / MariaDB` | Relasi entitas multi-role: Admin, Psikolog, Pasien. |
+| **Third-Party Integration** | `Midtrans` | Layanan Payment Gateway untuk QRIS & Bank Transfer. |
+
+<!-- 🟣 GLOWING NEON DIVIDER -->
+<img src="https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/purple.png" width="100%">
 
 ## 🚀 Panduan Instalasi (Development Setup)
 
@@ -77,7 +96,8 @@ npm run dev
 php artisan serve
 ```
 
----
+<!-- 🟣 GLOWING NEON DIVIDER -->
+<img src="https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/purple.png" width="100%">
 
 ## 🖼️ Tampilan Platform (Application Preview)
 
@@ -92,4 +112,4 @@ php artisan serve
 <br/>
 
 > **Catatan Pengembangan:**
-> Proyek ini dikembangkan selama masa magang di **PT Seven Inc** (2025-2026) dan berhasil diselesaikan serta dipertahankan sebagai sistem utama dalam tugas akhir/skripsi jurusan Informatika. Hak cipta & Arsitektur Sistem &copy; 2026 **Ulul Azmi A. Latala**.
+> Proyek ini dikembangkan selama masa magang di **PT Seven Inc** (2025-2026) dan berhasil diselesaikan serta dipertahankan sebagai sistem utama dalam tugas akhir/skripsi jurusan Informatika dengan dosen pembimbing Bapak Rikie Kartadie. Hak cipta & Arsitektur Sistem &copy; 2026 **Ulul Azmi A. Latala**.
